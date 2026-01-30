@@ -405,6 +405,42 @@ function AppContent() {
     });
   }, []);
 
+  // --- Arrow Key Navigation Between Blocks ---
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't handle if in preview mode or if user is typing in an input/textarea
+      if (isPreviewMode) return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
+
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const visibleBlocks = canvasBlocks.filter(b => !b.hidden);
+        if (visibleBlocks.length === 0) return;
+
+        if (!selectedBlockId) {
+          // No block selected — select first or last depending on direction
+          setSelectedBlockId(e.key === 'ArrowDown' ? visibleBlocks[0].id : visibleBlocks[visibleBlocks.length - 1].id);
+          return;
+        }
+
+        const currentIndex = visibleBlocks.findIndex(b => b.id === selectedBlockId);
+        if (currentIndex === -1) {
+          setSelectedBlockId(visibleBlocks[0].id);
+          return;
+        }
+
+        const nextIndex = e.key === 'ArrowUp' ? currentIndex - 1 : currentIndex + 1;
+        if (nextIndex >= 0 && nextIndex < visibleBlocks.length) {
+          setSelectedBlockId(visibleBlocks[nextIndex].id);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canvasBlocks, selectedBlockId, isPreviewMode]);
+
   // --- Drag and Drop Logic ---
   const handleDropBlock = useCallback((typeId: string, insertIndex?: number) => {
     if (!typeId) return;
