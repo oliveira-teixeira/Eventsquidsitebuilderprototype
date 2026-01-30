@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import { TouchBackend } from 'react-dnd-touch-backend';
 import { 
   Layout, 
   Calendar, 
@@ -56,6 +58,96 @@ interface BlockData {
 }
 
 // --- Components ---
+
+// 0. Sortable Block Item for Drag and Drop
+interface SortableBlockItemProps {
+  id: string;
+  index: number;
+  block: BlockData;
+  moveBlock: (dragIndex: number, hoverIndex: number) => void;
+  onSelect: () => void;
+  isSelected: boolean;
+}
+
+const SortableBlockItem: React.FC<SortableBlockItemProps> = ({ id, index, block, moveBlock, onSelect, isSelected }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [{ handlerId }, drop] = useDrop({
+    accept: 'BLOCK',
+    collect(monitor) {
+      return {
+        handlerId: monitor.getHandlerId(),
+      }
+    },
+    hover(item: any, monitor) {
+      if (!ref.current) {
+        return;
+      }
+      const dragIndex = item.index;
+      const hoverIndex = index;
+
+      // Don't replace items with themselves
+      if (dragIndex === hoverIndex) {
+        return;
+      }
+
+      // Determine rectangle on screen
+      const hoverBoundingRect = ref.current.getBoundingClientRect();
+
+      // Get vertical middle
+      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+
+      // Determine mouse position
+      const clientOffset = monitor.getClientOffset();
+      if (!clientOffset) return;
+
+      // Get pixels to the top
+      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+
+      // Dragging downwards
+      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
+        return;
+      }
+
+      // Dragging upwards
+      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
+        return;
+      }
+
+      // Time to actually perform the action
+      moveBlock(dragIndex, hoverIndex);
+
+      // Note: we're mutating the monitor item here!
+      item.index = hoverIndex;
+    },
+  });
+
+  const [{ isDragging }, drag] = useDrag({
+    type: 'BLOCK',
+    item: { id, index },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  });
+
+  const opacity = isDragging ? 0.4 : 1;
+  drag(drop(ref));
+
+  return (
+    <div ref={ref} style={{ opacity }} data-handler-id={handlerId}>
+       <PageListItem 
+          icon={
+              block.type === 'hero' ? Home : 
+              block.type === 'agenda' ? Calendar : 
+              block.type === 'sponsors' ? Users : FileText
+          } 
+          label={block.title} 
+          isActive={isSelected}
+          onClick={onSelect}
+          className="cursor-move"
+       />
+    </div>
+  );
+};
 
 // 1. Block Wrapper (Handles Selection & Actions)
 const BlockWrapper = ({ 
@@ -310,6 +402,15 @@ export const SiteBuilderLayout = () => {
     setBlocks(newBlocks);
   };
 
+  // Drag and Drop Reordering
+  const reorderBlock = (dragIndex: number, hoverIndex: number) => {
+    const dragBlock = blocks[dragIndex];
+    const newBlocks = [...blocks];
+    newBlocks.splice(dragIndex, 1);
+    newBlocks.splice(hoverIndex, 0, dragBlock);
+    setBlocks(newBlocks);
+  };
+
   // --- Render Helpers ---
   const renderBlockContent = (block: BlockData) => {
     switch (block.type) {
@@ -324,6 +425,7 @@ export const SiteBuilderLayout = () => {
   const getSelectedBlock = () => blocks.find(b => b.id === selectedBlockId);
 
   return (
+    <DndProvider backend={TouchBackend} options={{ enableMouseEvents: true }}>
     <div className="flex flex-col h-[850px] w-full bg-muted/30 border rounded-xl overflow-hidden font-sans">
       {/* Top Navigation Bar */}
       <header className="h-16 bg-background border-b flex items-center justify-between px-6 shrink-0 z-20">
@@ -502,18 +604,15 @@ export const SiteBuilderLayout = () => {
                     
                     <ScrollArea className="flex-1">
                         <div className="p-4 space-y-2">
-                             {blocks.map((block) => (
-                                 <PageListItem 
+                             {blocks.map((block, index) => (
+                                 <SortableBlockItem 
                                     key={block.id}
-                                    icon={
-                                        block.type === 'hero' ? Home : 
-                                        block.type === 'agenda' ? Calendar : 
-                                        block.type === 'sponsors' ? Users : FileText
-                                    } 
-                                    label={block.title} 
-                                    isActive={selectedBlockId === block.id}
-                                    onClick={() => handleSelectBlock(block.id)}
-                                    className="cursor-pointer"
+                                    id={block.id}
+                                    index={index}
+                                    block={block}
+                                    moveBlock={reorderBlock}
+                                    isSelected={selectedBlockId === block.id}
+                                    onSelect={() => handleSelectBlock(block.id)}
                                  />
                              ))}
                              
@@ -746,5 +845,6 @@ export const SiteBuilderLayout = () => {
         </aside>
       </div>
     </div>
+    </DndProvider>
   );
 };

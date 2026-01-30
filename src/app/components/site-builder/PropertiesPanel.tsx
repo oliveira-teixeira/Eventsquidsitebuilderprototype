@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useEffect } from "react";
-import { Sliders, Check, AlignJustify, AlignLeft, AlignCenter, AlignRight, MoveVertical, Eye, Smartphone, Link, Layout, Image as ImageIcon, Box, Hash, Palette, Upload, Cloud, Monitor } from "lucide-react";
+import { Sliders, Check, AlignJustify, AlignLeft, AlignCenter, AlignRight, MoveVertical, Eye, Smartphone, Link, Layout, Image as ImageIcon, Box, Hash, Palette, Upload, Cloud, Monitor, Move, Maximize2 } from "lucide-react";
 import { cn } from "../ui/utils";
 import { Switch } from "../ui/switch";
 import { 
@@ -26,6 +26,9 @@ import {
 } from "../ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Button } from "../ui/button";
+import { ImageCropModal } from "./ImageCropModal";
+import { Slider } from "../ui/slider";
+import { ImageSetting, getImageUrl as getHelpersImageUrl, getImageStyles } from "@/app/utils/image-helpers";
 
 interface PropertiesPanelProps {
   selectedBlockId: string | null;
@@ -190,6 +193,9 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
   const [currentImageId, setCurrentImageId] = useState<string | null>(null);
   const [tempImageUrl, setTempImageUrl] = useState("");
   const [activeAgendaDay, setActiveAgendaDay] = useState(0);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [cropImageUrl, setCropImageUrl] = useState("");
+  const [cropImageSettings, setCropImageSettings] = useState<ImageSetting | undefined>(undefined);
 
   // Reset active day when block changes
   useEffect(() => {
@@ -227,13 +233,68 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
 
   const handleImageUpdate = (url: string) => {
       if (currentImageId) {
+          // Open crop modal after image selection
+          setCropImageUrl(url);
+          
+          // Get existing settings if any
+          const images = selectedSettings.images || {};
+          const existing = images[currentImageId];
+          const existingSettings = typeof existing === 'object' ? existing : undefined;
+          
+          setCropImageSettings(existingSettings);
+          setAssetModalOpen(false);
+          setCropModalOpen(true);
+      }
+  };
+
+  const handleCropConfirm = (settings: ImageSetting) => {
+      if (currentImageId) {
           const newImages = {
               ...selectedSettings.images,
-              [currentImageId]: url
+              [currentImageId]: settings
           };
           onChangeSettings({ ...selectedSettings, images: newImages });
-          setAssetModalOpen(false);
       }
+  };
+
+  const handleImageSettingChange = (imageId: string, key: keyof ImageSetting, value: any) => {
+      const images = selectedSettings.images || {};
+      const currentImage = images[imageId];
+      
+      let updatedImage: ImageSetting;
+      if (typeof currentImage === 'string') {
+          updatedImage = { url: currentImage, [key]: value };
+      } else if (currentImage) {
+          updatedImage = { ...currentImage, [key]: value };
+      } else {
+          return;
+      }
+      
+      const newImages = {
+          ...images,
+          [imageId]: updatedImage
+      };
+      onChangeSettings({ ...selectedSettings, images: newImages });
+  };
+
+  const getImageUrl = (imageId: string, defaultUrl: string): string => {
+      const images = selectedSettings.images || {};
+      const image = images[imageId];
+      if (typeof image === 'string') {
+          return image;
+      } else if (image && image.url) {
+          return image.url;
+      }
+      return defaultUrl;
+  };
+
+  const getImageSettings = (imageId: string): ImageSetting | undefined => {
+      const images = selectedSettings.images || {};
+      const image = images[imageId];
+      if (typeof image === 'object') {
+          return image;
+      }
+      return undefined;
   };
 
   const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -581,13 +642,19 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                         <ImageIcon className="w-3.5 h-3.5" />
                         Images
                     </label>
-                    <div className="space-y-4 bg-muted/30 p-3 rounded-md border border-border">
+                    <div className="space-y-6 bg-muted/30 p-3 rounded-md border border-border">
                         {configurableImages.map((img) => {
-                            const images = selectedSettings.images || {};
-                            const currentUrl = images[img.id] || img.defaultUrl;
+                            const currentUrl = getImageUrl(img.id, img.defaultUrl);
+                            const imageSettings = getImageSettings(img.id);
+                            const fit = (imageSettings && imageSettings.fit) ? imageSettings.fit : (img.defaultFit || 'cover');
+                            const position = (imageSettings && imageSettings.position) ? imageSettings.position : (img.defaultPosition || 'center');
+                            const zoom = (imageSettings && imageSettings.zoom !== undefined) ? imageSettings.zoom : 100;
+                            
                             return (
-                                <div key={img.id} className="space-y-2">
+                                <div key={img.id} className="space-y-3">
                                     <label className="text-xs font-medium text-foreground">{img.label}</label>
+                                    
+                                    {/* Image preview and upload */}
                                     <div className="flex gap-3">
                                         <div 
                                             className="relative w-20 h-20 shrink-0 overflow-hidden rounded-md border border-border bg-muted group cursor-pointer shadow-sm hover:ring-2 hover:ring-primary hover:ring-offset-1 transition-all" 
@@ -622,6 +689,90 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                                                  </span>
                                             </div>
                                         </div>
+                                    </div>
+
+                                    {/* Image Fit */}
+                                    <div className="space-y-2 pt-2 border-t border-border/50">
+                                        <label className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1.5">
+                                            <Move className="w-3 h-3" />
+                                            Image Fit
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-1.5">
+                                            {[
+                                                { value: 'cover', label: 'Cover' },
+                                                { value: 'contain', label: 'Contain' },
+                                                { value: 'fill', label: 'Fill' },
+                                                { value: 'scale-down', label: 'Stretch' }
+                                            ].map((option) => (
+                                                <button
+                                                    key={option.value}
+                                                    type="button"
+                                                    onClick={() => handleImageSettingChange(img.id, 'fit', option.value)}
+                                                    className={cn(
+                                                        'px-2 py-1.5 rounded text-[10px] font-medium transition-all border',
+                                                        fit === option.value
+                                                            ? 'border-primary bg-primary/10 text-primary'
+                                                            : 'border-border bg-background text-muted-foreground hover:bg-muted'
+                                                    )}
+                                                >
+                                                    {option.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Image Position */}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1.5">
+                                            <Maximize2 className="w-3 h-3" />
+                                            Position
+                                        </label>
+                                        <div className="grid grid-cols-3 gap-0.5 w-full max-w-[120px] aspect-square bg-muted/20 p-0.5 rounded border border-border mx-auto">
+                                            {[
+                                                { value: 'top-left', label: 'Top Left' },
+                                                { value: 'top', label: 'Top' },
+                                                { value: 'top-right', label: 'Top Right' },
+                                                { value: 'left', label: 'Left' },
+                                                { value: 'center', label: 'Center' },
+                                                { value: 'right', label: 'Right' },
+                                                { value: 'bottom-left', label: 'Bottom Left' },
+                                                { value: 'bottom', label: 'Bottom' },
+                                                { value: 'bottom-right', label: 'Bottom Right' }
+                                            ].map((option) => (
+                                                <button
+                                                    key={option.value}
+                                                    type="button"
+                                                    onClick={() => handleImageSettingChange(img.id, 'position', option.value)}
+                                                    title={option.label}
+                                                    className={cn(
+                                                        'w-full h-full rounded-sm transition-all border border-transparent flex items-center justify-center',
+                                                        position === option.value
+                                                            ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                                                            : 'bg-background hover:bg-muted text-muted-foreground'
+                                                    )}
+                                                >
+                                                    <div className="w-1 h-1 rounded-full bg-current" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Zoom */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[10px] font-semibold text-muted-foreground">
+                                                Zoom
+                                            </label>
+                                            <span className="text-[10px] font-mono text-muted-foreground">{zoom}%</span>
+                                        </div>
+                                        <Slider
+                                            value={[zoom]}
+                                            onValueChange={(values) => handleImageSettingChange(img.id, 'zoom', values[0])}
+                                            min={50}
+                                            max={200}
+                                            step={5}
+                                            className="w-full"
+                                        />
                                     </div>
                                 </div>
                             );
@@ -793,7 +944,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                         <button 
                             key={p.id}
                             type="button"
-                            onClick={() => handlePaddingChange(p.id)}
+                            onClick={() => onChangeSettings({ ...selectedSettings, padding: p.id as any })}
                             onMouseDown={(e) => e.preventDefault()}
                             className={cn(
                                 "flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all",
@@ -815,7 +966,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
       </div>
 
       <div className="pt-4 border-t border-border">
-        <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 p-3 rounded-md text-xs">
+        <div className="bg-primary/10 text-primary p-3 rounded-md text-xs">
           <strong>Tip:</strong> Toggle elements to customize the layout. Double-click text on the canvas to edit.
         </div>
       </div>
@@ -823,21 +974,21 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
       <Dialog open={assetModalOpen} onOpenChange={setAssetModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Choose Image</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="font-sans" style={{ fontSize: 'var(--text-lg)' }}>Choose Image</DialogTitle>
+            <DialogDescription className="font-sans" style={{ fontSize: 'var(--text-sm)' }}>
               Upload an image or select from library.
             </DialogDescription>
           </DialogHeader>
           <Tabs defaultValue="upload" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="upload">Upload</TabsTrigger>
-              <TabsTrigger value="library">Library</TabsTrigger>
-              <TabsTrigger value="link">Link</TabsTrigger>
+              <TabsTrigger value="upload" className="font-sans">Upload</TabsTrigger>
+              <TabsTrigger value="library" className="font-sans">Library</TabsTrigger>
+              <TabsTrigger value="link" className="font-sans">Link</TabsTrigger>
             </TabsList>
             <TabsContent value="upload" className="py-4">
               <div className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-md p-6 gap-2 hover:bg-muted/50 transition-colors cursor-pointer relative h-[200px]">
                  <Cloud className="w-8 h-8 text-muted-foreground" />
-                 <span className="text-sm font-medium text-muted-foreground">Drag & drop or click to upload</span>
+                 <span className="text-sm font-medium text-muted-foreground font-sans">Drag &amp; drop or click to upload</span>
                  <input 
                     type="file" 
                     accept="image/*"
@@ -860,7 +1011,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                         className="aspect-square bg-muted rounded-md overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary relative group"
                         onClick={() => handleImageUpdate(url)}
                       >
-                         <img src={url} className="w-full h-full object-cover" />
+                         <img src={url} alt="" className="w-full h-full object-cover" />
                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                   ))}
@@ -868,21 +1019,30 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
             </TabsContent>
             <TabsContent value="link" className="py-4 space-y-4">
                <div className="space-y-2">
-                  <label className="text-sm font-medium">Image URL</label>
+                  <label className="text-sm font-medium font-sans">Image URL</label>
                   <input 
-                     className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                     className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-sans"
                      value={tempImageUrl}
                      onChange={(e) => setTempImageUrl(e.target.value)}
                      placeholder="https://example.com/image.jpg"
                   />
                </div>
-               <Button onClick={() => handleImageUpdate(tempImageUrl)} className="w-full">
+               <Button onClick={() => handleImageUpdate(tempImageUrl)} className="w-full font-sans">
                   Use Image
                </Button>
             </TabsContent>
           </Tabs>
         </DialogContent>
       </Dialog>
+
+      {/* Image Crop/Adjust Modal */}
+      <ImageCropModal
+        isOpen={cropModalOpen}
+        onClose={() => setCropModalOpen(false)}
+        imageUrl={cropImageUrl}
+        onConfirm={handleCropConfirm}
+        initialSettings={cropImageSettings}
+      />
     </div>
   );
 };

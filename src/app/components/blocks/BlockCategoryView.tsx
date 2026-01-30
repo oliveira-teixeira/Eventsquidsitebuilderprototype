@@ -252,6 +252,14 @@ export const AgendaVariant1 = () => (
 import { Badge } from "../ui/badge";
 import { MapPin } from "lucide-react";
 
+const SAMPLE_AGENDA = [
+    { time: "09:00 AM", title: "Registration & Breakfast", location: "Main Hall", type: "General" },
+    { time: "10:00 AM", title: "Opening Keynote: The Future of AI", location: "Auditorium A", type: "Keynote" },
+    { time: "11:30 AM", title: "Breakout Session: React Server Components", location: "Room 204", type: "Workshop" },
+    { time: "01:00 PM", title: "Networking Lunch", location: "Dining Area", type: "Networking" },
+    { time: "02:30 PM", title: "Design Systems at Scale", location: "Auditorium B", type: "Panel" },
+];
+
 // Variant 2: Timeline View
 export const AgendaVariant2 = () => (
   <div className="w-full py-16 bg-muted/30">
@@ -289,6 +297,14 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 import { ChevronRight, User, MapPin } from "lucide-react";
+
+const SAMPLE_AGENDA = [
+    { time: "09:00 AM", title: "Registration & Breakfast", location: "Main Hall", type: "General" },
+    { time: "10:00 AM", title: "Opening Keynote: The Future of AI", location: "Auditorium A", type: "Keynote" },
+    { time: "11:30 AM", title: "Breakout Session: React Server Components", location: "Room 204", type: "Workshop" },
+    { time: "01:00 PM", title: "Networking Lunch", location: "Dining Area", type: "Networking" },
+    { time: "02:30 PM", title: "Design Systems at Scale", location: "Auditorium B", type: "Panel" },
+];
 
 // Variant 3: Compact Tabbed View
 export const AgendaVariant3 = () => (
@@ -332,6 +348,14 @@ export const AgendaVariant3 = () => (
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 
+const SAMPLE_AGENDA = [
+    { time: "09:00 AM", title: "Registration & Breakfast", location: "Main Hall", type: "General" },
+    { time: "10:00 AM", title: "Opening Keynote: The Future of AI", location: "Auditorium A", type: "Keynote" },
+    { time: "11:30 AM", title: "Breakout Session: React Server Components", location: "Room 204", type: "Workshop" },
+    { time: "01:00 PM", title: "Networking Lunch", location: "Dining Area", type: "Networking" },
+    { time: "02:30 PM", title: "Design Systems at Scale", location: "Auditorium B", type: "Panel" },
+];
+
 // Variant 4: Brutalist Split
 export const AgendaVariant4 = () => (
     <div className="w-full py-16 bg-background">
@@ -374,6 +398,14 @@ export const AgendaVariant4 = () => (
 import { Badge } from "../ui/badge";
 import { Plus, Minus, MapPin } from "lucide-react";
 import { cn } from "../ui/utils";
+
+const SAMPLE_AGENDA = [
+    { time: "09:00 AM", title: "Registration & Breakfast", location: "Main Hall", type: "General" },
+    { time: "10:00 AM", title: "Opening Keynote: The Future of AI", location: "Auditorium A", type: "Keynote" },
+    { time: "11:30 AM", title: "Breakout Session: React Server Components", location: "Room 204", type: "Workshop" },
+    { time: "01:00 PM", title: "Networking Lunch", location: "Dining Area", type: "Networking" },
+    { time: "02:30 PM", title: "Design Systems at Scale", location: "Auditorium B", type: "Panel" },
+];
 
 // Variant 5: Interactive Accordion Stack
 export const AgendaVariant5 = () => {
@@ -440,6 +472,14 @@ export const AgendaVariant5 = () => {
 };`,
     v6: `import React from "react";
 import { cn } from "../ui/utils";
+
+const SAMPLE_AGENDA = [
+    { time: "09:00 AM", title: "Registration & Breakfast", location: "Main Hall", type: "General" },
+    { time: "10:00 AM", title: "Opening Keynote: The Future of AI", location: "Auditorium A", type: "Keynote" },
+    { time: "11:30 AM", title: "Breakout Session: React Server Components", location: "Room 204", type: "Workshop" },
+    { time: "01:00 PM", title: "Networking Lunch", location: "Dining Area", type: "Networking" },
+    { time: "02:30 PM", title: "Design Systems at Scale", location: "Auditorium B", type: "Panel" },
+];
 
 // Variant 6: Timeline Wireframe
 export const AgendaVariant6 = () => (
@@ -514,6 +554,14 @@ import { Button } from "../ui/button";
 import { ArrowUpRight } from "lucide-react";
 import { cn } from "../ui/utils";
 
+const SAMPLE_AGENDA = [
+    { time: "09:00 AM", title: "Registration & Breakfast", location: "Main Hall", type: "General" },
+    { time: "10:00 AM", title: "Opening Keynote: The Future of AI", location: "Auditorium A", type: "Keynote" },
+    { time: "11:30 AM", title: "Breakout Session: React Server Components", location: "Room 204", type: "Workshop" },
+    { time: "01:00 PM", title: "Networking Lunch", location: "Dining Area", type: "Networking" },
+    { time: "02:30 PM", title: "Design Systems at Scale", location: "Auditorium B", type: "Panel" },
+];
+
 // Variant 7: Modular Bento Grid
 export const AgendaVariant7 = () => (
     <div className="w-full py-16 bg-muted/10">
@@ -583,6 +631,14 @@ export const AgendaVariant7 = () => (
     v8: `import React from "react";
 import { Button } from "../ui/button";
 import { ArrowUpRight } from "lucide-react";
+
+const SAMPLE_AGENDA = [
+    { time: "09:00 AM", title: "Registration & Breakfast", location: "Main Hall", type: "General" },
+    { time: "10:00 AM", title: "Opening Keynote: The Future of AI", location: "Auditorium A", type: "Keynote" },
+    { time: "11:30 AM", title: "Breakout Session: React Server Components", location: "Room 204", type: "Workshop" },
+    { time: "01:00 PM", title: "Networking Lunch", location: "Dining Area", type: "Networking" },
+    { time: "02:30 PM", title: "Design Systems at Scale", location: "Auditorium B", type: "Panel" },
+];
 
 // Variant 8: Typographic Ledger
 export const AgendaVariant8 = () => (
@@ -878,6 +934,17 @@ export const SponsorsVariant1 = () => {
     v2: `import React from "react";
 import { Badge } from "../ui/badge";
 
+const ALL_SPONSORS = [
+    { name: "Acme Corp", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Platinum", desc: "Building the future of everything." },
+    { name: "Globex", logo: "https://images.unsplash.com/photo-1628760584600-6c31148991e9?w=200&h=100&fit=crop", tier: "Gold", desc: "Global logistics partner." },
+    { name: "Soylent", logo: "https://images.unsplash.com/photo-1746047420047-03fc7a9b9226?w=200&h=100&fit=crop", tier: "Gold", desc: "Nutritional solutions." },
+    { name: "Initech", logo: "/path/to/logo.png", tier: "Silver", desc: "Software for the modern age." },
+    { name: "Umbrella", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Silver", desc: "Biotech research." },
+    { name: "Stark Ind", logo: "https://images.unsplash.com/photo-1628760584600-6c31148991e9?w=200&h=100&fit=crop", tier: "Bronze", desc: "Advanced defense tech." },
+    { name: "Cyberdyne", logo: "https://images.unsplash.com/photo-1746047420047-03fc7a9b9226?w=200&h=100&fit=crop", tier: "Bronze", desc: "AI systems." },
+    { name: "Massive", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Bronze", desc: "Dynamic solutions." },
+];
+
 // Variant 2: Tiered Layout (Platinum/Gold/Silver)
 export const SponsorsVariant2 = () => {
     return (
@@ -923,6 +990,17 @@ export const SponsorsVariant2 = () => {
 };`,
     v3: `import React from "react";
 
+const ALL_SPONSORS = [
+    { name: "Acme Corp", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Platinum", desc: "Building the future of everything." },
+    { name: "Globex", logo: "https://images.unsplash.com/photo-1628760584600-6c31148991e9?w=200&h=100&fit=crop", tier: "Gold", desc: "Global logistics partner." },
+    { name: "Soylent", logo: "https://images.unsplash.com/photo-1746047420047-03fc7a9b9226?w=200&h=100&fit=crop", tier: "Gold", desc: "Nutritional solutions." },
+    { name: "Initech", logo: "/path/to/logo.png", tier: "Silver", desc: "Software for the modern age." },
+    { name: "Umbrella", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Silver", desc: "Biotech research." },
+    { name: "Stark Ind", logo: "https://images.unsplash.com/photo-1628760584600-6c31148991e9?w=200&h=100&fit=crop", tier: "Bronze", desc: "Advanced defense tech." },
+    { name: "Cyberdyne", logo: "https://images.unsplash.com/photo-1746047420047-03fc7a9b9226?w=200&h=100&fit=crop", tier: "Bronze", desc: "AI systems." },
+    { name: "Massive", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Bronze", desc: "Dynamic solutions." },
+];
+
 // Variant 3: Infinite Marquee
 export const SponsorsVariant3 = () => {
     return (
@@ -965,6 +1043,17 @@ export const SponsorsVariant3 = () => {
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { Star, ArrowRight } from "lucide-react";
+
+const ALL_SPONSORS = [
+    { name: "Acme Corp", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Platinum", desc: "Building the future of everything." },
+    { name: "Globex", logo: "https://images.unsplash.com/photo-1628760584600-6c31148991e9?w=200&h=100&fit=crop", tier: "Gold", desc: "Global logistics partner." },
+    { name: "Soylent", logo: "https://images.unsplash.com/photo-1746047420047-03fc7a9b9226?w=200&h=100&fit=crop", tier: "Gold", desc: "Nutritional solutions." },
+    { name: "Initech", logo: "/path/to/logo.png", tier: "Silver", desc: "Software for the modern age." },
+    { name: "Umbrella", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Silver", desc: "Biotech research." },
+    { name: "Stark Ind", logo: "https://images.unsplash.com/photo-1628760584600-6c31148991e9?w=200&h=100&fit=crop", tier: "Bronze", desc: "Advanced defense tech." },
+    { name: "Cyberdyne", logo: "https://images.unsplash.com/photo-1746047420047-03fc7a9b9226?w=200&h=100&fit=crop", tier: "Bronze", desc: "AI systems." },
+    { name: "Massive", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Bronze", desc: "Dynamic solutions." },
+];
 
 // Variant 4: Card Grid with Descriptions
 export const SponsorsVariant4 = () => {
@@ -1012,6 +1101,17 @@ export const SponsorsVariant4 = () => {
     v5: `import React from "react";
 import { Button } from "../ui/button";
 
+const ALL_SPONSORS = [
+    { name: "Acme Corp", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Platinum", desc: "Building the future of everything." },
+    { name: "Globex", logo: "https://images.unsplash.com/photo-1628760584600-6c31148991e9?w=200&h=100&fit=crop", tier: "Gold", desc: "Global logistics partner." },
+    { name: "Soylent", logo: "https://images.unsplash.com/photo-1746047420047-03fc7a9b9226?w=200&h=100&fit=crop", tier: "Gold", desc: "Nutritional solutions." },
+    { name: "Initech", logo: "/path/to/logo.png", tier: "Silver", desc: "Software for the modern age." },
+    { name: "Umbrella", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Silver", desc: "Biotech research." },
+    { name: "Stark Ind", logo: "https://images.unsplash.com/photo-1628760584600-6c31148991e9?w=200&h=100&fit=crop", tier: "Bronze", desc: "Advanced defense tech." },
+    { name: "Cyberdyne", logo: "https://images.unsplash.com/photo-1746047420047-03fc7a9b9226?w=200&h=100&fit=crop", tier: "Bronze", desc: "AI systems." },
+    { name: "Massive", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Bronze", desc: "Dynamic solutions." },
+];
+
 // Variant 5: Sidebar List
 export const SponsorsVariant5 = () => {
     return (
@@ -1046,6 +1146,17 @@ export const SponsorsVariant5 = () => {
     v6: `import React from "react";
 import { Badge } from "../ui/badge";
 
+const ALL_SPONSORS = [
+    { name: "Acme Corp", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Platinum", desc: "Building the future of everything." },
+    { name: "Globex", logo: "https://images.unsplash.com/photo-1628760584600-6c31148991e9?w=200&h=100&fit=crop", tier: "Gold", desc: "Global logistics partner." },
+    { name: "Soylent", logo: "https://images.unsplash.com/photo-1746047420047-03fc7a9b9226?w=200&h=100&fit=crop", tier: "Gold", desc: "Nutritional solutions." },
+    { name: "Initech", logo: "/path/to/logo.png", tier: "Silver", desc: "Software for the modern age." },
+    { name: "Umbrella", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Silver", desc: "Biotech research." },
+    { name: "Stark Ind", logo: "https://images.unsplash.com/photo-1628760584600-6c31148991e9?w=200&h=100&fit=crop", tier: "Bronze", desc: "Advanced defense tech." },
+    { name: "Cyberdyne", logo: "https://images.unsplash.com/photo-1746047420047-03fc7a9b9226?w=200&h=100&fit=crop", tier: "Bronze", desc: "AI systems." },
+    { name: "Massive", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Bronze", desc: "Dynamic solutions." },
+];
+
 // Variant 6: Featured + Grid
 export const SponsorsVariant6 = () => {
     return (
@@ -1076,6 +1187,17 @@ export const SponsorsVariant6 = () => {
     v7: `import React from "react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "../ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
+
+const ALL_SPONSORS = [
+    { name: "Acme Corp", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Platinum", desc: "Building the future of everything." },
+    { name: "Globex", logo: "https://images.unsplash.com/photo-1628760584600-6c31148991e9?w=200&h=100&fit=crop", tier: "Gold", desc: "Global logistics partner." },
+    { name: "Soylent", logo: "https://images.unsplash.com/photo-1746047420047-03fc7a9b9226?w=200&h=100&fit=crop", tier: "Gold", desc: "Nutritional solutions." },
+    { name: "Initech", logo: "/path/to/logo.png", tier: "Silver", desc: "Software for the modern age." },
+    { name: "Umbrella", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Silver", desc: "Biotech research." },
+    { name: "Stark Ind", logo: "https://images.unsplash.com/photo-1628760584600-6c31148991e9?w=200&h=100&fit=crop", tier: "Bronze", desc: "Advanced defense tech." },
+    { name: "Cyberdyne", logo: "https://images.unsplash.com/photo-1746047420047-03fc7a9b9226?w=200&h=100&fit=crop", tier: "Bronze", desc: "AI systems." },
+    { name: "Massive", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Bronze", desc: "Dynamic solutions." },
+];
 
 // Variant 7: Auto-scroll Logo Carousel (Embla)
 export const SponsorsVariant7 = () => {
@@ -1113,6 +1235,17 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { ArrowRight } from "lucide-react";
+
+const ALL_SPONSORS = [
+    { name: "Acme Corp", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Platinum", desc: "Building the future of everything." },
+    { name: "Globex", logo: "https://images.unsplash.com/photo-1628760584600-6c31148991e9?w=200&h=100&fit=crop", tier: "Gold", desc: "Global logistics partner." },
+    { name: "Soylent", logo: "https://images.unsplash.com/photo-1746047420047-03fc7a9b9226?w=200&h=100&fit=crop", tier: "Gold", desc: "Nutritional solutions." },
+    { name: "Initech", logo: "/path/to/logo.png", tier: "Silver", desc: "Software for the modern age." },
+    { name: "Umbrella", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Silver", desc: "Biotech research." },
+    { name: "Stark Ind", logo: "https://images.unsplash.com/photo-1628760584600-6c31148991e9?w=200&h=100&fit=crop", tier: "Bronze", desc: "Advanced defense tech." },
+    { name: "Cyberdyne", logo: "https://images.unsplash.com/photo-1746047420047-03fc7a9b9226?w=200&h=100&fit=crop", tier: "Bronze", desc: "AI systems." },
+    { name: "Massive", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Bronze", desc: "Dynamic solutions." },
+];
 
 // Variant 8: Sponsor Spotlight Carousel
 export const SponsorsVariant8 = () => {
@@ -1167,6 +1300,17 @@ export const SponsorsVariant8 = () => {
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "../ui/carousel";
 import { Badge } from "../ui/badge";
 import { ArrowRight } from "lucide-react";
+
+const ALL_SPONSORS = [
+    { name: "Acme Corp", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Platinum", desc: "Building the future of everything." },
+    { name: "Globex", logo: "https://images.unsplash.com/photo-1628760584600-6c31148991e9?w=200&h=100&fit=crop", tier: "Gold", desc: "Global logistics partner." },
+    { name: "Soylent", logo: "https://images.unsplash.com/photo-1746047420047-03fc7a9b9226?w=200&h=100&fit=crop", tier: "Gold", desc: "Nutritional solutions." },
+    { name: "Initech", logo: "/path/to/logo.png", tier: "Silver", desc: "Software for the modern age." },
+    { name: "Umbrella", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Silver", desc: "Biotech research." },
+    { name: "Stark Ind", logo: "https://images.unsplash.com/photo-1628760584600-6c31148991e9?w=200&h=100&fit=crop", tier: "Bronze", desc: "Advanced defense tech." },
+    { name: "Cyberdyne", logo: "https://images.unsplash.com/photo-1746047420047-03fc7a9b9226?w=200&h=100&fit=crop", tier: "Bronze", desc: "AI systems." },
+    { name: "Massive", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop", tier: "Bronze", desc: "Dynamic solutions." },
+];
 
 // Variant 9: Highlight Center Carousel
 export const SponsorsVariant9 = () => {
@@ -1361,6 +1505,13 @@ export const DocumentsVariant1 = () => (
     v2: `import React from "react";
 import { Button } from "../ui/button";
 import { File, Download } from "lucide-react";
+
+const DOCS = [
+    { name: "Conference Brochure", size: "2.4 MB", type: "PDF" },
+    { name: "Sponsorship Deck", size: "5.1 MB", type: "PDF" },
+    { name: "Attendee Guidelines", size: "1.2 MB", type: "DOCX" },
+    { name: "Code of Conduct", size: "0.5 MB", type: "PDF" },
+];
 
 // Variant 2: Simple List
 export const DocumentsVariant2 = () => (

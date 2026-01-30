@@ -14,6 +14,7 @@ import {
   CreditCard,
   Image as ImageIcon
 } from "lucide-react";
+import { getImageUrl, getImageStyleString, ImageSetting } from '@/app/utils/image-helpers';
 
 // --- Settings Interface ---
 export interface ButtonSetting {
@@ -26,7 +27,7 @@ export interface BlockSettings {
   showInMobile?: boolean;
   visibility?: Record<string, boolean>; // e.g. { showImage: true, showButton: false }
   buttons?: Record<string, ButtonSetting>;
-  images?: Record<string, string>;
+  images?: Record<string, string | ImageSetting>;
   icons?: Record<string, string>;
   text?: Record<string, string>;
   textAlign?: 'left' | 'center' | 'right';
@@ -55,6 +56,8 @@ export interface BlockImageDefinition {
     id: string;
     label: string;
     defaultUrl: string;
+    defaultFit?: 'cover' | 'contain' | 'fill' | 'scale-down';
+    defaultPosition?: 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 }
 
 export interface BlockIconDefinition {
@@ -388,7 +391,7 @@ const safeGetButton = (settings: BlockSettings | undefined, key: string, default
   return value !== undefined ? value : defaultValue;
 };
 
-const safeGetImage = (settings: BlockSettings | undefined, key: string, defaultValue?: string): string | undefined => {
+const safeGetImage = (settings: BlockSettings | undefined, key: string, defaultValue?: string): string | ImageSetting | undefined => {
   if (!settings || !settings.images) return defaultValue;
   const value = settings.images[key];
   return value !== undefined ? value : defaultValue;
@@ -571,7 +574,9 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
         const link4 = safeGetButton(settings, 'link4', { text: "Contact", url: "/contact" });
         const cta = safeGetButton(settings, 'cta', { text: "Get Started", url: "#" });
         
-        const logoUrl = safeGetImage(settings, 'logo', undefined);
+        const logoValue = safeGetImage(settings, 'logo', undefined);
+        const logoUrl = getImageUrl(logoValue, '');
+        const logoStyle = getImageStyleString(logoValue);
         const logoText = safeGetText(settings, 'logoText', "Brand");
 
         // Mock active state (Home is active)
@@ -586,7 +591,7 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
                 <div class="mr-4 hidden md:flex">
                     <a class="mr-6 flex items-center space-x-2" href="/">
                         ${logoUrl 
-                            ? `<img src="${logoUrl}" alt="Logo" class="h-8 w-auto object-contain" />` 
+                            ? `<img src="${logoUrl}" style="${logoStyle}" alt="Logo" class="h-8 w-auto object-contain" data-configurable-image="logo" />` 
                             : `<span class="hidden font-bold sm:inline-block text-xl font-sans tracking-tight">${logoText}</span>`
                         }
                     </a>
@@ -603,7 +608,7 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
                 <!-- Mobile Logo (Left Aligned) -->
                  <a class="mr-6 flex items-center space-x-2 md:hidden" href="/">
                     ${logoUrl 
-                        ? `<img src="${logoUrl}" alt="Logo" class="h-8 w-auto object-contain" />` 
+                        ? `<img src="${logoUrl}" style="${logoStyle}" alt="Logo" class="h-8 w-auto object-contain" data-configurable-image="logo" />` 
                         : `<span class="font-bold inline-block text-xl font-sans tracking-tight">${logoText}</span>`
                     }
                 </a>
@@ -725,75 +730,11 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
         { id: "secondary", label: "Secondary Button", defaultText: "Learn More", defaultUrl: "#" }
     ],
     configurableImages: [
-        { id: "hero", label: "Hero Image", defaultUrl: DEFAULT_IMAGES.hero }
+        { id: "hero", label: "Hero Image", defaultUrl: DEFAULT_IMAGES.hero, defaultFit: 'cover', defaultPosition: 'center' }
     ],
     configurableIcons: [
         { id: "calendar", label: "Date Icon", defaultIcon: "CALENDAR" },
         { id: "location", label: "Location Icon", defaultIcon: "MAP_PIN" }
-    ],
-    configurableSelects: [
-        {
-            id: 'heroFit',
-            label: 'Image Fit',
-            defaultValue: 'cover',
-            options: [
-                { label: 'Cover', value: 'cover' },
-                { label: 'Contain', value: 'contain' },
-                { label: 'Stretch', value: 'fill' },
-                { label: 'None', value: 'none' },
-                { label: 'Scale Down', value: 'scale-down' }
-            ]
-        },
-        {
-            id: 'heroPosition',
-            label: 'Image Position',
-            defaultValue: 'center',
-            options: [
-                { label: 'Center', value: 'center' },
-                { label: 'Top', value: 'top' },
-                { label: 'Bottom', value: 'bottom' },
-                { label: 'Left', value: 'left' },
-                { label: 'Right', value: 'right' },
-                { label: 'Top Left', value: 'top left' },
-                { label: 'Top Right', value: 'top right' },
-                { label: 'Bottom Left', value: 'bottom left' },
-                { label: 'Bottom Right', value: 'bottom right' }
-            ]
-        },
-        {
-            id: 'heroBlend',
-            label: 'Blending Mode',
-            defaultValue: 'normal',
-            options: [
-                { label: 'Normal', value: 'normal' },
-                { label: 'Multiply', value: 'multiply' },
-                { label: 'Screen', value: 'screen' },
-                { label: 'Overlay', value: 'overlay' },
-                { label: 'Darken', value: 'darken' },
-                { label: 'Lighten', value: 'lighten' },
-                { label: 'Color Dodge', value: 'color-dodge' },
-                { label: 'Color Burn', value: 'color-burn' },
-                { label: 'Hard Light', value: 'hard-light' },
-                { label: 'Soft Light', value: 'soft-light' },
-                { label: 'Difference', value: 'difference' },
-                { label: 'Exclusion', value: 'exclusion' },
-                { label: 'Hue', value: 'hue' },
-                { label: 'Saturation', value: 'saturation' },
-                { label: 'Color', value: 'color' },
-                { label: 'Luminosity', value: 'luminosity' }
-            ]
-        }
-    ],
-    configurableRanges: [
-        {
-            id: 'heroOpacity',
-            label: 'Image Opacity',
-            min: 0,
-            max: 100,
-            step: 5,
-            defaultValue: 100,
-            unit: '%'
-        }
     ],
     html: (id, variant, settings) => {
         const showBadge = getVisibility(settings, "showBadge", true);
@@ -803,20 +744,15 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
         const btnPrimary = safeGetButton(settings, 'primary', { text: "Get Tickets", url: "#" });
         const btnSecondary = safeGetButton(settings, 'secondary', { text: "Learn More", url: "#" });
       
-        const imgHero = safeGetImage(settings, 'hero', PLACEHOLDER_IMG);
+        const imgHeroValue = safeGetImage(settings, 'hero', PLACEHOLDER_IMG);
+        const imgHeroUrl = getImageUrl(imgHeroValue, PLACEHOLDER_IMG);
+        const imgHeroStyle = getImageStyleString(imgHeroValue);
+        
         const iconCalendar = safeGetIcon(settings, 'calendar', ICONS.CALENDAR);
         const iconLocation = safeGetIcon(settings, 'location', ICONS.MAP_PIN);
 
         const title = safeGetText(settings, 'title', "Design Systems <br/> Summit");
         const description = safeGetText(settings, 'description', "Scale your design workflow with the latest tools and methodologies. Connect with 5,000+ designers globally.");
-
-        // Image Settings
-        const fit = safeGetSelect(settings, 'heroFit', 'cover');
-        const position = safeGetSelect(settings, 'heroPosition', 'center');
-        const blend = safeGetSelect(settings, 'heroBlend', 'normal');
-        const opacity = safeGetRange(settings, 'heroOpacity', 100);
-
-        const imageStyle = `object-fit: ${fit}; object-position: ${position}; mix-blend-mode: ${blend}; opacity: ${opacity / 100};`;
 
         return `
       <builder-section id="${id}" class="relative block w-full bg-background overflow-hidden ${getVariantClasses(variant)} ${getPaddingClass(settings, 'py-0')}">
@@ -846,7 +782,7 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
               </div>` : ''}
             </div>
             ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stretch min-h-[280px] md:min-h-[450px] lg:min-h-[500px]">
-              <img src="${imgHero}" style="${imageStyle}" class="absolute inset-0 w-full h-full cursor-pointer" alt="Hero" data-configurable-image="hero" />
+              <img src="${imgHeroUrl}" style="${imgHeroStyle}" class="absolute inset-0 w-full h-full cursor-pointer" alt="Hero" data-configurable-image="hero" />
             </div>` : ''}
           </div>
         </div>
@@ -861,91 +797,21 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
     description: "Immersive background with play button.",
     icon: Schematics.HeroVideo,
     configurableImages: [
-        { id: "bg", label: "Background Image", defaultUrl: DEFAULT_IMAGES.conference }
+        { id: "bg", label: "Background Image", defaultUrl: DEFAULT_IMAGES.conference, defaultFit: 'cover', defaultPosition: 'center' }
     ],
     configurableIcons: [
         { id: "play", label: "Play Icon", defaultIcon: "PLAY" }
     ],
-    configurableSelects: [
-        {
-            id: 'bgFit',
-            label: 'Image Fit',
-            defaultValue: 'cover',
-            options: [
-                { label: 'Cover', value: 'cover' },
-                { label: 'Contain', value: 'contain' },
-                { label: 'Stretch', value: 'fill' },
-                { label: 'None', value: 'none' },
-                { label: 'Scale Down', value: 'scale-down' }
-            ]
-        },
-        {
-            id: 'bgPosition',
-            label: 'Image Position',
-            defaultValue: 'center',
-            options: [
-                { label: 'Center', value: 'center' },
-                { label: 'Top', value: 'top' },
-                { label: 'Bottom', value: 'bottom' },
-                { label: 'Left', value: 'left' },
-                { label: 'Right', value: 'right' },
-                { label: 'Top Left', value: 'top left' },
-                { label: 'Top Right', value: 'top right' },
-                { label: 'Bottom Left', value: 'bottom left' },
-                { label: 'Bottom Right', value: 'bottom right' }
-            ]
-        },
-        {
-            id: 'bgBlend',
-            label: 'Blending Mode',
-            defaultValue: 'normal',
-            options: [
-                { label: 'Normal', value: 'normal' },
-                { label: 'Multiply', value: 'multiply' },
-                { label: 'Screen', value: 'screen' },
-                { label: 'Overlay', value: 'overlay' },
-                { label: 'Darken', value: 'darken' },
-                { label: 'Lighten', value: 'lighten' },
-                { label: 'Color Dodge', value: 'color-dodge' },
-                { label: 'Color Burn', value: 'color-burn' },
-                { label: 'Hard Light', value: 'hard-light' },
-                { label: 'Soft Light', value: 'soft-light' },
-                { label: 'Difference', value: 'difference' },
-                { label: 'Exclusion', value: 'exclusion' },
-                { label: 'Hue', value: 'hue' },
-                { label: 'Saturation', value: 'saturation' },
-                { label: 'Color', value: 'color' },
-                { label: 'Luminosity', value: 'luminosity' }
-            ]
-        }
-    ],
-    configurableRanges: [
-        {
-            id: 'bgOpacity',
-            label: 'Image Opacity',
-            min: 0,
-            max: 100,
-            step: 5,
-            defaultValue: 100,
-            unit: '%'
-        }
-    ],
     html: (id, variant, settings) => {
-        const imgBg = safeGetImage(settings, 'bg', PLACEHOLDER_IMG);
+        const imgBgValue = safeGetImage(settings, 'bg', PLACEHOLDER_IMG);
+        const imgBgUrl = getImageUrl(imgBgValue, PLACEHOLDER_IMG);
+        const imgBgStyle = getImageStyleString(imgBgValue);
         const iconPlay = safeGetIcon(settings, 'play', ICONS.PLAY);
-
-        // Image Settings
-        const fit = safeGetSelect(settings, 'bgFit', 'cover');
-        const position = safeGetSelect(settings, 'bgPosition', 'center');
-        const blend = safeGetSelect(settings, 'bgBlend', 'normal');
-        const opacity = safeGetRange(settings, 'bgOpacity', 100);
-
-        const imageStyle = `object-fit: ${fit}; object-position: ${position}; mix-blend-mode: ${blend}; opacity: ${opacity / 100};`;
 
         return `
       <builder-section id="${id}" class="relative block w-full min-h-[400px] md:min-h-[550px] lg:min-h-[600px] h-auto flex items-end overflow-hidden ${getVariantClasses(variant)} ${getPaddingClass(settings, 'pb-8 md:pb-16 lg:pb-20')}">
         <div class="absolute inset-0 z-0">
-           <img src="${imgBg}" style="${imageStyle}" class="w-full h-full" />
+           <img src="${imgBgUrl}" style="${imgBgStyle}" class="w-full h-full" data-configurable-image="bg" />
            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
         </div>
         <div class="w-full max-w-[var(--max-width)] mx-auto px-4 md:px-[var(--global-padding)] relative z-10 text-white ${getAlignmentFlexClass(settings)}">
@@ -1588,12 +1454,20 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
         { id: 'showTitle', label: 'Show Title', defaultValue: true },
         { id: 'showSubtitle', label: 'Show Subtitle', defaultValue: false }
     ],
-    html: (id, variant, settings) => `
+    configurableImages: [
+        { id: "map", label: "Map/Location Image", defaultUrl: DEFAULT_IMAGES.location, defaultFit: 'cover', defaultPosition: 'center' }
+    ],
+    html: (id, variant, settings) => {
+        const mapValue = safeGetImage(settings, 'map', DEFAULT_IMAGES.location);
+        const mapUrl = getImageUrl(mapValue, DEFAULT_IMAGES.location);
+        const mapStyle = getImageStyleString(mapValue);
+        
+        return `
       <builder-section id="${id}" class="relative block w-full bg-background ${getVariantClasses(variant)} ${getPaddingClass(settings, 'py-0')}">
          <div class="w-full max-w-[var(--max-width)] mx-auto px-[var(--global-padding)]">
          <div class="grid grid-cols-1 lg:grid-cols-2 min-h-[500px]">
             <div class="bg-muted relative flex items-center justify-center overflow-hidden h-[200px] lg:h-auto w-full aspect-video lg:aspect-auto">
-                <img src="${DEFAULT_IMAGES.location}" class="absolute inset-0 w-full h-full object-cover grayscale opacity-50" />
+                <img src="${mapUrl}" style="${mapStyle}" class="absolute inset-0 w-full h-full grayscale opacity-50" data-configurable-image="map" />
                 <div class="relative z-10 p-4 bg-background rounded-full shadow-xl animate-bounce text-primary">
                    ${ICONS.MAP_PIN}
                 </div>
@@ -1617,7 +1491,8 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
          </div>
          </div>
       </builder-section>
-    `
+    `;
+    }
   },
   {
     id: "location-card",
