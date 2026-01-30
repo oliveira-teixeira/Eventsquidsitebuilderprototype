@@ -674,6 +674,7 @@ function AppContent() {
           onUpdateVariant={updateBlockVariant}
           onUpdateSettings={updateBlockSettings}
           onReorderBlock={moveBlock}
+          pages={pages.map(p => ({ id: p.id, name: p.name, slug: p.slug }))}
         />
 
         {showNavigator && (

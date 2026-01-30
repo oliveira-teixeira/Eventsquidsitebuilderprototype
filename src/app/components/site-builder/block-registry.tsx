@@ -22,6 +22,12 @@ export interface ButtonSetting {
   url: string;
 }
 
+export interface PageInfo {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export interface BlockSettings {
   padding?: 'none' | 'small' | 'medium' | 'large' | 'xlarge';
   showInMobile?: boolean;
@@ -37,6 +43,7 @@ export interface BlockSettings {
   ranges?: Record<string, number>;
   cmsCollectionId?: string;
   cmsItems?: any[];
+  pages?: PageInfo[]; // List of pages for navigation blocks
 }
 
 export interface ToggleableElement {
@@ -568,6 +575,11 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
         const isSticky = getVisibility(settings, "sticky", true);
         const showCTA = getVisibility(settings, "showButtons", true);
         
+        // Get pages from settings if available, otherwise use fallback buttons
+        const pages = settings?.pages || [];
+        const hasPages = pages.length > 0;
+        
+        // Fallback to configurable buttons if no pages provided
         const link1 = safeGetButton(settings, 'link1', { text: "Home", url: "/" });
         const link2 = safeGetButton(settings, 'link2', { text: "About", url: "/about" });
         const link3 = safeGetButton(settings, 'link3', { text: "Services", url: "/services" });
@@ -578,15 +590,42 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
         const logoUrl = getImageUrl(logoValue, '');
         const logoStyle = getImageStyleString(logoValue);
         const logoText = safeGetText(settings, 'logoText', "Brand");
-
-        // Mock active state (Home is active)
-        const getLinkClass = (isLast = false) => `text-sm font-medium transition-colors hover:text-primary ${!isLast ? 'text-foreground/60' : 'text-foreground'}`;
         
         const stickyClass = isSticky ? 'sticky top-0 z-50' : 'relative';
         
+        // Generate desktop nav links - either from pages or fallback buttons
+        const desktopNavLinks = hasPages
+            ? pages.map((page, index) => 
+                `<a class="transition-colors hover:text-foreground ${index === 0 ? 'text-foreground font-semibold' : 'text-foreground/60'}" href="${page.slug}">${page.name}</a>`
+              ).join('\n                        ')
+            : `<a class="transition-colors hover:text-foreground text-foreground font-semibold" href="${link1.url}">${link1.text}</a>
+                        <a class="transition-colors hover:text-foreground text-foreground/60" href="${link2.url}">${link2.text}</a>
+                        <a class="transition-colors hover:text-foreground text-foreground/60" href="${link3.url}">${link3.text}</a>
+                        <a class="transition-colors hover:text-foreground text-foreground/60" href="${link4.url}">${link4.text}</a>`;
+        
+        // Generate mobile nav links - either from pages or fallback buttons
+        const mobileNavLinks = hasPages
+            ? pages.map((page, index) => 
+                `<a href="${page.slug}" class="flex items-center gap-2 hover:text-primary transition-colors ${index === 0 ? '' : 'text-muted-foreground'}">
+                                    ${page.name}
+                                </a>`
+              ).join('\n                                ')
+            : `<a href="${link1.url}" class="flex items-center gap-2 hover:text-primary transition-colors">
+                                    ${link1.text}
+                                </a>
+                                <a href="${link2.url}" class="flex items-center gap-2 hover:text-primary transition-colors text-muted-foreground">
+                                    ${link2.text}
+                                </a>
+                                <a href="${link3.url}" class="flex items-center gap-2 hover:text-primary transition-colors text-muted-foreground">
+                                    ${link3.text}
+                                </a>
+                                <a href="${link4.url}" class="flex items-center gap-2 hover:text-primary transition-colors text-muted-foreground">
+                                    ${link4.text}
+                                </a>`;
+        
         return `
         <header id="${id}" class="${stickyClass} w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div class="container flex h-16 max-w-[var(--max-width)] mx-auto items-center px-4 md:px-[var(--global-padding)]">
+            <div class="container flex min-h-14 py-3 max-w-[var(--max-width)] mx-auto items-center px-4 md:px-[var(--global-padding)]">
                 <!-- Logo -->
                 <div class="mr-4 hidden md:flex">
                     <a class="mr-6 flex items-center space-x-2" href="/">
@@ -598,10 +637,7 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
                     
                     <!-- Desktop Nav -->
                     <nav class="flex items-center gap-6 text-sm font-medium">
-                        <a class="transition-colors hover:text-foreground text-foreground font-semibold" href="${link1.url}">${link1.text}</a>
-                        <a class="transition-colors hover:text-foreground text-foreground/60" href="${link2.url}">${link2.text}</a>
-                        <a class="transition-colors hover:text-foreground text-foreground/60" href="${link3.url}">${link3.text}</a>
-                        <a class="transition-colors hover:text-foreground text-foreground/60" href="${link4.url}">${link4.text}</a>
+                        ${desktopNavLinks}
                     </nav>
                 </div>
 
@@ -635,20 +671,9 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
                         <svg class="fill-current w-6 h-6 hidden peer-checked:block transition-transform" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 512 512"><polygon points="400 145.49 366.51 112 256 222.51 145.49 112 112 145.49 222.51 256 112 366.51 145.49 400 256 289.49 366.51 400 400 366.51 289.49 256 400 145.49"/></svg>
                         
                         <!-- Mobile Menu Dropdown -->
-                        <div class="fixed inset-x-0 top-16 bottom-0 bg-background/95 backdrop-blur-sm z-50 p-6 hidden peer-checked:block animate-in slide-in-from-top-5 fade-in border-t border-border">
+                        <div class="fixed inset-x-0 top-14 bottom-0 bg-background/95 backdrop-blur-sm z-50 p-6 hidden peer-checked:block animate-in slide-in-from-top-5 fade-in border-t border-border">
                             <div class="grid gap-6 text-lg font-medium">
-                                <a href="${link1.url}" class="flex items-center gap-2 hover:text-primary transition-colors">
-                                    ${link1.text}
-                                </a>
-                                <a href="${link2.url}" class="flex items-center gap-2 hover:text-primary transition-colors text-muted-foreground">
-                                    ${link2.text}
-                                </a>
-                                <a href="${link3.url}" class="flex items-center gap-2 hover:text-primary transition-colors text-muted-foreground">
-                                    ${link3.text}
-                                </a>
-                                <a href="${link4.url}" class="flex items-center gap-2 hover:text-primary transition-colors text-muted-foreground">
-                                    ${link4.text}
-                                </a>
+                                ${mobileNavLinks}
                                 ${showCTA ? `
                                 <div class="pt-4 mt-4 border-t border-border">
                                     <a href="${cta.url}" class="flex w-full items-center justify-center rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90">

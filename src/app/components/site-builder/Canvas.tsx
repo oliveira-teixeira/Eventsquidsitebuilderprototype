@@ -23,6 +23,12 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../ui/sheet";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "../ui/command";
 import { ImageUploadModal } from "./ImageUploadModal";
 
+interface PageInfo {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 interface CanvasProps {
   blocks: {id: string, typeId: string, hidden?: boolean, locked?: boolean, variant?: string, settings?: any}[];
   breakpoint: number;
@@ -36,6 +42,7 @@ interface CanvasProps {
   onUpdateVariant: (id: string, variant: string) => void;
   onUpdateSettings: (id: string, settings: any) => void;
   onReorderBlock?: (dragIndex: number, hoverIndex: number) => void;
+  pages?: PageInfo[];
 }
 
 export const Canvas: React.FC<CanvasProps> = ({
@@ -50,7 +57,8 @@ export const Canvas: React.FC<CanvasProps> = ({
   onEditSettings,
   onUpdateVariant,
   onUpdateSettings,
-  onReorderBlock
+  onReorderBlock,
+  pages = []
 }) => {
   const { config } = useTheme();
   const themeStyles = useMemo(() => {
@@ -676,7 +684,12 @@ const CanvasBlockWrapper = ({
                                 return '<div class="p-4 bg-muted text-muted-foreground">Invalid block definition</div>';
                             }
 
-                            const generatedHtml = definition.html(block.id, block.variant || 'default', block.settings || {});
+                            // For navbar blocks, inject pages into settings
+                            const blockSettings = block.typeId === 'navbar-master' 
+                                ? { ...block.settings, pages } 
+                                : (block.settings || {});
+                            
+                            const generatedHtml = definition.html(block.id, block.variant || 'default', blockSettings);
                             
                             // Validate output
                             if (typeof generatedHtml !== 'string') {
