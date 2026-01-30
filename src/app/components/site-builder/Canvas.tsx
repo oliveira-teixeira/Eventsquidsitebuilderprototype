@@ -237,23 +237,24 @@ export const Canvas: React.FC<CanvasProps> = ({
               );
             }
 
-            return (
-              <CanvasBlockWrapper
-                key={block.id}
-                block={block}
-                definition={definition}
-                index={index}
-                totalBlocks={blocks.length}
-                isSelected={isSelected}
-                breakpoint={breakpoint}
-                onSelectBlock={onSelectBlock}
-                onAddBlock={onAddBlock}
-                onMoveBlock={onMoveBlock}
-                onDeleteBlock={onDeleteBlock}
-                onDropBlock={onDropBlock} 
-                onEditSettings={onEditSettings}
-                onUpdateVariant={onUpdateVariant}
-                onUpdateSettings={onUpdateSettings}
+                return (
+                    <CanvasBlockWrapper
+                        key={block.id}
+                        block={block}
+                        definition={definition}
+                        index={index}
+                        totalBlocks={blocks.length}
+                        isSelected={isSelected}
+                        breakpoint={breakpoint}
+                        onSelectBlock={onSelectBlock}
+                        onAddBlock={onAddBlock}
+                        onMoveBlock={onMoveBlock}
+                        onDeleteBlock={onDeleteBlock}
+                        onDropBlock={onDropBlock}
+                        onEditSettings={onEditSettings}
+                        onUpdateVariant={onUpdateVariant}
+                        onUpdateSettings={onUpdateSettings}
+                        pages={pages}
                 onReorderBlock={onReorderBlock}
               />
             );
@@ -518,7 +519,8 @@ const CanvasBlockWrapper = ({
     onEditSettings,
     onUpdateVariant,
     onUpdateSettings,
-    onReorderBlock
+    onReorderBlock,
+    pages = []
 }: any) => {
     const settings = block.settings || {};
     const showInMobile = settings.showInMobile !== undefined ? settings.showInMobile : true;
