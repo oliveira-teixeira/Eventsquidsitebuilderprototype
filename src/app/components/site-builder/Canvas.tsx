@@ -16,7 +16,7 @@ import { cn } from "../ui/utils";
 import { BLOCK_REGISTRY } from "./block-registry";
 import { toast } from "sonner";
 import { useTheme, generateThemeStyles } from "./ThemeBuilder";
-import { useDrop } from "react-dnd";
+import { useDrag, useDrop } from "react-dnd";
 import { ResponsiveContainer } from "./ResponsiveContainer";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../ui/sheet";
@@ -29,6 +29,7 @@ interface CanvasProps {
   onDropBlock: (typeId: string, index?: number) => void;
   onDeleteBlock: (id: string) => void;
   onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
+  onReorderBlock: (dragIndex: number, hoverIndex: number) => void;
   onAddBlock: (index: number) => void;
   selectedBlockId: string | null;
   onSelectBlock: (id: string | null) => void;
@@ -43,6 +44,7 @@ export const Canvas: React.FC<CanvasProps> = ({
   onDropBlock,
   onDeleteBlock,
   onMoveBlock,
+  onReorderBlock,
   onAddBlock,
   selectedBlockId,
   onSelectBlock,
@@ -238,8 +240,9 @@ export const Canvas: React.FC<CanvasProps> = ({
                 onSelectBlock={onSelectBlock}
                 onAddBlock={onAddBlock}
                 onMoveBlock={onMoveBlock}
+                onReorderBlock={onReorderBlock}
                 onDeleteBlock={onDeleteBlock}
-                onDropBlock={onDropBlock} 
+                onDropBlock={onDropBlock}
                 onEditSettings={onEditSettings}
                 onUpdateVariant={onUpdateVariant}
                 onUpdateSettings={onUpdateSettings}
@@ -491,16 +494,17 @@ const DropZone = ({ index, onDropBlock, onAddBlock, isInitial = false }: { index
 }
 
 // Wrapper for individual blocks to handle selection and toolbar
-const CanvasBlockWrapper = ({ 
-    block, 
-    definition, 
-    index, 
+const CanvasBlockWrapper = ({
+    block,
+    definition,
+    index,
     totalBlocks = 0,
-    isSelected, 
+    isSelected,
     breakpoint,
-    onSelectBlock, 
-    onAddBlock, 
+    onSelectBlock,
+    onAddBlock,
     onMoveBlock,
+    onReorderBlock,
     onDeleteBlock,
     onDropBlock,
     onEditSettings,
@@ -512,17 +516,55 @@ const CanvasBlockWrapper = ({
     const isMobileView = breakpoint < 768;
     const isHiddenInSimulation = !showInMobile && isMobileView;
     const isMobile = breakpoint < 1024;
-    const [mounted, setMounted] = useState(false);
     const [imageModalOpen, setImageModalOpen] = useState(false);
     const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
-    
+
     // Calculate these once for consistency - ensure they're always boolean
     const isLastBlock = Boolean(totalBlocks > 0 && index === totalBlocks - 1);
     const isFirstBlock = Boolean(index === 0);
 
-    React.useEffect(() => {
-        setMounted(true);
-    }, []);
+    // --- Drag-and-drop reordering within the canvas ---
+    const wrapperRef = useRef<HTMLDivElement>(null);
+    const dragHandleRef = useRef<HTMLDivElement>(null);
+
+    const [{ isDragging }, drag, preview] = useDrag({
+        type: 'CANVAS_BLOCK',
+        item: () => ({ id: block.id, index }),
+        canDrag: () => !block.locked,
+        collect: (monitor) => ({
+            isDragging: monitor.isDragging(),
+        }),
+    });
+
+    const [{ isOverBlock }, drop] = useDrop({
+        accept: 'CANVAS_BLOCK',
+        hover: (item: { id: string; index: number }, monitor) => {
+            if (!wrapperRef.current) return;
+            const dragIndex = item.index;
+            const hoverIndex = index;
+            if (dragIndex === hoverIndex) return;
+
+            const hoverBoundingRect = wrapperRef.current.getBoundingClientRect();
+            const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+            const clientOffset = monitor.getClientOffset();
+            if (!clientOffset) return;
+            const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+
+            // Only perform the move when the mouse has crossed half of the item height
+            if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) return;
+            if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) return;
+
+            onReorderBlock(dragIndex, hoverIndex);
+            item.index = hoverIndex;
+        },
+        collect: (monitor) => ({
+            isOverBlock: monitor.isOver({ shallow: true }),
+        }),
+    });
+
+    // Connect drag handle and drop target
+    drag(dragHandleRef);
+    drop(preview(wrapperRef));
 
     // Handle text editing
     const handleContentChange = (key: string, content: string) => {
@@ -575,16 +617,17 @@ const CanvasBlockWrapper = ({
 
     return (
         <>
-        <div className={cn("relative", isHiddenInSimulation && "hidden")}>
+        <div ref={wrapperRef} data-block-id={block.id} className={cn("relative", isHiddenInSimulation && "hidden", isDragging && "opacity-30")}>
             {/* Top Drop Zone */}
             <DropZone index={index} onDropBlock={onDropBlock} onAddBlock={onAddBlock} />
 
-            <div 
+            <div
                 className={cn(
                     "relative group/block transition-all border-y border-transparent",
                     isSelected ? "ring-2 ring-primary z-10" : "hover:border-primary/20",
                     block.locked && "opacity-90 grayscale-[0.5]",
-                    !showInMobile && "max-md:hidden"
+                    !showInMobile && "max-md:hidden",
+                    isOverBlock && "ring-2 ring-primary/50"
                 )}
                 onClick={(e) => { e.stopPropagation(); onSelectBlock(block.id); }}
             >
@@ -643,13 +686,14 @@ const CanvasBlockWrapper = ({
                     "absolute top-4 right-4 flex items-center gap-1 transition-all z-40 bg-background/95 backdrop-blur shadow-lg border border-border/50 p-1 rounded-full origin-right",
                     isSelected ? "opacity-100 scale-100" : "opacity-0 group-hover/block:opacity-100 scale-95 group-hover/block:scale-100"
                   )}>
-                    <div className="flex items-center gap-2 px-3 border-r border-border mr-1">
+                    <div ref={dragHandleRef} className="flex items-center gap-2 px-3 border-r border-border mr-1 cursor-grab active:cursor-grabbing" title="Drag to reorder">
+                      <GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{definition.category}</span>
                     </div>
-                    
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); onMoveBlock(block.id, 'up'); }} 
-                      disabled={isFirstBlock} 
+
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onMoveBlock(block.id, 'up'); }}
+                      disabled={isFirstBlock}
                       className="p-1.5 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       title="Move Up"
                     >

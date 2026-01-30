@@ -405,41 +405,61 @@ function AppContent() {
     });
   }, []);
 
-  // --- Arrow Key Navigation Between Blocks ---
+  // --- Arrow Key Navigation & Reordering Between Blocks ---
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't handle if in preview mode or if user is typing in an input/textarea
       if (isPreviewMode) return;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
 
-      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      const visibleBlocks = canvasBlocks.filter(b => !b.hidden);
+      if (visibleBlocks.length === 0) return;
+
+      const dir = e.key === 'ArrowUp' ? 'up' : 'down';
+
+      // No block selected — select first or last
+      if (!selectedBlockId) {
         e.preventDefault();
-        const visibleBlocks = canvasBlocks.filter(b => !b.hidden);
-        if (visibleBlocks.length === 0) return;
+        const id = dir === 'down' ? visibleBlocks[0].id : visibleBlocks[visibleBlocks.length - 1].id;
+        setSelectedBlockId(id);
+        requestAnimationFrame(() => {
+          document.querySelector(`[data-block-id="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+        return;
+      }
 
-        if (!selectedBlockId) {
-          // No block selected — select first or last depending on direction
-          setSelectedBlockId(e.key === 'ArrowDown' ? visibleBlocks[0].id : visibleBlocks[visibleBlocks.length - 1].id);
-          return;
-        }
+      const currentIndex = visibleBlocks.findIndex(b => b.id === selectedBlockId);
+      if (currentIndex === -1) {
+        e.preventDefault();
+        setSelectedBlockId(visibleBlocks[0].id);
+        return;
+      }
 
-        const currentIndex = visibleBlocks.findIndex(b => b.id === selectedBlockId);
-        if (currentIndex === -1) {
-          setSelectedBlockId(visibleBlocks[0].id);
-          return;
-        }
+      e.preventDefault();
 
-        const nextIndex = e.key === 'ArrowUp' ? currentIndex - 1 : currentIndex + 1;
+      // Ctrl/Cmd + Arrow = reorder the selected block
+      if (e.ctrlKey || e.metaKey) {
+        handleMoveBlockDirectional(selectedBlockId, dir);
+        requestAnimationFrame(() => {
+          document.querySelector(`[data-block-id="${selectedBlockId}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+      } else {
+        // Plain Arrow = navigate selection
+        const nextIndex = dir === 'up' ? currentIndex - 1 : currentIndex + 1;
         if (nextIndex >= 0 && nextIndex < visibleBlocks.length) {
-          setSelectedBlockId(visibleBlocks[nextIndex].id);
+          const nextId = visibleBlocks[nextIndex].id;
+          setSelectedBlockId(nextId);
+          requestAnimationFrame(() => {
+            document.querySelector(`[data-block-id="${nextId}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          });
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [canvasBlocks, selectedBlockId, isPreviewMode]);
+  }, [canvasBlocks, selectedBlockId, isPreviewMode, handleMoveBlockDirectional]);
 
   // --- Drag and Drop Logic ---
   const handleDropBlock = useCallback((typeId: string, insertIndex?: number) => {
@@ -469,14 +489,12 @@ function AppContent() {
   }, [canvasBlocks, selectedBlockId, pushToHistory]);
 
   const moveBlock = useCallback((dragIndex: number, hoverIndex: number) => {
-    setCanvasBlocks((prevBlocks) => {
-      const newBlocks = [...prevBlocks];
-      const dragBlock = newBlocks[dragIndex];
-      newBlocks.splice(dragIndex, 1);
-      newBlocks.splice(hoverIndex, 0, dragBlock);
-      return newBlocks;
-    });
-  }, []);
+    const newBlocks = [...canvasBlocks];
+    const dragBlock = newBlocks[dragIndex];
+    newBlocks.splice(dragIndex, 1);
+    newBlocks.splice(hoverIndex, 0, dragBlock);
+    pushToHistory(newBlocks);
+  }, [canvasBlocks, pushToHistory]);
 
   const addDefaultBlock = useCallback((index: number) => {
     // Adds a default hero block at index
@@ -621,12 +639,13 @@ function AppContent() {
           />
         )}
         
-        <Canvas 
+        <Canvas
           blocks={canvasBlocks}
           breakpoint={breakpoint}
-          onDropBlock={handleDropBlock} 
+          onDropBlock={handleDropBlock}
           onDeleteBlock={deleteBlock}
           onMoveBlock={handleMoveBlockDirectional}
+          onReorderBlock={moveBlock}
           onAddBlock={addDefaultBlock}
           selectedBlockId={selectedBlockId}
           onSelectBlock={handleSelectBlock}
