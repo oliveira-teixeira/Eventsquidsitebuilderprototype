@@ -532,15 +532,23 @@ const CanvasBlockWrapper = ({
     const [{ isDragging }, drag, preview] = useDrag(() => ({
         type: 'CANVAS_BLOCK',
         item: { id: block.id, index },
-        collect: (monitor) => ({
-            isDragging: monitor.isDragging()
-        })
+        collect: (monitor) => {
+            // Only mark as dragging if this specific block's ID matches the dragged item
+            const item = monitor.getItem();
+            return {
+                isDragging: monitor.isDragging() && item?.id === block.id
+            };
+        }
     }), [block.id, index]);
 
     const [{ isOver: isOverBlock }, drop] = useDrop(() => ({
         accept: 'CANVAS_BLOCK',
         hover: (item: { id: string; index: number }, monitor) => {
             if (!ref.current) return;
+            
+            // Use ID to check if dragging over self to avoid stale index issues
+            if (item.id === block.id) return;
+            
             const dragIndex = item.index;
             const hoverIndex = index;
             if (dragIndex === hoverIndex) return;
@@ -580,7 +588,7 @@ const CanvasBlockWrapper = ({
         collect: (monitor) => ({
             isOver: monitor.isOver()
         })
-    }), [index, onReorderBlock]);
+    }), [index, block.id, onReorderBlock]);
 
     // Connect drag source to handle and drop target/preview to main ref
     drag(dragHandleRef);
