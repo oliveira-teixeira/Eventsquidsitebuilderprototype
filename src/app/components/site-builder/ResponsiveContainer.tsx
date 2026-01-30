@@ -1,0 +1,685 @@
+import React, { useRef, useState, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { Monitor, Tablet, Smartphone } from 'lucide-react';
+import { useTheme, generateThemeStyles } from './ThemeBuilder';
+import { cn } from '../ui/utils';
+import gsap from 'gsap';
+
+interface ResponsiveContainerProps {
+  children?: React.ReactNode;
+  html?: string;
+  className?: string;
+  title?: string;
+  onContentChange?: (key: string, content: string) => void;
+  onClick?: () => void;
+  onImageClick?: (imageId: string) => void;
+}
+
+export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({ 
+  children, 
+  html,
+  className,
+  title = "Component Preview",
+  onContentChange,
+  onClick,
+  onImageClick
+}) => {
+  const [mountNode, setMountNode] = useState<HTMLElement | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const figmaContainerRef = useRef<HTMLDivElement>(null);
+  const updateHeightRef = useRef<() => void>(() => {});
+  const { config } = useTheme();
+  
+  // Detect if we're in Figma environment
+  const isFigmaEnvironment = typeof window !== 'undefined' && window.location.hostname.includes('figma.com');
+
+  const handleInteraction = (target: HTMLElement, e: Event | React.MouseEvent | React.TouchEvent) => {
+      // Check if an image with data-configurable-image was clicked
+      if (target.tagName === 'IMG' && target.hasAttribute('data-configurable-image')) {
+          e.stopPropagation();
+          e.preventDefault();
+          const imageId = target.getAttribute('data-configurable-image');
+          if (imageId && onImageClick) {
+              onImageClick(imageId);
+              return;
+          }
+      }
+      
+      if (onClick) {
+          onClick();
+      }
+  };
+
+  // Handle interactions for iframe mode
+  useEffect(() => {
+    if (!mountNode) return;
+
+    const handleBlur = (e: Event) => {
+      if (!onContentChange) return;
+      const target = e.target as HTMLElement;
+      if (target.isContentEditable) {
+        const key = target.getAttribute('data-key');
+        if (key) {
+          onContentChange(key, target.innerHTML);
+        }
+      }
+    };
+    
+    const handleClick = (e: Event) => {
+        handleInteraction(e.target as HTMLElement, e);
+    };
+
+    // We use capturing to ensure we catch the blur event
+    mountNode.addEventListener('blur', handleBlur, true);
+    
+    // Listen for clicks on the body to handle selection
+    mountNode.addEventListener('click', handleClick);
+    mountNode.addEventListener('touchstart', handleClick, { passive: true });
+    
+    return () => {
+      mountNode.removeEventListener('blur', handleBlur, true);
+      mountNode.removeEventListener('click', handleClick);
+      mountNode.removeEventListener('touchstart', handleClick);
+    };
+  }, [mountNode, onContentChange, onClick, onImageClick]);
+
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    const handleLoad = () => {
+      try {
+        // Double check iframe availability
+        if (!iframe || !iframe.contentWindow) return;
+        
+        const doc = iframe.contentDocument;
+        if (!doc) return;
+
+        // Ensure head exists (sometimes it might not in some envs)
+        if (!doc.head) {
+          try {
+             const head = doc.createElement('head');
+             if (doc.documentElement) {
+               doc.documentElement.appendChild(head);
+             } else {
+               return; // Can't proceed without documentElement
+             }
+          } catch(e) {
+             console.warn("Could not create head element", e);
+             return; // Critical failure
+          }
+        }
+
+        // Copy styles from main document - Wrap individually to prevent one failure stopping all
+        const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'));
+        styles.forEach(style => {
+          try {
+            // Check if style is valid
+            if (style instanceof HTMLLinkElement && !style.href) return;
+            // Additional safety for cross-origin sheets that might throw on access
+            if (doc.head) {
+              doc.head.appendChild(style.cloneNode(true));
+            }
+          } catch (e) {
+            // Silent fail for individual styles
+          }
+        });
+
+        // Inject custom styles for transparency and layout
+        try {
+            if (!doc.head) return;
+            const customStyle = doc.createElement('style');
+            customStyle.textContent = `
+              body { 
+                background-color: transparent; 
+                margin: 0;
+                padding: 0;
+                min-height: 0;
+                width: 100%;
+                overflow: hidden;
+              }
+              #root {
+                width: 100%;
+                min-height: 0;
+              }
+              builder-section {
+                display: block;
+                width: 100%;
+                min-height: 0;
+              }
+            `;
+            doc.head.appendChild(customStyle);
+        } catch(e) {
+            console.warn("Failed to inject custom styles", e);
+        }
+
+        // Only set mountNode if we have a valid body
+        if (doc.body) {
+          setMountNode(doc.body);
+        }
+      } catch (error) {
+        console.error('Error setting up iframe:', error);
+      }
+    };
+
+    // Add delay to ensure iframe is ready in Figma environment
+    const setupTimer = setTimeout(() => {
+      const contentDocument = iframe.contentDocument;
+      if (contentDocument && contentDocument.readyState === 'complete') {
+        handleLoad();
+      } else {
+        iframe.addEventListener('load', handleLoad);
+      }
+    }, 0);
+
+    return () => {
+      clearTimeout(setupTimer);
+      iframe.removeEventListener('load', handleLoad);
+    };
+  }, []);
+
+  // Inject HTML directly into iframe if provided
+  useEffect(() => {
+    if (!mountNode || !html) return;
+    
+    // Reset height to allow shrinking (Hug contents behavior)
+    if (iframeRef.current) {
+        iframeRef.current.style.height = '1px';
+    }
+    
+        try {
+            // Safety check if mountNode is still valid
+            if (mountNode && mountNode.isConnected) {
+                // Validate HTML before setting
+                if (typeof html !== 'string') {
+                    console.error('Invalid HTML type:', typeof html);
+                    return;
+                }
+                
+                // Try to detect problematic content
+                if (html.includes('<script') && !html.includes('</script>')) {
+                    console.error('Unclosed script tag detected');
+                    mountNode.innerHTML = '<div class="p-4 text-red-500 bg-red-50">Invalid HTML: Unclosed script tag</div>';
+                    return;
+                }
+                
+                mountNode.innerHTML = html;
+                
+                // Setup event listeners for agenda day tabs
+                const agendaSection = mountNode.querySelector('builder-section[data-active-day]');
+                if (agendaSection) {
+                    // Initialize active day attribute
+                    if (!agendaSection.hasAttribute('data-active-day')) {
+                        agendaSection.setAttribute('data-active-day', '0');
+                    }
+                    
+                    // Add click event delegation for tab buttons
+                    const handleTabClick = (e: Event) => {
+                        const target = e.target as HTMLElement;
+                        const tabBtn = target.closest('.tab-btn');
+                        if (tabBtn) {
+                            const tabIndex = tabBtn.getAttribute('data-tab-index');
+                            if (tabIndex !== null) {
+                                const dayIndex = parseInt(tabIndex, 10);
+                                
+                                // Update data-active-day attribute
+                                agendaSection.setAttribute('data-active-day', tabIndex);
+                                
+                                // Update tab styles
+                                const allTabs = agendaSection.querySelectorAll('.tab-btn');
+                                allTabs.forEach((tab, idx) => {
+                                    if (idx === dayIndex) {
+                                        tab.classList.add('border-foreground', 'text-foreground');
+                                        tab.classList.remove('border-transparent', 'text-muted-foreground');
+                                    } else {
+                                        tab.classList.remove('border-foreground', 'text-foreground');
+                                        tab.classList.add('border-transparent', 'text-muted-foreground');
+                                    }
+                                });
+                                
+                                // Show/hide panels
+                                const allPanels = agendaSection.querySelectorAll('.tab-panel');
+                                allPanels.forEach((panel, idx) => {
+                                    (panel as HTMLElement).style.display = idx === dayIndex ? 'block' : 'none';
+                                });
+                                
+                                // Notify parent window about day change
+                                window.parent.postMessage({
+                                    type: 'AGENDA_DAY_CHANGED',
+                                    blockId: agendaSection.id,
+                                    activeDay: dayIndex
+                                }, '*');
+                            }
+                        }
+                    };
+                    
+                    agendaSection.addEventListener('click', handleTabClick);
+                    
+                    // Add search functionality
+                    const searchInput = agendaSection.querySelector('input[data-search-input]');
+                    if (searchInput) {
+                        const handleSearch = () => {
+                            const searchTerm = (searchInput as HTMLInputElement).value.toLowerCase();
+                            const allSessions = agendaSection.querySelectorAll('.session-item');
+                            
+                            allSessions.forEach((session) => {
+                                const titleEl = session.querySelector('h4');
+                                const descEl = session.querySelector('p');
+                                const titleText = titleEl ? titleEl.textContent : null;
+                                const descText = descEl ? descEl.textContent : null;
+                                const title = titleText ? titleText.toLowerCase() : '';
+                                const desc = descText ? descText.toLowerCase() : '';
+                                const matchesSearch = title.includes(searchTerm) || desc.includes(searchTerm);
+                                
+                                (session as HTMLElement).style.display = matchesSearch ? 'flex' : 'none';
+                            });
+                            
+                            // Show empty state if needed
+                            const allPanels = agendaSection.querySelectorAll('.tab-panel');
+                            allPanels.forEach((panel) => {
+                                const visibleSessions = Array.from(panel.querySelectorAll('.session-item')).filter(
+                                    (s) => (s as HTMLElement).style.display !== 'none'
+                                );
+                                let emptyState = panel.querySelector('.empty-state');
+                                
+                                if (visibleSessions.length === 0 && !emptyState && searchTerm) {
+                                    const sessionsList = panel.querySelector('.sessions-list');
+                                    if (sessionsList) {
+                                        const emptyDiv = document.createElement('div');
+                                        emptyDiv.className = 'empty-state text-center py-8 text-muted-foreground font-sans';
+                                        emptyDiv.innerHTML = `<p>No sessions found matching "${searchTerm}"</p>`;
+                                        sessionsList.insertAdjacentElement('afterend', emptyDiv);
+                                    }
+                                } else if (visibleSessions.length > 0 && emptyState) {
+                                    emptyState.remove();
+                                }
+                            });
+                        };
+                        
+                        searchInput.addEventListener('input', handleSearch);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Error setting iframe content:", e);
+            // Set a fallback error message
+            try {
+                if (mountNode && mountNode.isConnected) {
+                    mountNode.innerHTML = '<div class="p-4 text-red-500 bg-red-50">Error rendering block content</div>';
+                }
+            } catch (fallbackError) {
+                console.error("Failed to set error message:", fallbackError);
+            }
+        }
+        
+        // Force height update immediately after content change
+        updateHeightRef.current();
+    
+    // Double check after a short delay to catch any layout shifts
+    setTimeout(() => updateHeightRef.current(), 50);
+  }, [html, mountNode]);
+
+  // Sync theme variables
+  useEffect(() => {
+    if (!mountNode) return;
+    
+    try {
+      const themeStyles = generateThemeStyles(config);
+      const body = mountNode as HTMLElement;
+      
+      Object.entries(themeStyles).forEach(([key, value]) => {
+        try {
+          body.style.setProperty(key, value as string);
+        } catch (e) {
+          console.warn(`Failed to set CSS property ${key}:`, e);
+        }
+      });
+
+      if (config.isDarkMode) {
+        body.classList.add('dark');
+      } else {
+        body.classList.remove('dark');
+      }
+    } catch (error) {
+      console.error('Error syncing theme variables to iframe:', error);
+    }
+  }, [config, mountNode]);
+
+  // Auto-resize height based on content
+  useEffect(() => {
+    // If we're in simplified mode (isFigmaEnvironment && html), we don't use this resize logic
+    // because we render a div that autosizes.
+    // However, we must not return early from the HOOK itself, but inside.
+    if (isFigmaEnvironment && html) return;
+    
+    if (!mountNode || !iframeRef.current) return;
+
+    // Use a flag to prevent updates if component unmounted
+    let isMounted = true;
+
+    const updateHeight = () => {
+      if (!isMounted) return;
+      
+      requestAnimationFrame(() => {
+          if (!isMounted || !mountNode || !iframeRef.current) return;
+          
+          try {
+              // Prevent loop: Don't reset to 'auto'. 
+              // Just measure content and expand/shrink if needed.
+              // Note: This means 'min-height: 100vh' content might not shrink if it was previously expanded,
+              // but this prevents Critical ResizeObserver loops in restricted environments like Figma.
+              
+              const currentHeight = iframeRef.current.offsetHeight;
+              const contentHeight = mountNode.scrollHeight;
+              
+              // Validate contentHeight to prevent 0 or Infinity
+              if (!Number.isFinite(contentHeight) || contentHeight === 0) return;
+
+              // Threshold of 4px to avoid micro-adjustments and loops
+              if (Math.abs(currentHeight - contentHeight) > 4) {
+                 // Double check connectivity to avoid "Unknown runtime error" in some environments
+                 if (iframeRef.current && iframeRef.current.isConnected && iframeRef.current.style) {
+                     iframeRef.current.style.height = `${contentHeight}px`;
+                 }
+              }
+          } catch (e) {
+              // Ignore resize errors silently
+          }
+      });
+    };
+    
+    updateHeightRef.current = updateHeight;
+
+    // Initial calculation with delay
+    const initialTimer = setTimeout(updateHeight, 100);
+
+    // Use try-catch for observer creation in case it's not supported or restricted
+    let resizeObserver: ResizeObserver | null = null;
+    let mutationObserver: MutationObserver | null = null;
+
+    try {
+        if (typeof ResizeObserver !== 'undefined') {
+            resizeObserver = new ResizeObserver(() => {
+                // Wrap in another RAF to break any synchronous loop
+                if (isMounted) {
+                    requestAnimationFrame(updateHeight);
+                }
+            });
+            
+            if (mountNode && mountNode.isConnected) {
+                resizeObserver.observe(mountNode);
+            }
+        }
+    } catch (e) {
+        console.warn("ResizeObserver not available or failed:", e);
+    }
+
+    try {
+        if (typeof MutationObserver !== 'undefined') {
+            mutationObserver = new MutationObserver(() => {
+                // Throttle mutations
+                if (isMounted) {
+                    requestAnimationFrame(updateHeight);
+                }
+            });
+            
+            if (mountNode && mountNode.isConnected) {
+                mutationObserver.observe(mountNode, { subtree: true, childList: true, attributes: true });
+            }
+        }
+    } catch (e) {
+        console.warn("MutationObserver not available or failed:", e);
+    }
+
+    return () => {
+      isMounted = false;
+      clearTimeout(initialTimer);
+      
+      try {
+        if (resizeObserver) {
+          resizeObserver.disconnect();
+        }
+      } catch (e) {
+        // Ignore disconnect errors
+      }
+      
+      try {
+        if (mutationObserver) {
+          mutationObserver.disconnect();
+        }
+      } catch (e) {
+        // Ignore disconnect errors
+      }
+    };
+  }, [mountNode, isFigmaEnvironment, html]);
+
+  // GSAP Animations
+  useEffect(() => {
+    if (!mountNode || !config.animationPreset || config.animationPreset === 'none') return;
+    
+    // Disable animations in Figma environment to prevent runtime errors
+    if (typeof window !== 'undefined' && window.location.hostname.includes('figma.com')) {
+      return;
+    }
+    
+    // Check if we are currently editing (don't animate if user is typing)
+    const activeElement = document.activeElement;
+    if (activeElement && activeElement.getAttribute('contenteditable') === 'true') {
+        return;
+    }
+
+    // Small delay to ensure DOM is ready and painted
+    const timer = setTimeout(() => {
+        try {
+            // Check if GSAP is available
+            if (typeof gsap === 'undefined') return;
+
+            const ctx = gsap.context(() => {
+                const targets = mountNode.querySelectorAll('h1, h2, h3, h4, h5, h6, p, span, a, button, img');
+                
+                if (targets.length === 0) return;
+
+                // Kill existing animations on these targets to prevent conflicts
+                gsap.killTweensOf(targets);
+                
+                // Reset to initial state (remove inline styles from previous animations)
+                gsap.set(targets, { clearProps: 'all' });
+
+                let fromVars: any = { 
+                    duration: 0.8, 
+                    stagger: 0.05, 
+                    ease: "power2.out",
+                    clearProps: "all" // Clear props after animation so it doesn't interfere with editing/layout
+                };
+
+                switch (config.animationPreset) {
+                    case 'fade':
+                        fromVars.opacity = 0;
+                        break;
+                    case 'slide-up':
+                        fromVars.y = 30;
+                        fromVars.opacity = 0;
+                        break;
+                    case 'scale':
+                        fromVars.scale = 0.9;
+                        fromVars.opacity = 0;
+                        break;
+                    default:
+                        return;
+                }
+
+                gsap.from(targets, fromVars);
+
+            }, mountNode); 
+
+            return () => ctx.revert();
+        } catch (error) {
+            console.warn('GSAP animation failed:', error);
+        }
+    }, 100);
+
+    return () => clearTimeout(timer);
+
+  }, [mountNode, html, config.animationPreset]);
+
+  // Setup event listeners for Figma environment (when using dangerouslySetInnerHTML)
+  useEffect(() => {
+    if (!isFigmaEnvironment || !html || !figmaContainerRef.current) return;
+    
+    try {
+      const container = figmaContainerRef.current;
+      const agendaSection = container.querySelector('builder-section[data-active-day]');
+      
+      if (!agendaSection) return;
+      
+      // Initialize active day attribute
+      if (!agendaSection.hasAttribute('data-active-day')) {
+        agendaSection.setAttribute('data-active-day', '0');
+      }
+      
+      // Tab click handler
+      const handleTabClick = (e) => {
+        try {
+          const target = e.target;
+          const tabBtn = target.closest('.tab-btn');
+          if (tabBtn) {
+            const tabIndex = tabBtn.getAttribute('data-tab-index');
+            if (tabIndex !== null) {
+              const dayIndex = parseInt(tabIndex, 10);
+              
+              agendaSection.setAttribute('data-active-day', tabIndex);
+              
+              // Update tab styles
+              const allTabs = agendaSection.querySelectorAll('.tab-btn');
+              allTabs.forEach((tab, idx) => {
+                if (idx === dayIndex) {
+                  tab.classList.add('border-foreground', 'text-foreground');
+                  tab.classList.remove('border-transparent', 'text-muted-foreground');
+                } else {
+                  tab.classList.remove('border-foreground', 'text-foreground');
+                  tab.classList.add('border-transparent', 'text-muted-foreground');
+                }
+              });
+              
+              // Show/hide panels
+              const allPanels = agendaSection.querySelectorAll('.tab-panel');
+              allPanels.forEach((panel, idx) => {
+                panel.style.display = idx === dayIndex ? 'block' : 'none';
+              });
+              
+              // Notify parent window about day change
+              if (window.parent) {
+                try {
+                  window.parent.postMessage({
+                    type: 'AGENDA_DAY_CHANGED',
+                    blockId: agendaSection.id,
+                    activeDay: dayIndex
+                  }, '*');
+                } catch (err) {
+                  // Ignore postMessage errors
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('Tab click handler error:', err);
+        }
+      };
+      
+      agendaSection.addEventListener('click', handleTabClick);
+      
+      // Search handler
+      const searchInput = agendaSection.querySelector('input[data-search-input]');
+      if (searchInput) {
+        const handleSearch = () => {
+          try {
+            const searchTerm = searchInput.value.toLowerCase();
+            const allSessions = agendaSection.querySelectorAll('.session-item');
+            
+            allSessions.forEach((session) => {
+              const titleEl = session.querySelector('h4');
+              const descEl = session.querySelector('p');
+              const titleText = titleEl ? titleEl.textContent : null;
+              const descText = descEl ? descEl.textContent : null;
+              const title = titleText ? titleText.toLowerCase() : '';
+              const desc = descText ? descText.toLowerCase() : '';
+              const matchesSearch = title.includes(searchTerm) || desc.includes(searchTerm);
+              
+              session.style.display = matchesSearch ? 'flex' : 'none';
+            });
+            
+            // Show empty state if needed
+            const allPanels = agendaSection.querySelectorAll('.tab-panel');
+            allPanels.forEach((panel) => {
+              const sessionsList = Array.from(panel.querySelectorAll('.session-item'));
+              const visibleSessions = sessionsList.filter((s) => s.style.display !== 'none');
+              let emptyState = panel.querySelector('.empty-state');
+              
+              if (visibleSessions.length === 0 && !emptyState && searchTerm) {
+                const sessionsListEl = panel.querySelector('.sessions-list');
+                if (sessionsListEl) {
+                  const emptyDiv = document.createElement('div');
+                  emptyDiv.className = 'empty-state text-center py-8 text-muted-foreground font-sans';
+                  emptyDiv.innerHTML = '<p>No sessions found matching "' + searchTerm + '"</p>';
+                  sessionsListEl.insertAdjacentElement('afterend', emptyDiv);
+                }
+              } else if (visibleSessions.length > 0 && emptyState) {
+                emptyState.remove();
+              }
+            });
+          } catch (err) {
+            console.warn('Search handler error:', err);
+          }
+        };
+        
+        searchInput.addEventListener('input', handleSearch);
+        
+        return () => {
+          agendaSection.removeEventListener('click', handleTabClick);
+          searchInput.removeEventListener('input', handleSearch);
+        };
+      } else {
+        return () => {
+          agendaSection.removeEventListener('click', handleTabClick);
+        };
+      }
+    } catch (err) {
+      console.warn('Error setting up Figma event listeners:', err);
+    }
+  }, [isFigmaEnvironment, html]);
+
+  // Render Logic
+  
+  // If we're in Figma and have HTML, use a simpler rendering approach
+  if (isFigmaEnvironment && html) {
+    return (
+      <div 
+        ref={figmaContainerRef}
+        className={cn("w-full relative bg-background text-foreground font-sans", className)}
+        onClick={(e) => handleInteraction(e.target as HTMLElement, e)}
+      >
+        <div 
+          dangerouslySetInnerHTML={{ __html: html }} 
+          style={{
+            fontFamily: 'var(--font-sans)',
+            color: 'var(--foreground)',
+            backgroundColor: 'var(--background)'
+          }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("w-full relative", className)}>
+      <iframe 
+        ref={iframeRef}
+        className="w-full block bg-transparent border-none"
+        title={title}
+        scrolling="no"
+        src="about:blank"
+      />
+      {mountNode && !html && children && createPortal(children, mountNode)}
+    </div>
+  );
+};

@@ -1,0 +1,106 @@
+@import 'tailwindcss' source(none);
+@source '../**/*.{js,ts,jsx,tsx}';
+
+@import 'tw-animate-css';
+
+/* Typography utilities using design system variables */
+@layer utilities {
+  /* Font Weights */
+  .font-normal {
+    font-weight: var(--font-weight-normal);
+  }
+  
+  .font-medium {
+    font-weight: var(--font-weight-medium);
+  }
+  
+  .font-semibold {
+    font-weight: var(--font-weight-semibold);
+  }
+
+  /* Mobile-optimized typography utilities (375px viewport) */
+  .text-mobile-hero {
+    font-size: var(--text-mobile-hero);
+    line-height: 1.1;
+  }
+  
+  .text-mobile-hero-split {
+    font-size: var(--text-mobile-hero-split);
+    line-height: 1.1;
+  }
+  
+  .text-mobile-hero-video {
+    font-size: var(--text-mobile-hero-video);
+    line-height: 1.1;
+  }
+  
+  .text-mobile-body {
+    font-size: var(--text-mobile-body);
+    line-height: 1.5;
+  }
+  
+  .text-mobile-badge {
+    font-size: var(--text-mobile-badge);
+  }
+  
+  .text-mobile-button {
+    font-size: var(--text-mobile-button);
+  }
+  
+  .text-mobile-caption {
+    font-size: var(--text-mobile-caption);
+  }
+  
+  .text-mobile-tiny {
+    font-size: var(--text-mobile-tiny);
+  }
+
+  /* Base Typography - Mobile First (using clamp variables from theme.css) */
+  .text-xs {
+    font-size: var(--text-xs);
+  }
+  
+  .text-sm {
+    font-size: var(--text-sm);
+  }
+  
+  .text-base {
+    font-size: var(--text-base);
+  }
+  
+  .text-lg {
+    font-size: var(--text-lg);
+  }
+  
+  .text-xl {
+    font-size: var(--text-xl);
+  }
+  
+  .text-2xl {
+    font-size: var(--text-2xl);
+  }
+  
+  .text-3xl {
+    font-size: var(--text-3xl);
+  }
+  
+  .text-4xl {
+    font-size: var(--text-4xl);
+  }
+  
+  .text-5xl {
+    font-size: var(--text-5xl);
+  }
+  
+  .text-6xl {
+    font-size: var(--text-6xl);
+  }
+  
+  .text-7xl {
+    font-size: var(--text-7xl);
+  }
+  
+  .text-8xl {
+    font-size: var(--text-8xl);
+  }
+}
