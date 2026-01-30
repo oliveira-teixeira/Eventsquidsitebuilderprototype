@@ -71,25 +71,32 @@ const SortableLayer = ({
   const dragRef = useRef<HTMLDivElement>(null);
   const definition = BLOCK_REGISTRY.find(d => d.id === block.typeId);
 
-  const [{ handlerId }, drop] = useDrop({
+  const [{ handlerId, isOverCurrent }, drop] = useDrop({
     accept: 'layer',
     collect(monitor) {
       return {
         handlerId: monitor.getHandlerId(),
+        isOverCurrent: monitor.isOver({ shallow: true }),
       };
     },
     hover(item: any, monitor) {
       if (!ref.current) return;
-      const dragIndex = item.index;
-      const hoverIndex = index;
-      if (dragIndex === hoverIndex) return;
-
-      const hoverBoundingRect = ref.current ? ref.current.getBoundingClientRect() : null;
-      if (!hoverBoundingRect) return;
       
+      // Use ID to find actual indices to avoid stale index issues
+      const dragId = item.id;
+      if (dragId === block.id) return; // Don't replace with self
+      
+      const hoverBoundingRect = ref.current.getBoundingClientRect();
       const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
       const clientOffset = monitor.getClientOffset();
-      const hoverClientY = (clientOffset as any).y - hoverBoundingRect.top;
+      if (!clientOffset) return;
+      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+
+      // Get current indices based on the actual item.index which gets updated
+      const dragIndex = item.index;
+      const hoverIndex = index;
+      
+      if (dragIndex === hoverIndex) return;
 
       if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) return;
       if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) return;
@@ -104,9 +111,13 @@ const SortableLayer = ({
     item: () => {
       return { id: block.id, index };
     },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
+    collect: (monitor) => {
+      // Only mark as dragging if this specific block's ID matches the dragged item
+      const item = monitor.getItem();
+      return {
+        isDragging: monitor.isDragging() && item?.id === block.id,
+      };
+    },
   });
 
   // Connect drag source to handle
