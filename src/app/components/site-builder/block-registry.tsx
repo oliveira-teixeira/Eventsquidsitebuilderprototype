@@ -1036,18 +1036,43 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
     configurableCounts: [
         { id: 'count', label: 'Number of Items', min: 1, max: 12, defaultValue: 6 }
     ],
+    configurableSelects: [
+        {
+            id: 'columns',
+            label: 'Cards per Row',
+            defaultValue: '3',
+            options: [
+                { label: '1 per row', value: '1' },
+                { label: '2 per row', value: '2' },
+                { label: '3 per row', value: '3' },
+                { label: '4 per row', value: '4' }
+            ]
+        }
+    ],
     toggleableElements: [
         { id: 'showTitle', label: 'Show Title', defaultValue: true },
         { id: 'showSubtitle', label: 'Show Subtitle', defaultValue: true }
     ],
     html: (id, variant, settings) => {
         const count = safeGetCount(settings, 'count', 6);
+        const columns = parseInt(safeGetSelect(settings, 'columns', '3'));
+        
+        let gridClass = 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
+        if (columns === 1) {
+            gridClass = 'grid-cols-1';
+        } else if (columns === 2) {
+            gridClass = 'grid-cols-1 md:grid-cols-2';
+        } else if (columns === 3) {
+            gridClass = 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
+        } else if (columns === 4) {
+            gridClass = 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+        }
         
         return `
       <builder-section id="${id}" class="relative block w-full transition-colors duration-300 ${getVariantClasses(variant)} ${getPaddingClass(settings, 'py-20')}">
          <div class="w-full max-w-[var(--max-width)] mx-auto px-[var(--global-padding)]">
             ${renderSectionHeader(settings, "Sessions", "Explore the tracks.")}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid ${gridClass} gap-6">
                ${Array.from({length: count}, (_, i) => i + 1).map(i => `
                   <div class="group p-6 rounded-xl border border-border bg-card text-card-foreground hover:border-primary/50 transition-colors cursor-pointer shadow-sm ${getTextAlignClass(settings)}">
                      <div class="flex justify-between items-start mb-4">
@@ -1238,18 +1263,40 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
     configurableCounts: [
         { id: 'count', label: 'Number of Speakers', min: 1, max: 12, defaultValue: 4 }
     ],
+    configurableSelects: [
+        {
+            id: 'columns',
+            label: 'Cards per Row',
+            defaultValue: '2',
+            options: [
+                { label: '1 per row', value: '1' },
+                { label: '2 per row', value: '2' },
+                { label: '3 per row', value: '3' }
+            ]
+        }
+    ],
     toggleableElements: [
         { id: 'showTitle', label: 'Show Title', defaultValue: true },
         { id: 'showSubtitle', label: 'Show Subtitle', defaultValue: true }
     ],
     html: (id, variant, settings) => {
         const count = safeGetCount(settings, 'count', 4);
+        const columns = parseInt(safeGetSelect(settings, 'columns', '2'));
+        
+        let gridClass = 'grid-cols-1 lg:grid-cols-2';
+        if (columns === 1) {
+            gridClass = 'grid-cols-1';
+        } else if (columns === 2) {
+            gridClass = 'grid-cols-1 lg:grid-cols-2';
+        } else if (columns === 3) {
+            gridClass = 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
+        }
         
         return `
       <builder-section id="${id}" class="relative block w-full bg-muted/20 ${getVariantClasses(variant)} ${getPaddingClass(settings, 'py-12')}">
         <div class="w-full max-w-[var(--max-width)] mx-auto px-[var(--global-padding)]">
           ${renderSectionHeader(settings, "Speakers", "Industry leaders sharing their knowledge.")}
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="grid ${gridClass} gap-4">
              ${Array.from({length: count}, (_, i) => i + 1).map(i => `
                <div class="flex items-center gap-4 p-4 rounded-lg bg-card text-card-foreground shadow-sm hover:shadow-md transition-all">
                   <div class="h-16 w-16 rounded-full overflow-hidden bg-muted">
@@ -1531,15 +1578,39 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
     category: "Resources",
     description: "Grid of downloadable resources.",
     icon: Schematics.DocsDownloads,
+    configurableSelects: [
+        {
+            id: 'columns',
+            label: 'Cards per Row',
+            defaultValue: '4',
+            options: [
+                { label: '2 per row', value: '2' },
+                { label: '3 per row', value: '3' },
+                { label: '4 per row', value: '4' }
+            ]
+        }
+    ],
     toggleableElements: [
         { id: 'showTitle', label: 'Show Title', defaultValue: true },
         { id: 'showSubtitle', label: 'Show Subtitle', defaultValue: true }
     ],
-    html: (id, variant, settings) => `
+    html: (id, variant, settings) => {
+        const columns = parseInt(safeGetSelect(settings, 'columns', '4'));
+        
+        let gridClass = 'grid-cols-1 md:grid-cols-4';
+        if (columns === 2) {
+            gridClass = 'grid-cols-1 md:grid-cols-2';
+        } else if (columns === 3) {
+            gridClass = 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
+        } else if (columns === 4) {
+            gridClass = 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+        }
+        
+        return `
       <builder-section id="${id}" class="relative block w-full bg-muted/10 ${getVariantClasses(variant)} ${getPaddingClass(settings, 'py-16')}">
          <div class="w-full max-w-[var(--max-width)] mx-auto px-[var(--global-padding)]">
             ${renderSectionHeader(settings, "Downloads", "Access important documents.")}
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="grid ${gridClass} gap-6">
                ${[
                  { name: "Conference Brochure", size: "2.4 MB", type: "PDF" },
                  { name: "Sponsorship Deck", size: "5.1 MB", type: "PDF" },
@@ -1560,6 +1631,7 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
          </div>
       </builder-section>
     `
+    }
   },
   {
     id: "docs-list",

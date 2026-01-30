@@ -9,7 +9,7 @@ import { AuditLogPanel } from "./components/site-builder/AuditLogPanel";
 import { Toaster, toast } from "sonner";
 import { Image as ImageIcon, Code } from "lucide-react";
 import { DndProvider } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
+import { TouchBackend } from "react-dnd-touch-backend";
 import { BlockSettings } from "./components/site-builder/block-registry";
 import { ResponsiveContainer } from "./components/site-builder/ResponsiveContainer";
 import { generateFullPageHtml } from "./utils/generate-html";
@@ -433,14 +433,12 @@ function AppContent() {
   }, [canvasBlocks, selectedBlockId, pushToHistory]);
 
   const moveBlock = useCallback((dragIndex: number, hoverIndex: number) => {
-    setCanvasBlocks((prevBlocks) => {
-      const newBlocks = [...prevBlocks];
-      const dragBlock = newBlocks[dragIndex];
-      newBlocks.splice(dragIndex, 1);
-      newBlocks.splice(hoverIndex, 0, dragBlock);
-      return newBlocks;
-    });
-  }, []);
+    const newBlocks = [...canvasBlocks];
+    const dragBlock = newBlocks[dragIndex];
+    newBlocks.splice(dragIndex, 1);
+    newBlocks.splice(hoverIndex, 0, dragBlock);
+    pushToHistory(newBlocks);
+  }, [canvasBlocks, pushToHistory]);
 
   const addDefaultBlock = useCallback((index: number) => {
     // Adds a default hero block at index
@@ -526,6 +524,84 @@ function AppContent() {
       pushToHistory(newBlocks);
   }, [canvasBlocks, pushToHistory]);
 
+  // --- Arrow Key Navigation Between Blocks ---
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isPreviewMode) return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+
+      const visibleBlocks = canvasBlocks.filter(b => !b.hidden);
+      if (visibleBlocks.length === 0) return;
+
+      // Only preventDefault once we know we'll handle the event
+      e.preventDefault();
+
+      const dir = e.key === 'ArrowUp' ? 'up' : 'down';
+
+      // No block selected — just select first/last
+      if (!selectedBlockId) {
+        setSelectedBlockId(dir === 'down' ? visibleBlocks[0].id : visibleBlocks[visibleBlocks.length - 1].id);
+        return;
+      }
+
+      const currentIndex = visibleBlocks.findIndex(b => b.id === selectedBlockId);
+      if (currentIndex === -1) {
+        setSelectedBlockId(visibleBlocks[0].id);
+        return;
+      }
+
+      // Plain arrow = navigate selection, Ctrl/Cmd+arrow = reorder block
+      if (e.ctrlKey || e.metaKey) {
+        handleMoveBlockDirectional(selectedBlockId, dir);
+      } else {
+        const nextIndex = dir === 'up' ? currentIndex - 1 : currentIndex + 1;
+        if (nextIndex >= 0 && nextIndex < visibleBlocks.length) {
+          const nextBlockId = visibleBlocks[nextIndex].id;
+          setSelectedBlockId(nextBlockId);
+          
+          // Scroll into view
+          requestAnimationFrame(() => {
+            const el = document.querySelector(`[data-block-id="${nextBlockId}"]`);
+            el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          });
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    
+    // Listen for keydown events from iframes
+    const handleMessage = (event: MessageEvent) => {
+        if (event.data && event.data.type === 'IFRAME_KEYDOWN') {
+             const { key, code, shiftKey, ctrlKey, metaKey, altKey } = event.data;
+             if (key === 'ArrowUp' || key === 'ArrowDown') {
+                 // Dispatch as if it happened on the window
+                 const newEvent = new KeyboardEvent('keydown', {
+                     key,
+                     code,
+                     shiftKey,
+                     ctrlKey,
+                     metaKey,
+                     altKey,
+                     bubbles: true,
+                     cancelable: true
+                 });
+                 // We need to bypass the "target" check in handleKeyDown because target will be null or body
+                 // But handleKeyDown checks target tagName. If we dispatch on window, target might be body?
+                 window.dispatchEvent(newEvent);
+             }
+        }
+    };
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('message', handleMessage);
+    };
+  }, [canvasBlocks, selectedBlockId, isPreviewMode, handleMoveBlockDirectional]);
+
   // --- Render Views ---
   const renderMainContent = () => {
     if (isPreviewMode) {
@@ -597,6 +673,7 @@ function AppContent() {
           onEditSettings={handleEditSettings}
           onUpdateVariant={updateBlockVariant}
           onUpdateSettings={updateBlockSettings}
+          onReorderBlock={moveBlock}
         />
 
         {showNavigator && (
@@ -646,7 +723,7 @@ function AppContent() {
   }
 
   return (
-    <DndProvider backend={HTML5Backend}>
+    <DndProvider backend={TouchBackend} options={{ enableMouseEvents: true }}>
       <ThemeProvider>
         <div className="flex flex-col h-screen w-full bg-background text-foreground overflow-hidden font-sans">
           <TopNav 

@@ -411,6 +411,8 @@ export const Navigator: React.FC<NavigatorProps> = ({
             configurableIcons={selectedBlockDef && selectedBlockDef.configurableIcons}
             configurableCounts={selectedBlockDef && selectedBlockDef.configurableCounts}
             configurableColors={selectedBlockDef && selectedBlockDef.configurableColors}
+            configurableSelects={selectedBlockDef && selectedBlockDef.configurableSelects}
+            configurableRanges={selectedBlockDef && selectedBlockDef.configurableRanges}
             onChangeVariant={(v) => selectedBlockId && onUpdateBlockVariant(selectedBlockId, v)}
             onChangeSettings={(s) => selectedBlockId && onUpdateBlockSettings(selectedBlockId, s)}
             onChangeType={(t) => selectedBlockId && onUpdateBlockType(selectedBlockId, t)}

@@ -72,12 +72,38 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
     // We use capturing to ensure we catch the blur event
     mountNode.addEventListener('blur', handleBlur, true);
     
+    // Forward key events to parent for navigation
+    const handleKeyDown = (e: KeyboardEvent) => {
+        const target = e.target as HTMLElement;
+        if (target.isContentEditable || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+            return;
+        }
+
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            try {
+                window.parent.postMessage({
+                    type: 'IFRAME_KEYDOWN',
+                    key: e.key,
+                    code: e.code,
+                    shiftKey: e.shiftKey,
+                    ctrlKey: e.ctrlKey,
+                    metaKey: e.metaKey,
+                    altKey: e.altKey
+                }, '*');
+            } catch (err) {
+                // ignore
+            }
+        }
+    };
+    mountNode.addEventListener('keydown', handleKeyDown);
+
     // Listen for clicks on the body to handle selection
     mountNode.addEventListener('click', handleClick);
     mountNode.addEventListener('touchstart', handleClick, { passive: true });
     
     return () => {
       mountNode.removeEventListener('blur', handleBlur, true);
+      mountNode.removeEventListener('keydown', handleKeyDown);
       mountNode.removeEventListener('click', handleClick);
       mountNode.removeEventListener('touchstart', handleClick);
     };
@@ -164,12 +190,16 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
 
     // Add delay to ensure iframe is ready in Figma environment
     const setupTimer = setTimeout(() => {
-      const contentDocument = iframe.contentDocument;
-      if (contentDocument && contentDocument.readyState === 'complete') {
-        handleLoad();
-      } else {
-        iframe.addEventListener('load', handleLoad);
-      }
+        try {
+            const contentDocument = iframe.contentDocument;
+            if (contentDocument && contentDocument.readyState === 'complete') {
+                handleLoad();
+            } else {
+                iframe.addEventListener('load', handleLoad);
+            }
+        } catch (e) {
+             console.warn("Error checking iframe state:", e);
+        }
     }, 0);
 
     return () => {
@@ -244,11 +274,15 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                                 });
                                 
                                 // Notify parent window about day change
-                                window.parent.postMessage({
-                                    type: 'AGENDA_DAY_CHANGED',
-                                    blockId: agendaSection.id,
-                                    activeDay: dayIndex
-                                }, '*');
+                                try {
+                                    window.parent.postMessage({
+                                        type: 'AGENDA_DAY_CHANGED',
+                                        blockId: agendaSection.id,
+                                        activeDay: dayIndex
+                                    }, '*');
+                                } catch (err) {
+                                    console.warn('Failed to post message:', err);
+                                }
                             }
                         }
                     };

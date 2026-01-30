@@ -16,7 +16,7 @@ import { cn } from "../ui/utils";
 import { BLOCK_REGISTRY } from "./block-registry";
 import { toast } from "sonner";
 import { useTheme, generateThemeStyles } from "./ThemeBuilder";
-import { useDrop } from "react-dnd";
+import { useDrop, useDrag } from "react-dnd";
 import { ResponsiveContainer } from "./ResponsiveContainer";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../ui/sheet";
@@ -35,6 +35,7 @@ interface CanvasProps {
   onEditSettings: (id: string) => void;
   onUpdateVariant: (id: string, variant: string) => void;
   onUpdateSettings: (id: string, settings: any) => void;
+  onReorderBlock?: (dragIndex: number, hoverIndex: number) => void;
 }
 
 export const Canvas: React.FC<CanvasProps> = ({
@@ -48,7 +49,8 @@ export const Canvas: React.FC<CanvasProps> = ({
   onSelectBlock,
   onEditSettings,
   onUpdateVariant,
-  onUpdateSettings
+  onUpdateSettings,
+  onReorderBlock
 }) => {
   const { config } = useTheme();
   const themeStyles = useMemo(() => {
@@ -169,10 +171,11 @@ export const Canvas: React.FC<CanvasProps> = ({
             className="mb-auto"
             style={{
                 width: breakpoint,
-                transform: `scale(${scale})`,
+                // Use zoom instead of transform: scale to ensure DnD coordinates are correct
+                ...({ zoom: scale } as React.CSSProperties),
                 transformOrigin: 'top center',
                 flexShrink: 0,
-                transition: "width 0.3s ease-out, height 0.3s ease-out, transform 0.2s ease-out"
+                transition: "width 0.3s ease-out, height 0.3s ease-out"
             }}
         >
             <div 
@@ -243,6 +246,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                 onEditSettings={onEditSettings}
                 onUpdateVariant={onUpdateVariant}
                 onUpdateSettings={onUpdateSettings}
+                onReorderBlock={onReorderBlock}
               />
             );
           })}
@@ -401,7 +405,7 @@ const DropZone = ({ index, onDropBlock, onAddBlock, isInitial = false }: { index
                                 ? "h-full w-full pointer-events-none" 
                                 : canDrop
                                     ? "h-24 w-full cursor-copy" 
-                                    : "h-0 w-full cursor-pointer group hover:h-12 transition-[height]"
+                                    : "h-6 w-full cursor-pointer group hover:h-12 transition-[height]"
                         )}
                         onClick={(e) => {
                             e.stopPropagation();
@@ -505,7 +509,8 @@ const CanvasBlockWrapper = ({
     onDropBlock,
     onEditSettings,
     onUpdateVariant,
-    onUpdateSettings
+    onUpdateSettings,
+    onReorderBlock
 }: any) => {
     const settings = block.settings || {};
     const showInMobile = settings.showInMobile !== undefined ? settings.showInMobile : true;
@@ -519,6 +524,67 @@ const CanvasBlockWrapper = ({
     // Calculate these once for consistency - ensure they're always boolean
     const isLastBlock = Boolean(totalBlocks > 0 && index === totalBlocks - 1);
     const isFirstBlock = Boolean(index === 0);
+
+    const ref = useRef<HTMLDivElement>(null);
+    const dragHandleRef = useRef<HTMLDivElement>(null);
+
+    // Drag and drop for reordering blocks within canvas
+    const [{ isDragging }, drag, preview] = useDrag(() => ({
+        type: 'CANVAS_BLOCK',
+        item: { id: block.id, index },
+        collect: (monitor) => ({
+            isDragging: monitor.isDragging()
+        })
+    }), [block.id, index]);
+
+    const [{ isOver: isOverBlock }, drop] = useDrop(() => ({
+        accept: 'CANVAS_BLOCK',
+        hover: (item: { id: string; index: number }, monitor) => {
+            if (!ref.current) return;
+            const dragIndex = item.index;
+            const hoverIndex = index;
+            if (dragIndex === hoverIndex) return;
+
+            // Determine rectangle on screen
+            const hoverBoundingRect = ref.current.getBoundingClientRect();
+            
+            // Get vertical middle
+            const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+            
+            // Determine mouse position
+            const clientOffset = monitor.getClientOffset();
+            if (!clientOffset) return;
+            
+            // Get pixels to the top
+            const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+            
+            // Only perform the move when the mouse has crossed half of the items height
+            // When dragging downwards, only move when the cursor is below 50%
+            // When dragging upwards, only move when the cursor is above 50%
+            
+            // Dragging downwards
+            if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
+                return;
+            }
+            
+            // Dragging upwards
+            if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
+                return;
+            }
+
+            if (onReorderBlock) {
+                onReorderBlock(dragIndex, hoverIndex);
+                item.index = hoverIndex;
+            }
+        },
+        collect: (monitor) => ({
+            isOver: monitor.isOver()
+        })
+    }), [index, onReorderBlock]);
+
+    // Connect drag source to handle and drop target/preview to main ref
+    drag(dragHandleRef);
+    preview(drop(ref));
 
     React.useEffect(() => {
         setMounted(true);
@@ -580,13 +646,16 @@ const CanvasBlockWrapper = ({
             <DropZone index={index} onDropBlock={onDropBlock} onAddBlock={onAddBlock} />
 
             <div 
+                ref={ref}
                 className={cn(
                     "relative group/block transition-all border-y border-transparent",
                     isSelected ? "ring-2 ring-primary z-10" : "hover:border-primary/20",
                     block.locked && "opacity-90 grayscale-[0.5]",
-                    !showInMobile && "max-md:hidden"
+                    !showInMobile && "max-md:hidden",
+                    isDragging && "opacity-50"
                 )}
                 onClick={(e) => { e.stopPropagation(); onSelectBlock(block.id); }}
+                data-block-id={block.id}
             >
                 {/* Block Content */}
                 <ResponsiveContainer 
@@ -645,6 +714,15 @@ const CanvasBlockWrapper = ({
                   )}>
                     <div className="flex items-center gap-2 px-3 border-r border-border mr-1">
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{definition.category}</span>
+                    </div>
+
+                    <div 
+                      ref={dragHandleRef}
+                      className="cursor-grab active:cursor-grabbing p-1.5 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground transition-colors mr-1"
+                      title="Drag to reorder"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <GripVertical className="w-3.5 h-3.5" />
                     </div>
                     
                     <button 
