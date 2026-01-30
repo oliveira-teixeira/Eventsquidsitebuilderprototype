@@ -659,31 +659,38 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
                     </nav>
                     ` : ''}
                     
-                    <!-- Mobile Hamburger Toggle (Checkbox Hack) -->
-                    <label class="btn btn-circle swap swap-rotate md:hidden p-2 hover:bg-muted rounded-md cursor-pointer group">
-                        <!-- this hidden checkbox controls the state -->
-                        <input type="checkbox" class="peer hidden" id="mobile-menu-toggle-${id}" />
-                        
+                    <!-- Mobile Hamburger Toggle -->
+                    <button 
+                        type="button"
+                        class="md:hidden flex items-center justify-center p-2 hover:bg-muted rounded-md cursor-pointer"
+                        onclick="(function(btn) {
+                            var menu = document.getElementById('mobile-menu-panel-${id}');
+                            var isOpen = menu.classList.contains('hidden');
+                            menu.classList.toggle('hidden', !isOpen);
+                            btn.querySelector('.hamburger-icon').classList.toggle('hidden', isOpen);
+                            btn.querySelector('.close-icon').classList.toggle('hidden', !isOpen);
+                        })(this)"
+                        aria-label="Toggle menu"
+                    >
                         <!-- hamburger icon -->
-                        <svg class="fill-current w-6 h-6 block peer-checked:hidden transition-transform" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 512 512"><path d="M64,384H448V341.33H64Zm0-106.67H448V234.67H64ZM64,128v42.67H448V128Z"/></svg>
-                        
+                        <svg class="hamburger-icon fill-current w-6 h-6" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 512 512"><path d="M64,384H448V341.33H64Zm0-106.67H448V234.67H64ZM64,128v42.67H448V128Z"/></svg>
                         <!-- close icon -->
-                        <svg class="fill-current w-6 h-6 hidden peer-checked:block transition-transform" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 512 512"><polygon points="400 145.49 366.51 112 256 222.51 145.49 112 112 145.49 222.51 256 112 366.51 145.49 400 256 289.49 366.51 400 400 366.51 289.49 256 400 145.49"/></svg>
-                        
-                        <!-- Mobile Menu Dropdown -->
-                        <div class="fixed inset-x-0 top-14 bottom-0 bg-background/95 backdrop-blur-sm z-50 p-6 hidden peer-checked:block animate-in slide-in-from-top-5 fade-in border-t border-border">
-                            <div class="grid gap-6 text-lg font-medium">
-                                ${mobileNavLinks}
-                                ${showCTA ? `
-                                <div class="pt-4 mt-4 border-t border-border">
-                                    <a href="${cta.url}" class="flex w-full items-center justify-center rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90">
-                                        ${cta.text}
-                                    </a>
-                                </div>
-                                ` : ''}
-                            </div>
-                        </div>
-                    </label>
+                        <svg class="close-icon fill-current w-6 h-6 hidden" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 512 512"><polygon points="400 145.49 366.51 112 256 222.51 145.49 112 112 145.49 222.51 256 112 366.51 145.49 400 256 289.49 366.51 400 400 366.51 289.49 256 400 145.49"/></svg>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Mobile Menu Panel -->
+            <div id="mobile-menu-panel-${id}" class="hidden md:hidden bg-background/95 backdrop-blur-sm border-t border-border">
+                <div class="p-6 grid gap-4 text-base font-medium">
+                    ${mobileNavLinks}
+                    ${showCTA ? `
+                    <div class="pt-4 mt-2 border-t border-border">
+                        <a href="${cta.url}" class="flex w-full items-center justify-center rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90">
+                            ${cta.text}
+                        </a>
+                    </div>
+                    ` : ''}
                 </div>
             </div>
         </header>
