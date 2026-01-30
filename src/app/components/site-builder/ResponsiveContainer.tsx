@@ -28,6 +28,7 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const figmaContainerRef = useRef<HTMLDivElement>(null);
   const updateHeightRef = useRef<() => void>(() => {});
+  const previousHtmlRef = useRef<string | undefined>(undefined);
   const { config } = useTheme();
   
   // Detect if we're in Figma environment
@@ -212,9 +213,26 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
   useEffect(() => {
     if (!mountNode || !html) return;
     
+    // Skip re-injection if HTML content hasn't changed - prevents flickering during reordering
+    const htmlChanged = previousHtmlRef.current !== html;
+    previousHtmlRef.current = html;
+    
+    // Store the current height before resetting - this helps prevent flickering
+    // when re-rendering with the same content (e.g., during block reordering)
+    const previousHeight = iframeRef.current?.offsetHeight || 0;
+    
+    // If HTML hasn't changed, just ensure height is correct and return
+    if (!htmlChanged && previousHeight > 50) {
+        // Still trigger height update in case something changed externally
+        setTimeout(() => updateHeightRef.current(), 50);
+        return;
+    }
+    
     // Reset height to allow shrinking (Hug contents behavior)
+    // But use 'auto' instead of '1px' to prevent content from being cut off
     if (iframeRef.current) {
-        iframeRef.current.style.height = '1px';
+        iframeRef.current.style.height = 'auto';
+        iframeRef.current.style.minHeight = `${Math.max(50, previousHeight)}px`;
     }
     
         try {
@@ -348,9 +366,16 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
         
         // Force height update immediately after content change
         updateHeightRef.current();
+        
+        // Clear minHeight after content is set to allow proper resizing
+        if (iframeRef.current) {
+            iframeRef.current.style.minHeight = '';
+        }
     
     // Double check after a short delay to catch any layout shifts
     setTimeout(() => updateHeightRef.current(), 50);
+    // Additional check for cases where ResizeObserver doesn't fire
+    setTimeout(() => updateHeightRef.current(), 150);
   }, [html, mountNode]);
 
   // Sync theme variables
@@ -406,8 +431,14 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
               const currentHeight = iframeRef.current.offsetHeight;
               const contentHeight = mountNode.scrollHeight;
               
-              // Validate contentHeight to prevent 0 or Infinity
-              if (!Number.isFinite(contentHeight) || contentHeight === 0) return;
+              // Validate contentHeight to prevent Infinity (but allow 0 as it might be transitional)
+              if (!Number.isFinite(contentHeight)) return;
+              
+              // If content height is 0, schedule a retry as the DOM might still be initializing
+              if (contentHeight === 0) {
+                  setTimeout(updateHeight, 100);
+                  return;
+              }
 
               // Threshold of 4px to avoid micro-adjustments and loops
               if (Math.abs(currentHeight - contentHeight) > 4) {
