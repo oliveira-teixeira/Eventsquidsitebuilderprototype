@@ -819,7 +819,7 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
         const iconPlay = safeGetIcon(settings, 'play', ICONS.PLAY);
 
         return `
-      <builder-section id="${id}" class="relative block w-full min-h-[400px] md:min-h-[550px] lg:min-h-[600px] h-auto flex items-end overflow-hidden ${getVariantClasses(variant)} ${getPaddingClass(settings, 'pb-8 md:pb-16 lg:pb-20')}">`
+      <builder-section id="${id}" class="relative block w-full min-h-[400px] md:min-h-[550px] lg:min-h-[600px] h-auto flex items-end overflow-hidden ${getVariantClasses(variant)} ${getPaddingClass(settings, 'pb-8 md:pb-16 lg:pb-20')}">
         <div class="absolute inset-0 z-0">
            <img src="${imgBgUrl}" style="${imgBgStyle}" class="w-full h-full" data-configurable-image="bg" />
            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
