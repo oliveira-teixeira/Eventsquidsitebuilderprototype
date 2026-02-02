@@ -469,12 +469,14 @@ const getAlignmentJustifyClass = (settings: BlockSettings | undefined) => {
 
 const getPaddingClass = (settings: BlockSettings | undefined, defaultPadding: string = 'py-20') => {
   if (!settings || !settings.padding) return defaultPadding;
+  // Use explicit pt-* and pb-* with responsive overrides to ensure both top and bottom are controlled
+  // This prevents issues where default responsive pb-* classes aren't overridden by py-*
   switch (settings.padding) {
-    case 'none': return 'py-0';
-    case 'small': return 'py-8';
-    case 'medium': return 'py-16';
-    case 'large': return 'py-24';
-    case 'xlarge': return 'py-32';
+    case 'none': return 'pt-0 pb-0 md:pt-0 md:pb-0 lg:pt-0 lg:pb-0';
+    case 'small': return 'pt-8 pb-8 md:pt-8 md:pb-8 lg:pt-8 lg:pb-8';
+    case 'medium': return 'pt-16 pb-16 md:pt-16 md:pb-16 lg:pt-16 lg:pb-16';
+    case 'large': return 'pt-24 pb-24 md:pt-24 md:pb-24 lg:pt-24 lg:pb-24';
+    case 'xlarge': return 'pt-32 pb-32 md:pt-32 md:pb-32 lg:pt-32 lg:pb-32';
     default: return defaultPadding;
   }
 };
