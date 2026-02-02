@@ -13,7 +13,14 @@ function Switch({
     <SwitchPrimitive.Root
       data-slot="switch"
       className={cn(
-        "peer data-[state=checked]:bg-primary data-[state=unchecked]:bg-foreground/20 dark:data-[state=unchecked]:bg-foreground/20 inline-flex h-[1.15rem] w-8 shrink-0 items-center rounded-full border border-transparent transition-all outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
+        // Base styles
+        "peer inline-flex h-[1.15rem] w-8 shrink-0 items-center rounded-full transition-all outline-none focus-visible:ring-[3px]",
+        // ON state - primary color
+        "data-[state=checked]:bg-primary data-[state=checked]:border-primary",
+        // OFF state - visible muted background with border
+        "data-[state=unchecked]:bg-muted data-[state=unchecked]:border-border border",
+        // DISABLED state - reduced opacity but still visible, with distinct styling
+        "disabled:cursor-not-allowed disabled:opacity-70 disabled:data-[state=unchecked]:bg-muted/80 disabled:data-[state=checked]:bg-primary/60",
         className,
       )}
       {...props}
@@ -21,7 +28,14 @@ function Switch({
       <SwitchPrimitive.Thumb
         data-slot="switch-thumb"
         className={cn(
-          "bg-card dark:data-[state=unchecked]:bg-card-foreground dark:data-[state=checked]:bg-primary-foreground pointer-events-none block size-4 rounded-full ring-0 transition-transform data-[state=checked]:translate-x-[calc(100%-2px)] data-[state=unchecked]:translate-x-0",
+          // Base thumb styles
+          "pointer-events-none block size-4 rounded-full ring-0 transition-transform",
+          // Position based on state
+          "data-[state=checked]:translate-x-[calc(100%-2px)] data-[state=unchecked]:translate-x-0",
+          // ON state thumb - contrasting color
+          "data-[state=checked]:bg-primary-foreground",
+          // OFF state thumb - visible with shadow for depth
+          "data-[state=unchecked]:bg-background data-[state=unchecked]:shadow-sm data-[state=unchecked]:border data-[state=unchecked]:border-border/50",
         )}
       />
     </SwitchPrimitive.Root>
