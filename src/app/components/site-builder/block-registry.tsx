@@ -791,7 +791,7 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
                 </div>
               </div>` : ''}
             </div>
-            ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stretch min-h-[280px] md:min-h-[450px] lg:min-h-[500px]">
+            ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stretch aspect-[4/3] md:aspect-auto">
               <img src="${imgHeroUrl}" style="${imgHeroStyle}" class="absolute inset-0 w-full h-full cursor-pointer" alt="Hero" data-configurable-image="hero" />
             </div>` : ''}
           </div>
@@ -819,7 +819,7 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
         const iconPlay = safeGetIcon(settings, 'play', ICONS.PLAY);
 
         return `
-      <builder-section id="${id}" class="relative block w-full min-h-[400px] md:min-h-[550px] lg:min-h-[600px] h-auto flex items-end overflow-hidden ${getVariantClasses(variant)} ${getPaddingClass(settings, 'pb-8 md:pb-16 lg:pb-20')}">
+      <builder-section id="${id}" class="relative block w-full aspect-[4/3] md:aspect-[16/9] lg:aspect-[21/9] flex items-end overflow-hidden ${getVariantClasses(variant)} ${getPaddingClass(settings, 'pb-8 md:pb-16 lg:pb-20')}">
         <div class="absolute inset-0 z-0">
            <img src="${imgBgUrl}" style="${imgBgStyle}" class="w-full h-full" data-configurable-image="bg" />
            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
@@ -1522,8 +1522,8 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
         return `
       <builder-section id="${id}" class="relative block w-full bg-background ${getVariantClasses(variant)} ${getPaddingClass(settings, 'py-0')}">
          <div class="w-full max-w-[var(--max-width)] mx-auto px-[var(--global-padding)]">
-         <div class="grid grid-cols-1 lg:grid-cols-2 min-h-[500px]">
-            <div class="bg-muted relative flex items-center justify-center overflow-hidden h-[200px] lg:h-auto w-full aspect-video lg:aspect-auto">
+         <div class="grid grid-cols-1 lg:grid-cols-2">
+            <div class="bg-muted relative flex items-center justify-center overflow-hidden w-full aspect-video lg:aspect-[4/3]">
                 <img src="${mapUrl}" style="${mapStyle}" class="absolute inset-0 w-full h-full grayscale opacity-50" data-configurable-image="map" />
                 <div class="relative z-10 p-4 bg-background rounded-full shadow-xl animate-bounce text-primary">
                    ${ICONS.MAP_PIN}
@@ -1562,7 +1562,7 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
         { id: 'showSubtitle', label: 'Show Subtitle', defaultValue: true }
     ],
     html: (id, variant, settings) => `
-      <builder-section id="${id}" class="relative block w-full h-[600px] bg-muted ${getVariantClasses(variant)} ${getPaddingClass(settings, 'py-0')}">
+      <builder-section id="${id}" class="relative block w-full aspect-[4/3] md:aspect-[16/9] bg-muted ${getVariantClasses(variant)} ${getPaddingClass(settings, 'py-0')}">
          <img src="${DEFAULT_IMAGES.location}" class="absolute inset-0 w-full h-full object-cover" />
          <div class="relative w-full h-full max-w-[var(--max-width)] mx-auto px-[var(--global-padding)] pointer-events-none">
              <div class="absolute top-1/2 left-[var(--global-padding)] -translate-y-1/2 w-[350px] pointer-events-auto">
