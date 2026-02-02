@@ -950,10 +950,13 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
 
         {/* Padding / Spacing */}
         <div className="space-y-3">
-            <label className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
-                <VerticalPaddingIcon />
-                Vertical Padding
-            </label>
+            <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
+                    <VerticalPaddingIcon />
+                    Vertical Padding
+                </label>
+                <span className="text-[9px] text-muted-foreground/70 bg-muted/50 px-1.5 py-0.5 rounded">All viewports</span>
+            </div>
             <div className="grid grid-cols-5 gap-1 bg-muted/30 p-1 rounded-md border border-border">
                 {PADDINGS.map((p) => {
                     const isActive = selectedSettings.padding === p.id || (!selectedSettings.padding && p.id === 'medium'); // defaulting visual
@@ -978,16 +981,22 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                 <span className="text-[10px] text-muted-foreground">None</span>
                 <span className="text-[10px] text-muted-foreground">Max</span>
             </div>
+            <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
+                Applies to all screen sizes. Spacing scales automatically for mobile.
+            </p>
         </div>
 
         <div className="h-px bg-border w-full" />
 
         {/* Divider Settings */}
         <div className="space-y-3">
-            <label className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
-                <Minus className="w-3.5 h-3.5" />
-                Divider
-            </label>
+            <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
+                    <Minus className="w-3.5 h-3.5" />
+                    Divider
+                </label>
+                <span className="text-[9px] text-muted-foreground/70 bg-muted/50 px-1.5 py-0.5 rounded">All viewports</span>
+            </div>
             <div className="space-y-3 bg-muted/30 p-3 rounded-md border border-border">
                 {/* Toggle */}
                 <div className="flex items-center justify-between">
