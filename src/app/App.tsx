@@ -522,6 +522,16 @@ function AppContent() {
       [newBlocks[index], newBlocks[targetIndex]] = [newBlocks[targetIndex], newBlocks[index]];
       
       pushToHistory(newBlocks);
+      
+      // Scroll the moved block into view after state update and re-render
+      requestAnimationFrame(() => {
+          setTimeout(() => {
+              const el = document.querySelector(`[data-block-id="${blockId}"]`);
+              if (el) {
+                  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              }
+          }, 100); // Small delay to allow for re-render
+      });
   }, [canvasBlocks, pushToHistory]);
 
   // --- Arrow Key Navigation Between Blocks ---

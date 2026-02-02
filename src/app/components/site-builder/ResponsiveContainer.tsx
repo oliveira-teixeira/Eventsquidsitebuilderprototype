@@ -110,6 +110,9 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
     };
   }, [mountNode, onContentChange, onClick, onImageClick]);
 
+  // Track a version counter to force re-setup when iframe gets invalidated
+  const [iframeVersion, setIframeVersion] = useState(0);
+
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
@@ -207,32 +210,64 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
       clearTimeout(setupTimer);
       iframe.removeEventListener('load', handleLoad);
     };
-  }, []);
+  }, [iframeVersion]);
+  
+  // Check periodically if mountNode became invalid (e.g., due to iframe reload from DOM movement)
+  // and trigger re-setup if needed
+  useEffect(() => {
+    if (!html) return;
+    
+    const checkMountNode = () => {
+      // If we have HTML to render but mountNode is invalid, trigger re-setup
+      if (mountNode && (!mountNode.isConnected || !mountNode.innerHTML)) {
+        setMountNode(null);
+        setIframeVersion(v => v + 1);
+      }
+    };
+    
+    // Check after a short delay to catch DOM movement issues
+    const timer = setTimeout(checkMountNode, 100);
+    
+    return () => clearTimeout(timer);
+  }, [html, mountNode]);
 
   // Inject HTML directly into iframe if provided
   useEffect(() => {
     if (!mountNode || !html) return;
     
-    // Skip re-injection if HTML content hasn't changed - prevents flickering during reordering
+    // Check if mountNode is still valid and connected to the DOM
+    // This handles cases where the iframe was reloaded due to DOM movement
+    const mountNodeValid = mountNode.isConnected && mountNode.ownerDocument;
+    
+    // Check if content already exists and matches what we want
+    // This prevents unnecessary re-injection during reordering
     const htmlChanged = previousHtmlRef.current !== html;
+    const contentMissing = !mountNodeValid || !mountNode.innerHTML || mountNode.innerHTML.trim() === '';
+    
     previousHtmlRef.current = html;
     
-    // Store the current height before resetting - this helps prevent flickering
-    // when re-rendering with the same content (e.g., during block reordering)
-    const previousHeight = iframeRef.current?.offsetHeight || 0;
-    
-    // If HTML hasn't changed, just ensure height is correct and return
-    if (!htmlChanged && previousHeight > 50) {
+    // If HTML hasn't changed AND content is present AND mountNode is valid, just update height
+    if (!htmlChanged && !contentMissing && mountNodeValid) {
         // Still trigger height update in case something changed externally
         setTimeout(() => updateHeightRef.current(), 50);
         return;
     }
     
-    // Reset height to allow shrinking (Hug contents behavior)
-    // But use 'auto' instead of '1px' to prevent content from being cut off
-    if (iframeRef.current) {
-        iframeRef.current.style.height = 'auto';
-        iframeRef.current.style.minHeight = `${Math.max(50, previousHeight)}px`;
+    // If mountNode is invalid, we can't proceed - the iframe setup effect will handle this
+    if (!mountNodeValid) {
+        return;
+    }
+    
+    // For changed HTML content, we need to measure and update height
+    // but should NOT reset to auto as this causes sections to collapse during reorder
+    // Instead, let the content render and then measure
+    const iframe = iframeRef.current;
+    if (iframe) {
+        // Store current height to use as minimum during transition
+        const currentHeight = iframe.offsetHeight;
+        if (currentHeight > 50) {
+            iframe.style.minHeight = `${currentHeight}px`;
+        }
     }
     
         try {
@@ -366,16 +401,18 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
         
         // Force height update immediately after content change
         updateHeightRef.current();
-        
-        // Clear minHeight after content is set to allow proper resizing
-        if (iframeRef.current) {
-            iframeRef.current.style.minHeight = '';
-        }
     
     // Double check after a short delay to catch any layout shifts
     setTimeout(() => updateHeightRef.current(), 50);
     // Additional check for cases where ResizeObserver doesn't fire
-    setTimeout(() => updateHeightRef.current(), 150);
+    setTimeout(() => {
+        updateHeightRef.current();
+        // Clear minHeight after content has had time to render and measure
+        // This allows proper height calculation while preventing collapse during reorder
+        if (iframeRef.current) {
+            iframeRef.current.style.minHeight = '';
+        }
+    }, 200);
   }, [html, mountNode]);
 
   // Sync theme variables
@@ -740,6 +777,7 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
       <iframe 
         ref={iframeRef}
         className="w-full block bg-transparent border-none"
+        style={{ minHeight: '100px' }} // Prevent complete collapse during reordering
         title={title}
         scrolling="no"
         src="about:blank"
