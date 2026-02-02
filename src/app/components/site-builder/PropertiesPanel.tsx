@@ -1,9 +1,10 @@
 import React, { useCallback, useState, useEffect } from "react";
-import { Sliders, Check, AlignJustify, AlignLeft, AlignCenter, AlignRight, MoveVertical, Eye, Smartphone, Link, Layout, Image as ImageIcon, Box, Hash, Palette, Upload, Cloud, Monitor, Move, Maximize2 } from "lucide-react";
+import { Sliders, Check, AlignJustify, AlignLeft, AlignCenter, AlignRight, MoveVertical, Eye, Smartphone, Link, Layout, Image as ImageIcon, Box, Hash, Palette, Upload, Cloud, Monitor, Move, Maximize2, Minus } from "lucide-react";
 import { cn } from "../ui/utils";
 import { Switch } from "../ui/switch";
 import { 
     BlockSettings, 
+    DividerSettings,
     ToggleableElement, 
     BlockButtonDefinition, 
     BlockImageDefinition, 
@@ -328,6 +329,22 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
       visibility: {
         ...currentVisibility,
         [elementId]: checked
+      }
+    });
+  }, [selectedSettings, onChangeSettings]);
+
+  const handleDividerChange = useCallback((key: keyof DividerSettings, value: boolean | string | number) => {
+    const currentDivider = selectedSettings.divider || {
+      enabled: false,
+      color: '#e5e5e5',
+      marginTop: 0,
+      marginBottom: 0
+    };
+    onChangeSettings({
+      ...selectedSettings,
+      divider: {
+        ...currentDivider,
+        [key]: value
       }
     });
   }, [selectedSettings, onChangeSettings]);
@@ -960,6 +977,84 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
             <div className="flex justify-between px-1">
                 <span className="text-[10px] text-muted-foreground">None</span>
                 <span className="text-[10px] text-muted-foreground">Max</span>
+            </div>
+        </div>
+
+        <div className="h-px bg-border w-full" />
+
+        {/* Divider Settings */}
+        <div className="space-y-3">
+            <label className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
+                <Minus className="w-3.5 h-3.5" />
+                Divider
+            </label>
+            <div className="space-y-3 bg-muted/30 p-3 rounded-md border border-border">
+                {/* Toggle */}
+                <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium">Show Divider</span>
+                    <Switch 
+                        checked={selectedSettings.divider?.enabled || false} 
+                        onCheckedChange={(checked) => handleDividerChange('enabled', checked)}
+                        className="scale-75 origin-right"
+                    />
+                </div>
+                
+                {/* Divider Options - only show when enabled */}
+                {selectedSettings.divider?.enabled && (
+                    <>
+                        {/* Color Picker */}
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium">Color</span>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="color"
+                                    value={selectedSettings.divider?.color || '#e5e5e5'}
+                                    onChange={(e) => handleDividerChange('color', e.target.value)}
+                                    className="w-6 h-6 rounded border border-border cursor-pointer bg-transparent"
+                                />
+                                <span className="text-[10px] text-muted-foreground font-mono w-14">
+                                    {(selectedSettings.divider?.color || '#e5e5e5').toUpperCase()}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        {/* Margin Above */}
+                        <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium">Margin Above</span>
+                                <span className="text-[10px] text-muted-foreground font-mono">
+                                    {selectedSettings.divider?.marginTop || 0}px
+                                </span>
+                            </div>
+                            <Slider
+                                value={[selectedSettings.divider?.marginTop || 0]}
+                                onValueChange={(values) => handleDividerChange('marginTop', values[0])}
+                                min={0}
+                                max={48}
+                                step={4}
+                                className="w-full"
+                            />
+                        </div>
+                        
+                        {/* Margin Below */}
+                        <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium">Margin Below</span>
+                                <span className="text-[10px] text-muted-foreground font-mono">
+                                    {selectedSettings.divider?.marginBottom || 0}px
+                                </span>
+                            </div>
+                            <Slider
+                                value={[selectedSettings.divider?.marginBottom || 0]}
+                                onValueChange={(values) => handleDividerChange('marginBottom', values[0])}
+                                min={0}
+                                max={48}
+                                step={4}
+                                className="w-full"
+                            />
+                        </div>
+                    </>
+                )}
             </div>
         </div>
 

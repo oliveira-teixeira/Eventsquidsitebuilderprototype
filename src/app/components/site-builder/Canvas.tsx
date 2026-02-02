@@ -701,6 +701,22 @@ const CanvasBlockWrapper = ({
                     onImageClick={handleImageClick}
                 />
                 
+                {/* Divider - rendered at bottom of section */}
+                {settings.divider?.enabled && (
+                    <div 
+                        className="w-full px-4 md:px-8 lg:px-16"
+                        style={{
+                            marginTop: settings.divider.marginTop || 0,
+                            marginBottom: settings.divider.marginBottom || 0
+                        }}
+                    >
+                        <div 
+                            className="w-full h-px"
+                            style={{ backgroundColor: settings.divider.color || '#e5e5e5' }}
+                        />
+                    </div>
+                )}
+                
                 {/* Click Catcher - Only cover if locked */}
                 {block.locked && <div className="absolute inset-0 z-[5] cursor-default bg-transparent" />}
 

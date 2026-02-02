@@ -22,6 +22,13 @@ export interface ButtonSetting {
   url: string;
 }
 
+export interface DividerSettings {
+  enabled: boolean;
+  color: string;
+  marginTop: number;
+  marginBottom: number;
+}
+
 export interface BlockSettings {
   padding?: 'none' | 'small' | 'medium' | 'large' | 'xlarge';
   showInMobile?: boolean;
@@ -37,6 +44,7 @@ export interface BlockSettings {
   ranges?: Record<string, number>;
   cmsCollectionId?: string;
   cmsItems?: any[];
+  divider?: DividerSettings;
 }
 
 export interface ToggleableElement {
