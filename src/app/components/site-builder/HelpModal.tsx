@@ -52,13 +52,13 @@ export const HelpModal: React.FC<HelpModalProps> = ({ open, onOpenChange }) => {
 
                 <div className="w-full h-px bg-border/50" />
 
-                {/* Drag and Drop */}
+                {/* Adding Sections */}
                 <section className="flex flex-col md:flex-row gap-8 items-start">
                     <div className="p-4 rounded-2xl bg-blue-500/10 text-blue-500">
                         <Move className="w-8 h-8" />
                     </div>
                     <div>
-                        <h3 className="text-xl font-bold mb-3">Drag and Drop</h3>
+                        <h3 className="text-xl font-bold mb-3">Adding Sections</h3>
                         <p className="text-muted-foreground leading-relaxed mb-4">
                             Building your layout is intuitive and fast. Open the sidebar to access the component library.
                         </p>
@@ -68,12 +68,12 @@ export const HelpModal: React.FC<HelpModalProps> = ({ open, onOpenChange }) => {
                                 Find sections like Heroes, Features, and Footers in the sidebar.
                             </li>
                             <li className="bg-secondary/50 p-4 rounded-lg border border-border/50">
-                                <span className="font-semibold block mb-1 text-foreground">2. Drag</span>
-                                Click and drag any component directly onto the canvas.
+                                <span className="font-semibold block mb-1 text-foreground">2. Click to Add</span>
+                                Click any component in the sidebar to add it to your page.
                             </li>
                             <li className="bg-secondary/50 p-4 rounded-lg border border-border/50">
-                                <span className="font-semibold block mb-1 text-foreground">3. Drop</span>
-                                Release the mouse button when you see the drop indicator to place the block.
+                                <span className="font-semibold block mb-1 text-foreground">3. Position</span>
+                                New sections are added at the end. Use reorder controls to adjust placement.
                             </li>
                             <li className="bg-secondary/50 p-4 rounded-lg border border-border/50">
                                 <span className="font-semibold block mb-1 text-foreground">4. Reorder</span>

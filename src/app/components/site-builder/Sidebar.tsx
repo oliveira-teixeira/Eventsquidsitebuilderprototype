@@ -26,7 +26,7 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
     Resources: <FileText className="w-4 h-4" />
 };
 
-// Draggable Sidebar Item Component
+// Clickable Sidebar Item Component (also supports drag)
 const DraggableBlockItem = ({ block, onAddBlock }: { block: any, onAddBlock?: (typeId: string) => void }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'NEW_BLOCK',
@@ -41,10 +41,10 @@ const DraggableBlockItem = ({ block, onAddBlock }: { block: any, onAddBlock?: (t
       ref={drag}
       onClick={() => onAddBlock && onAddBlock(block.id)}
       className={cn(
-        "group cursor-grab active:cursor-grabbing flex flex-col gap-2 w-full transition-all duration-200",
+        "group cursor-pointer flex flex-col gap-2 w-full transition-all duration-200",
         isDragging ? "opacity-30 scale-95" : "opacity-100 scale-100"
       )}
-      title={block.description}
+      title={`Click to add ${block.name}`}
     >
       <div className={cn(
         "aspect-[3/2] bg-card border border-border rounded-lg overflow-hidden relative shadow-sm transition-all duration-200",
@@ -214,7 +214,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                {!searchQuery && (
                    <div className="mb-4 pb-2 border-b border-border">
                        <h2 className="text-sm font-bold">{activeCategory}</h2>
-                       <p className="text-xs text-muted-foreground">Select a layout to add to your page.</p>
+                       <p className="text-xs text-muted-foreground">Click a layout to add it to your page.</p>
                    </div>
                )}
                
