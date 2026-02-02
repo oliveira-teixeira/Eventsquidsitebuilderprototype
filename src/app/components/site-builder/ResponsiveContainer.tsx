@@ -241,8 +241,10 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
     
     // Check if content already exists and matches what we want
     // This prevents unnecessary re-injection during reordering
-    const htmlChanged = previousHtmlRef.current !== html;
+    const previousHtml = previousHtmlRef.current;
+    const htmlChanged = previousHtml !== html;
     const contentMissing = !mountNodeValid || !mountNode.innerHTML || mountNode.innerHTML.trim() === '';
+    const hadPreviousContent = previousHtml !== undefined && previousHtml.trim() !== '';
     
     previousHtmlRef.current = html;
     
@@ -260,9 +262,9 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
     
     // For changed HTML content, we need to measure and update height
     // but should NOT reset to auto as this causes sections to collapse during reorder
-    // Instead, let the content render and then measure
+    // Only preserve minHeight if there was previous content (not for newly inserted blocks)
     const iframe = iframeRef.current;
-    if (iframe) {
+    if (iframe && hadPreviousContent) {
         // Store current height to use as minimum during transition
         const currentHeight = iframe.offsetHeight;
         if (currentHeight > 50) {
@@ -777,7 +779,6 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
       <iframe 
         ref={iframeRef}
         className="w-full block bg-transparent border-none"
-        style={{ minHeight: '100px' }} // Prevent complete collapse during reordering
         title={title}
         scrolling="no"
         src="about:blank"
