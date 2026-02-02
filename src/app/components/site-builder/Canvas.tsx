@@ -206,7 +206,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                 </div>
 
         {/* Blocks Content */}
-        <div className="w-full pb-20">
+        <div className="w-full">
           {blocks.map((block, index) => {
             const definition = BLOCK_REGISTRY.find(d => d.id === block.typeId);
             if (!definition) return null;
