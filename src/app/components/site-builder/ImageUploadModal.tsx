@@ -6,7 +6,10 @@ import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';
 import { Upload, Cloud, Link as LinkIcon, Loader2, X, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey, isSupabaseConfigured } from '@/utils/supabase/info';
+// Supabase configuration - define locally to avoid import issues
+const projectId = 'hemuqhaosarldtfepxiu';
+const publicAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlbXVxaGFvc2FybGR0ZmVweGl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU0Njk4NzcsImV4cCI6MjA4MTA0NTg3N30.bozLGakwIpMdwXLB71OBCuSPr79r_XnUmXr_uJ6im1M';
+const isSupabaseConfigured = () => projectId && projectId !== 'your-project-id' && publicAnonKey && publicAnonKey !== 'your-anon-key';
 import { cn } from '../ui/utils';
 
 interface Asset {

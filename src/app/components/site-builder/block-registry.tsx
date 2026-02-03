@@ -14,7 +14,7 @@ import {
   CreditCard,
   Image as ImageIcon
 } from "lucide-react";
-import { getImageUrl, getImageStyleString, ImageSetting } from '@/app/utils/image-helpers';
+import { getImageUrl, getImageStyleString, ImageSetting } from '../../utils/image-helpers';
 
 // --- Settings Interface ---
 export interface ButtonSetting {
