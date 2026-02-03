@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Search, Palette, LayoutGrid, Type, Users, Calendar, Megaphone, Clock, MapPin, FileText, X, History, Sparkles } from "lucide-react";
+import { Search, Palette, LayoutGrid, Type, Users, Calendar, Megaphone, Clock, MapPin, FileText, X, History, Sparkles, PanelTop } from "lucide-react";
 import { BLOCK_REGISTRY } from "./block-registry";
 import { cn } from "../ui/utils";
 import { useDrag } from "react-dnd";
@@ -18,6 +18,7 @@ interface SidebarProps {
 // Map categories to icons
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
     Hero: <Sparkles className="w-4 h-4" />,
+    Navigation: <PanelTop className="w-4 h-4" />,
     Agenda: <Calendar className="w-4 h-4" />,
     Speakers: <Users className="w-4 h-4" />,
     Sponsors: <Megaphone className="w-4 h-4" />,
