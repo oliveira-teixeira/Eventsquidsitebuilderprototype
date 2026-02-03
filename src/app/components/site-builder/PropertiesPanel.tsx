@@ -31,6 +31,12 @@ import { ImageCropModal } from "./ImageCropModal";
 import { Slider } from "../ui/slider";
 import { ImageSetting, getImageUrl as getHelpersImageUrl, getImageStyles } from "@/app/utils/image-helpers";
 
+interface Page {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 interface PropertiesPanelProps {
   selectedBlockId: string | null;
   selectedBlockType?: string;
@@ -48,6 +54,7 @@ interface PropertiesPanelProps {
   onChangeSettings: (settings: BlockSettings) => void;
   onChangeType?: (typeId: string) => void;
   blockName: string;
+  pages?: Page[]; // Available pages for internal linking
 }
 
 const VerticalPaddingIcon = () => (
@@ -188,7 +195,8 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
   onChangeVariant,
   onChangeSettings,
   onChangeType,
-  blockName
+  blockName,
+  pages = []
 }) => {
   const [assetModalOpen, setAssetModalOpen] = useState(false);
   const [currentImageId, setCurrentImageId] = useState<string | null>(null);
@@ -610,7 +618,10 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                     <div className="space-y-4 bg-muted/30 p-3 rounded-md border border-border">
                         {configurableButtons.map((btn) => {
                             const buttons = selectedSettings.buttons || {};
-                            const currentBtn = buttons[btn.id] || { text: btn.defaultText, url: btn.defaultUrl };
+                            const currentBtn = buttons[btn.id] || { text: btn.defaultText, url: btn.defaultUrl, linkType: 'external' };
+                            const linkType = currentBtn.linkType || 'external';
+                            const selectedPage = pages.find(p => p.id === currentBtn.internalPageId);
+                            
                             return (
                                 <div key={btn.id} className="space-y-2">
                                     <label className="text-xs font-medium text-foreground">{btn.label}</label>
@@ -628,19 +639,98 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                                             placeholder="Label"
                                             className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                         />
-                                        <input 
-                                            type="text" 
-                                            value={currentBtn.url}
-                                            onChange={(e) => {
-                                                const newButtons = { 
-                                                    ...selectedSettings.buttons,
-                                                    [btn.id]: { ...currentBtn, url: e.target.value }
-                                                };
-                                                onChangeSettings({ ...selectedSettings, buttons: newButtons });
-                                            }}
-                                            placeholder="URL (e.g. #about)"
-                                            className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono text-[10px]"
-                                        />
+                                        
+                                        {/* Link Type Selector */}
+                                        <div className="flex gap-1 p-0.5 bg-muted rounded-md">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const newButtons = { 
+                                                        ...selectedSettings.buttons,
+                                                        [btn.id]: { ...currentBtn, linkType: 'external' as const }
+                                                    };
+                                                    onChangeSettings({ ...selectedSettings, buttons: newButtons });
+                                                }}
+                                                className={cn(
+                                                    "flex-1 px-2 py-1 text-[10px] font-medium rounded transition-colors",
+                                                    linkType === 'external' 
+                                                        ? "bg-background text-foreground shadow-sm" 
+                                                        : "text-muted-foreground hover:text-foreground"
+                                                )}
+                                            >
+                                                External URL
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const newButtons = { 
+                                                        ...selectedSettings.buttons,
+                                                        [btn.id]: { ...currentBtn, linkType: 'internal' as const }
+                                                    };
+                                                    onChangeSettings({ ...selectedSettings, buttons: newButtons });
+                                                }}
+                                                className={cn(
+                                                    "flex-1 px-2 py-1 text-[10px] font-medium rounded transition-colors",
+                                                    linkType === 'internal' 
+                                                        ? "bg-background text-foreground shadow-sm" 
+                                                        : "text-muted-foreground hover:text-foreground"
+                                                )}
+                                            >
+                                                Internal Page
+                                            </button>
+                                        </div>
+                                        
+                                        {/* External URL Input */}
+                                        {linkType === 'external' && (
+                                            <input 
+                                                type="text" 
+                                                value={currentBtn.url}
+                                                onChange={(e) => {
+                                                    const newButtons = { 
+                                                        ...selectedSettings.buttons,
+                                                        [btn.id]: { ...currentBtn, url: e.target.value }
+                                                    };
+                                                    onChangeSettings({ ...selectedSettings, buttons: newButtons });
+                                                }}
+                                                placeholder="URL (e.g. https://example.com or #about)"
+                                                className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono text-[10px]"
+                                            />
+                                        )}
+                                        
+                                        {/* Internal Page Selector */}
+                                        {linkType === 'internal' && (
+                                            <select
+                                                value={currentBtn.internalPageId || ''}
+                                                onChange={(e) => {
+                                                    const pageId = e.target.value;
+                                                    const page = pages.find(p => p.id === pageId);
+                                                    const newButtons = { 
+                                                        ...selectedSettings.buttons,
+                                                        [btn.id]: { 
+                                                            ...currentBtn, 
+                                                            internalPageId: pageId,
+                                                            url: page ? page.slug : '' // Auto-generate URL from page slug
+                                                        }
+                                                    };
+                                                    onChangeSettings({ ...selectedSettings, buttons: newButtons });
+                                                }}
+                                                className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                            >
+                                                <option value="">Select a page...</option>
+                                                {pages.map((page) => (
+                                                    <option key={page.id} value={page.id}>
+                                                        {page.name} ({page.slug})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        )}
+                                        
+                                        {/* Show selected page info for internal links */}
+                                        {linkType === 'internal' && selectedPage && (
+                                            <p className="text-[10px] text-muted-foreground">
+                                                Links to: <span className="font-mono">{selectedPage.slug}</span>
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             );

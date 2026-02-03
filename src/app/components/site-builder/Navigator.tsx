@@ -428,6 +428,7 @@ export const Navigator: React.FC<NavigatorProps> = ({
             onChangeSettings={(s) => selectedBlockId && onUpdateBlockSettings(selectedBlockId, s)}
             onChangeType={(t) => selectedBlockId && onUpdateBlockType(selectedBlockId, t)}
             blockName={(selectedBlockDef && selectedBlockDef.name) || "Selection"}
+            pages={pages}
           />
         )}
       </div>

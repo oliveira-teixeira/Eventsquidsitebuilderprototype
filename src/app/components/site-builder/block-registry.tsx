@@ -20,6 +20,8 @@ import { getImageUrl, getImageStyleString, ImageSetting } from '../../utils/imag
 export interface ButtonSetting {
   text: string;
   url: string;
+  linkType?: 'external' | 'internal'; // 'external' for URLs, 'internal' for page links
+  internalPageId?: string; // ID of internal page when linkType is 'internal'
 }
 
 export interface DividerSettings {
