@@ -29,6 +29,8 @@ export interface DividerSettings {
   color: string;
   marginTop: number;
   marginBottom: number;
+  thickness: number; // Height of the divider in pixels
+  width: number; // Width as a percentage (1-100)
 }
 
 export interface BlockSettings {

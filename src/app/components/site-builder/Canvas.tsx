@@ -704,15 +704,18 @@ const CanvasBlockWrapper = ({
                 {/* Divider - rendered at bottom of section */}
                 {settings.divider?.enabled && (
                     <div 
-                        className="w-full px-4 md:px-8 lg:px-16"
+                        className="w-full px-4 md:px-8 lg:px-16 flex justify-center"
                         style={{
                             marginTop: settings.divider.marginTop || 0,
                             marginBottom: settings.divider.marginBottom || 0
                         }}
                     >
                         <div 
-                            className="w-full h-px"
-                            style={{ backgroundColor: settings.divider.color || '#e5e5e5' }}
+                            style={{ 
+                                backgroundColor: settings.divider.color || '#e5e5e5',
+                                height: `${settings.divider.thickness || 1}px`,
+                                width: `${settings.divider.width || 100}%`
+                            }}
                         />
                     </div>
                 )}

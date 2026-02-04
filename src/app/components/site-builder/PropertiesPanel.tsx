@@ -346,7 +346,9 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
       enabled: false,
       color: '#e5e5e5',
       marginTop: 0,
-      marginBottom: 0
+      marginBottom: 0,
+      thickness: 1,
+      width: 100
     };
     onChangeSettings({
       ...selectedSettings,
@@ -1115,6 +1117,42 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                                     {(selectedSettings.divider?.color || '#e5e5e5').toUpperCase()}
                                 </span>
                             </div>
+                        </div>
+                        
+                        {/* Thickness */}
+                        <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium">Thickness</span>
+                                <span className="text-[10px] text-muted-foreground font-mono">
+                                    {selectedSettings.divider?.thickness || 1}px
+                                </span>
+                            </div>
+                            <Slider
+                                value={[selectedSettings.divider?.thickness || 1]}
+                                onValueChange={(values) => handleDividerChange('thickness', values[0])}
+                                min={1}
+                                max={8}
+                                step={1}
+                                className="w-full"
+                            />
+                        </div>
+                        
+                        {/* Width */}
+                        <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium">Width</span>
+                                <span className="text-[10px] text-muted-foreground font-mono">
+                                    {selectedSettings.divider?.width || 100}%
+                                </span>
+                            </div>
+                            <Slider
+                                value={[selectedSettings.divider?.width || 100]}
+                                onValueChange={(values) => handleDividerChange('width', values[0])}
+                                min={10}
+                                max={100}
+                                step={5}
+                                className="w-full"
+                            />
                         </div>
                         
                         {/* Margin Above */}
