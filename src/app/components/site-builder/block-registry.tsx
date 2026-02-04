@@ -858,126 +858,182 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
     icon: Schematics.Agenda,
     configurableIcons: [],
     configurableCounts: [
-        { id: 'count', label: 'Sessions per Day', min: 1, max: 15, defaultValue: 6 },
         { id: 'days', label: 'Number of Days', min: 1, max: 7, defaultValue: 3 }
     ],
     toggleableElements: [
         { id: 'showTitle', label: 'Show Title', defaultValue: true },
-        { id: 'showSubtitle', label: 'Show Subtitle', defaultValue: true }
+        { id: 'showSubtitle', label: 'Show Subtitle', defaultValue: true },
+        { id: 'showSpeakers', label: 'Show Speaker Avatars', defaultValue: true }
     ],
     html: (id, variant, settings) => {
         const numDays = safeGetCount(settings, 'days', 3);
-        
-        // Get per-day session counts, fallback to global count for backwards compatibility
-        const getSessionsForDay = (dayIndex) => {
-            const dayCountKey = `day${dayIndex}Count`;
-            const dayCount = safeGetCount(settings, dayCountKey, 0);
-            if (dayCount > 0) {
-                return dayCount;
-            }
-            const globalCount = safeGetCount(settings, 'count', 6);
-            return globalCount;
-        };
+        const showSpeakers = getVisibility(settings, 'showSpeakers', true);
         
         const dayNames = ['Friday', 'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
-        const dayAbbr = ['Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
         const dates = ['Dec 15', 'Dec 16', 'Dec 17', 'Dec 18', 'Dec 19', 'Dec 20', 'Dec 21'];
         
-        // Render a single session row with time, title, and description
-        const renderSession = (dayIndex, sessionIndex) => {
-            const hour = 8 + sessionIndex;
-            const time = hour < 12 ? `${String(hour).padStart(2, '0')}:00 AM` : `${String(hour === 12 ? 12 : hour - 12).padStart(2, '0')}:00 PM`;
+        // Sample sessions data - all sessions shown per day
+        const sampleSessions = [
+            { time: '09:00 AM', title: 'Registration & Welcome Coffee', speakers: [], type: 'General' },
+            { time: '10:00 AM', title: 'Opening Keynote: The Future of Tech', speakers: ['Sarah Chen', 'Mike Ross'], type: 'Keynote' },
+            { time: '11:30 AM', title: 'Building Scalable Systems', speakers: ['Dan Wilson'], type: 'Workshop' },
+            { time: '12:30 PM', title: 'Networking Lunch', speakers: [], type: 'Break' },
+            { time: '02:00 PM', title: 'Design Systems at Scale', speakers: ['Emma Liu', 'Alex Kim'], type: 'Panel' },
+            { time: '03:30 PM', title: 'AI & Machine Learning Workshop', speakers: ['Dr. James Park'], type: 'Workshop' },
+            { time: '05:00 PM', title: 'Lightning Talks', speakers: ['Various Speakers'], type: 'Talks' },
+            { time: '06:00 PM', title: 'Evening Reception', speakers: [], type: 'Networking' }
+        ];
+        
+        // Speaker avatar URLs (placeholder images)
+        const speakerImages = [
+            'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=40&h=40&fit=crop',
+            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop',
+            'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=40&h=40&fit=crop'
+        ];
+        
+        // Render a single session row
+        const renderSession = (dayIndex, session, sessionIndex) => {
             const sessionKey = `session-d${dayIndex}-s${sessionIndex}`;
-            const descKey = `desc-d${dayIndex}-s${sessionIndex}`;
-            const sessionTitle = safeGetText(settings, sessionKey, `Session ${sessionIndex + 1}: Innovation Workshop`);
-            const sessionDesc = safeGetText(settings, descKey, `Join us for an engaging discussion on the latest trends and innovations in technology.`);
+            const sessionTitle = safeGetText(settings, sessionKey, session.title);
+            const hasSpeakers = session.speakers.length > 0 && showSpeakers;
             
-            return `
-                <div class="session-item group py-4 flex items-start gap-6 border-b ${getBorderColor(variant)} last:border-0 hover:bg-muted/20 transition-colors" data-day="${dayIndex}">
+            return \`
+                <div 
+                    class="session-row group flex items-center gap-4 py-3 px-4 rounded-lg hover:bg-muted/50 cursor-pointer transition-all border border-transparent hover:border-border"
+                    data-day="\${dayIndex}"
+                    data-session="\${sessionIndex}"
+                    onclick="(function(el){
+                        var modal = el.closest('builder-section').querySelector('.session-modal');
+                        var title = el.querySelector('.session-title').innerText;
+                        var time = el.querySelector('.session-time').innerText;
+                        modal.querySelector('.modal-title').innerText = title;
+                        modal.querySelector('.modal-time').innerText = time;
+                        modal.style.display = 'flex';
+                    })(this)"
+                >
                     <!-- Time -->
                     <div class="flex-shrink-0 w-20">
-                        <span class="text-sm font-medium text-muted-foreground font-sans">${time}</span>
+                        <span class="session-time text-sm font-mono text-primary font-medium">\${session.time}</span>
                     </div>
                     
-                    <!-- Content -->
+                    <!-- Title -->
                     <div class="flex-1 min-w-0">
-                        <h4 class="font-medium text-foreground font-sans ${getTextAlignClass(settings)} mb-1" contenteditable="true" data-key="${sessionKey}">
-                            ${sessionTitle}
+                        <h4 class="session-title font-medium text-foreground text-sm truncate" contenteditable="true" data-key="\${sessionKey}">
+                            \${sessionTitle}
                         </h4>
-                        <p class="text-sm text-muted-foreground font-sans ${getTextAlignClass(settings)}" contenteditable="true" data-key="${descKey}">
-                            ${sessionDesc}
-                        </p>
+                        <span class="text-xs text-muted-foreground">\${session.type}</span>
                     </div>
+                    
+                    <!-- Speaker Avatars -->
+                    \${hasSpeakers ? \`
+                        <div class="flex -space-x-2 flex-shrink-0">
+                            \${session.speakers.slice(0, 3).map((speaker, i) => \`
+                                <div class="w-8 h-8 rounded-full border-2 border-background overflow-hidden bg-muted" title="\${speaker}">
+                                    <img src="\${speakerImages[i % speakerImages.length]}" alt="\${speaker}" class="w-full h-full object-cover" />
+                                </div>
+                            \`).join('')}
+                            \${session.speakers.length > 3 ? \`<div class="w-8 h-8 rounded-full border-2 border-background bg-muted flex items-center justify-center text-xs text-muted-foreground">+\${session.speakers.length - 3}</div>\` : ''}
+                        </div>
+                    \` : ''}
+                    
+                    <!-- Arrow indicator -->
+                    <svg class="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
                 </div>
-            `;
+            \`;
         };
         
-        // Render sessions for a single day
+        // Render all sessions for a day
         const renderDayContent = (dayIndex) => {
-            const sessionsForThisDay = getSessionsForDay(dayIndex);
-            const sessions = Array.from({length: sessionsForThisDay}, (_, i) => renderSession(dayIndex, i)).join('');
-            return `
-                <div class="sessions-list">
-                    ${sessions}
-                </div>
-            `;
+            const sessions = sampleSessions.map((session, i) => renderSession(dayIndex, session, i)).join('');
+            return \`<div class="space-y-1">\${sessions}</div>\`;
         };
         
-        // Horizontal day tabs with JS-based switching
+        // Horizontal day tabs
         const tabNavigation = Array.from({length: numDays}, (_, i) => {
-            const dayShort = dayAbbr[i % dayAbbr.length];
+            const dayName = dayNames[i % dayNames.length];
             const date = dates[i % dates.length];
-            return `
+            return \`
                 <button 
                     type="button"
-                    class="tab-btn flex-1 text-center px-4 py-3 cursor-pointer transition-all font-sans border-b-2 ${i === 0 ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground'} hover:text-foreground"
-                    data-tab-index="${i}"
-                    data-day-index="${i}"
+                    class="day-tab flex-1 text-center px-4 py-3 cursor-pointer transition-all font-sans border-b-2 \${i === 0 ? 'border-primary text-foreground bg-muted/30' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/20'}"
+                    data-tab-index="\${i}"
+                    onclick="(function(btn){
+                        var section = btn.closest('builder-section');
+                        section.querySelectorAll('.day-tab').forEach(function(t){ 
+                            t.classList.remove('border-primary','text-foreground','bg-muted/30'); 
+                            t.classList.add('border-transparent','text-muted-foreground'); 
+                        });
+                        btn.classList.remove('border-transparent','text-muted-foreground');
+                        btn.classList.add('border-primary','text-foreground','bg-muted/30');
+                        section.querySelectorAll('.day-panel').forEach(function(p){ p.style.display = 'none'; });
+                        section.querySelector('.day-panel[data-day=\\\"' + btn.dataset.tabIndex + '\\\"]').style.display = 'block';
+                    })(this)"
                 >
-                    <span class="font-medium text-sm">${dayShort}</span>
-                    <span class="text-xs ml-1.5">${date}</span>
+                    <span class="font-semibold text-sm">\${dayName}</span>
+                    <span class="text-xs block opacity-70">\${date}</span>
                 </button>
-            `;
+            \`;
         }).join('');
         
-        const tabPanels = Array.from({length: numDays}, (_, i) => `
-            <div class="tab-panel" data-day="${i}" style="display: ${i === 0 ? 'block' : 'none'};">
-                ${renderDayContent(i)}
+        // Day panels (first expanded, others hidden)
+        const dayPanels = Array.from({length: numDays}, (_, i) => \`
+            <div class="day-panel" data-day="\${i}" style="display: \${i === 0 ? 'block' : 'none'};">
+                \${renderDayContent(i)}
             </div>
-        `).join('');
+        \`).join('');
 
-        return `
-        <builder-section id="${id}" class="relative block w-full transition-colors duration-300 ${getVariantClasses(variant)} ${getPaddingClass(settings, 'py-20')}" data-active-day="0">
+        return \`
+        <builder-section id="\${id}" class="relative block w-full transition-colors duration-300 \${getVariantClasses(variant)} \${getPaddingClass(settings, 'py-16')}" data-active-day="0">
             <div class="w-full max-w-[var(--max-width)] mx-auto px-[var(--global-padding)]">
-                ${renderSectionHeader(settings, "Event Schedule", "Browse sessions by day.")}
-                
-                <!-- Search Bar -->
-                <div class="mb-6">
-                    <div class="relative max-w-md">
-                        <input 
-                            type="text" 
-                            placeholder="Search sessions..."
-                            class="w-full px-4 py-2.5 pr-10 bg-background border border-border rounded-[var(--radius)] text-foreground placeholder:text-muted-foreground font-sans focus:outline-none focus:ring-2 focus:ring-ring transition-all"
-                            data-search-input="true"
-                        />
-                        <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                    </div>
-                </div>
+                \${renderSectionHeader(settings, "Event Schedule", "Browse sessions by day.")}
                 
                 <!-- Horizontal Day Navigation -->
-                <div class="flex gap-0 mb-8 border-b ${getBorderColor(variant)}">
-                    ${tabNavigation}
+                <div class="flex gap-0 mb-6 border-b \${getBorderColor(variant)} overflow-x-auto">
+                    \${tabNavigation}
                 </div>
                 
                 <!-- Session Lists by Day -->
-                <div class="tab-content">
-                    ${tabPanels}
+                <div class="day-panels">
+                    \${dayPanels}
+                </div>
+            </div>
+            
+            <!-- Session Details Modal -->
+            <div class="session-modal fixed inset-0 bg-black/50 z-50 items-center justify-center p-4" style="display: none;" onclick="if(event.target === this) this.style.display = 'none'">
+                <div class="bg-background rounded-xl shadow-2xl max-w-lg w-full p-6 relative">
+                    <button onclick="this.closest('.session-modal').style.display = 'none'" class="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-2 text-primary">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span class="modal-time text-sm font-mono">10:00 AM</span>
+                        </div>
+                        <h3 class="modal-title text-xl font-bold text-foreground">Session Title</h3>
+                        <p class="text-muted-foreground text-sm leading-relaxed">
+                            Join us for this engaging session where industry experts share insights on the latest trends and best practices. 
+                            This is a great opportunity to learn and connect with like-minded professionals.
+                        </p>
+                        <div class="flex gap-4 pt-4 border-t border-border">
+                            <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                <span>Main Hall</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                                <span>50 seats available</span>
+                            </div>
+                        </div>
+                        <button class="w-full mt-4 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
+                            Add to My Schedule
+                        </button>
+                    </div>
                 </div>
             </div>
         </builder-section>
-        `;
+        \`;
     }
   },
   {
