@@ -731,14 +731,85 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                         {toggleableElements.map((element) => {
                             const visibility = selectedSettings.visibility || {};
                             const isVisible = visibility[element.id] !== undefined ? visibility[element.id] : element.defaultValue;
+                            
+                            // Check if this is a brand toggle with inline controls
+                            const isBrandImage = element.id === 'showBrandImage';
+                            const isBrandText = element.id === 'showBrandText';
+                            
                             return (
-                                <div key={element.id} className="flex items-center justify-between p-1">
-                                    <span className="text-xs font-medium">{element.label}</span>
-                                    <Switch 
-                                        checked={isVisible} 
-                                        onCheckedChange={(checked) => handleVisibilityChange(element.id, checked)}
-                                        className="scale-75 origin-right"
-                                    />
+                                <div key={element.id}>
+                                    <div className="flex items-center justify-between p-1">
+                                        <span className="text-xs font-medium">{element.label}</span>
+                                        <Switch 
+                                            checked={isVisible} 
+                                            onCheckedChange={(checked) => handleVisibilityChange(element.id, checked)}
+                                            className="scale-75 origin-right"
+                                        />
+                                    </div>
+                                    
+                                    {/* Brand Image controls - shown when Brand Image toggle is on */}
+                                    {isBrandImage && isVisible && configurableImages && (() => {
+                                        const brandImgDef = configurableImages.find(img => img.id === 'logo');
+                                        if (!brandImgDef) return null;
+                                        const currentUrl = getImageUrl(brandImgDef.id, brandImgDef.defaultUrl);
+                                        return (
+                                            <div className="ml-1 mt-2 mb-1 pl-3 border-l-2 border-primary/20 space-y-2">
+                                                <div className="flex gap-2 items-center">
+                                                    <div 
+                                                        className="relative w-12 h-12 shrink-0 overflow-hidden rounded-md border border-border bg-muted group cursor-pointer shadow-sm hover:ring-2 hover:ring-primary hover:ring-offset-1 transition-all" 
+                                                        onClick={() => {
+                                                            setCurrentImageId(brandImgDef.id);
+                                                            setTempImageUrl(currentUrl);
+                                                            setAssetModalOpen(true);
+                                                        }}
+                                                    >
+                                                        {currentUrl ? (
+                                                            <img src={currentUrl} alt={brandImgDef.label} className="h-full w-full object-contain" />
+                                                        ) : (
+                                                            <div className="h-full w-full flex items-center justify-center">
+                                                                <ImageIcon className="w-4 h-4 text-muted-foreground" />
+                                                            </div>
+                                                        )}
+                                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <Upload className="w-3.5 h-3.5 text-white" />
+                                                        </div>
+                                                    </div>
+                                                    <Button 
+                                                        variant="outline" 
+                                                        size="sm" 
+                                                        className="text-[10px] h-7 font-normal flex-1"
+                                                        onClick={() => {
+                                                            setCurrentImageId(brandImgDef.id);
+                                                            setTempImageUrl(currentUrl);
+                                                            setAssetModalOpen(true);
+                                                        }}
+                                                    >
+                                                        <ImageIcon className="w-3 h-3 mr-1.5" />
+                                                        {currentUrl ? 'Change' : 'Upload'}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+                                    
+                                    {/* Brand Text controls - shown when Brand Text toggle is on */}
+                                    {isBrandText && isVisible && (
+                                        <div className="ml-1 mt-2 mb-1 pl-3 border-l-2 border-primary/20">
+                                            <input 
+                                                type="text" 
+                                                value={(selectedSettings.text && selectedSettings.text['brandText']) || 'Brand'}
+                                                onChange={(e) => {
+                                                    const newText = {
+                                                        ...selectedSettings.text,
+                                                        brandText: e.target.value
+                                                    };
+                                                    onChangeSettings({ ...selectedSettings, text: newText });
+                                                }}
+                                                placeholder="Enter brand name"
+                                                className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
@@ -905,7 +976,14 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
         )}
 
         {/* Images */}
-        {configurableImages && configurableImages.length > 0 && (
+        {configurableImages && configurableImages.length > 0 && (() => {
+            // Filter out brand image if handled by brand toggle controls
+            const hasBrandToggle = toggleableElements && toggleableElements.some(el => el.id === 'showBrandImage');
+            const filteredImages = hasBrandToggle 
+                ? configurableImages.filter(img => img.id !== 'logo') 
+                : configurableImages;
+            if (filteredImages.length === 0) return null;
+            return (
             <>
                 <div className="space-y-3">
                     <label className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
@@ -913,7 +991,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                         Images
                     </label>
                     <div className="space-y-6 bg-muted/30 p-3 rounded-md border border-border">
-                        {configurableImages.map((img) => {
+                        {filteredImages.map((img) => {
                             const currentUrl = getImageUrl(img.id, img.defaultUrl);
                             const imageSettings = getImageSettings(img.id);
                             const fit = (imageSettings && imageSettings.fit) ? imageSettings.fit : (img.defaultFit || 'cover');
@@ -1076,7 +1154,8 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                 </div>
                 <div className="h-px bg-border w-full" />
             </>
-        )}
+            );
+        })()}
 
         {/* Selects */}
         {configurableSelects && configurableSelects.length > 0 && (

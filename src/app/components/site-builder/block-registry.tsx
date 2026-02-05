@@ -588,10 +588,12 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
     id: "navbar-master",
     name: "Master Navigation",
     category: "Navigation",
-    description: "Sticky navbar with logo, responsive menu, and active states.",
+    description: "Sticky navbar with brand image/text, responsive menu, and active states.",
     icon: Schematics.Navbar,
     toggleableElements: [
         { id: "sticky", label: "Sticky Positioning", defaultValue: true },
+        { id: "showBrandImage", label: "Brand Image", defaultValue: false },
+        { id: "showBrandText", label: "Brand Text", defaultValue: true },
         { id: "showLink1", label: "Show Link 1", defaultValue: true },
         { id: "showLink2", label: "Show Link 2", defaultValue: true },
         { id: "showLink3", label: "Show Link 3", defaultValue: false },
@@ -606,7 +608,7 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
         { id: "cta", label: "CTA Button", defaultText: "Get Started", defaultUrl: "#" }
     ],
     configurableImages: [
-        { id: "logo", label: "Logo Image", defaultUrl: "" } // Empty default to show text fallback
+        { id: "logo", label: "Brand Image", defaultUrl: "" }
     ],
     html: (id, variant, settings) => {
         const isSticky = getVisibility(settings, "sticky", true);
@@ -622,10 +624,29 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
         const link4 = safeGetButton(settings, 'link4', { text: "Services", url: "/services" });
         const cta = safeGetButton(settings, 'cta', { text: "Get Started", url: "#" });
         
+        const showBrandImage = getVisibility(settings, "showBrandImage", false);
+        const showBrandText = getVisibility(settings, "showBrandText", true);
+        
         const logoValue = safeGetImage(settings, 'logo', undefined);
         const logoUrl = getImageUrl(logoValue, '');
         const logoStyle = getImageStyleString(logoValue);
-        const logoText = safeGetText(settings, 'logoText', "Brand");
+        const brandText = safeGetText(settings, 'brandText', "Brand");
+
+        // Build brand markup based on toggles
+        const buildBrandHtml = (isMobile = false) => {
+            const parts: string[] = [];
+            if (showBrandImage && logoUrl) {
+                parts.push(`<img src="${logoUrl}" style="${logoStyle}" alt="${brandText}" class="h-8 w-auto object-contain" data-configurable-image="logo" />`);
+            }
+            if (showBrandText) {
+                parts.push(`<span class="${isMobile ? '' : 'hidden sm:inline-block '}font-bold text-xl font-sans tracking-tight">${brandText}</span>`);
+            }
+            // Fallback: if both are off, show text anyway
+            if (parts.length === 0) {
+                parts.push(`<span class="${isMobile ? '' : 'hidden sm:inline-block '}font-bold text-xl font-sans tracking-tight">${brandText}</span>`);
+            }
+            return parts.join('\n');
+        };
 
         // Mock active state (Home is active)
         const getLinkClass = (isLast = false) => `text-sm font-medium transition-colors hover:text-primary ${!isLast ? 'text-foreground/60' : 'text-foreground'}`;
@@ -635,13 +656,10 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
         return `
         <header id="${id}" class="${stickyClass} w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div class="container flex h-16 max-w-[var(--max-width)] mx-auto items-center px-4 md:px-[var(--global-padding)]">
-                <!-- Logo -->
+                <!-- Brand -->
                 <div class="mr-4 hidden md:flex">
-                    <a class="mr-6 flex items-center space-x-2 nav-link" href="/" data-nav-link="true">
-                        ${logoUrl 
-                            ? `<img src="${logoUrl}" style="${logoStyle}" alt="Logo" class="h-8 w-auto object-contain" data-configurable-image="logo" />` 
-                            : `<span class="hidden font-bold sm:inline-block text-xl font-sans tracking-tight">${logoText}</span>`
-                        }
+                    <a class="mr-6 flex items-center gap-2 nav-link" href="/" data-nav-link="true">
+                        ${buildBrandHtml(false)}
                     </a>
                     
                     <!-- Desktop Nav -->
@@ -653,12 +671,9 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
                     </nav>
                 </div>
 
-                <!-- Mobile Logo (Left Aligned) -->
-                 <a class="mr-6 flex items-center space-x-2 md:hidden nav-link" href="/" data-nav-link="true">
-                    ${logoUrl 
-                        ? `<img src="${logoUrl}" style="${logoStyle}" alt="Logo" class="h-8 w-auto object-contain" data-configurable-image="logo" />` 
-                        : `<span class="font-bold inline-block text-xl font-sans tracking-tight">${logoText}</span>`
-                    }
+                <!-- Mobile Brand (Left Aligned) -->
+                 <a class="mr-6 flex items-center gap-2 md:hidden nav-link" href="/" data-nav-link="true">
+                    ${buildBrandHtml(true)}
                 </a>
 
                 <!-- Right Side -->
