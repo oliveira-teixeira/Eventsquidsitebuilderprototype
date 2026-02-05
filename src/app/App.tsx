@@ -506,6 +506,25 @@ function AppContent() {
     });
   }, [showNavigator]);
 
+  // Handle navigation link clicks - navigate between pages in the builder
+  const handleNavLinkClick = useCallback((url: string) => {
+    // Find page by slug
+    const targetPage = pages.find(p => p.slug === url);
+    if (targetPage) {
+      handleSwitchPage(targetPage.id);
+      toast.info(`Navigated to ${targetPage.name}`, { duration: 2000 });
+    } else if (url.startsWith('#')) {
+      // Hash links - scroll to element (in preview mode)
+      toast.info(`Anchor link: ${url}`, { duration: 2000 });
+    } else if (url.startsWith('http://') || url.startsWith('https://')) {
+      // External links - show info in builder
+      toast.info(`External link: ${url}`, { duration: 2000 });
+    } else {
+      // Unknown internal link - offer to create page
+      toast.info(`Page "${url}" not found. Create it in the Navigator panel.`, { duration: 3000 });
+    }
+  }, [pages, handleSwitchPage]);
+
   const handleMoveBlockDirectional = useCallback((blockId: string, dir: 'up' | 'down') => {
       const index = canvasBlocks.findIndex(b => b.id === blockId);
       if (index === -1) return;
@@ -612,6 +631,7 @@ function AppContent() {
                         html={generateFullPageHtml(canvasBlocks)}
                         className="h-full w-full"
                         title="Live Preview"
+                        onNavLinkClick={handleNavLinkClick}
                      />
                  </div>
              </div>
@@ -674,6 +694,7 @@ function AppContent() {
           onUpdateVariant={updateBlockVariant}
           onUpdateSettings={updateBlockSettings}
           onReorderBlock={moveBlock}
+          onNavLinkClick={handleNavLinkClick}
         />
 
         {showNavigator && (

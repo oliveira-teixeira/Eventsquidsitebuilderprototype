@@ -592,13 +592,17 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
     icon: Schematics.Navbar,
     toggleableElements: [
         { id: "sticky", label: "Sticky Positioning", defaultValue: true },
+        { id: "showLink1", label: "Show Link 1", defaultValue: true },
+        { id: "showLink2", label: "Show Link 2", defaultValue: true },
+        { id: "showLink3", label: "Show Link 3", defaultValue: false },
+        { id: "showLink4", label: "Show Link 4", defaultValue: false },
         { id: "showButtons", label: "Show CTA Button", defaultValue: true }
     ],
     configurableButtons: [
         { id: "link1", label: "Link 1", defaultText: "Home", defaultUrl: "/" },
-        { id: "link2", label: "Link 2", defaultText: "About", defaultUrl: "/about" },
-        { id: "link3", label: "Link 3", defaultText: "Services", defaultUrl: "/services" },
-        { id: "link4", label: "Link 4", defaultText: "Contact", defaultUrl: "/contact" },
+        { id: "link2", label: "Link 2", defaultText: "Contact", defaultUrl: "/contact" },
+        { id: "link3", label: "Link 3", defaultText: "About", defaultUrl: "/about" },
+        { id: "link4", label: "Link 4", defaultText: "Services", defaultUrl: "/services" },
         { id: "cta", label: "CTA Button", defaultText: "Get Started", defaultUrl: "#" }
     ],
     configurableImages: [
@@ -606,12 +610,16 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
     ],
     html: (id, variant, settings) => {
         const isSticky = getVisibility(settings, "sticky", true);
+        const showLink1 = getVisibility(settings, "showLink1", true);
+        const showLink2 = getVisibility(settings, "showLink2", true);
+        const showLink3 = getVisibility(settings, "showLink3", false);
+        const showLink4 = getVisibility(settings, "showLink4", false);
         const showCTA = getVisibility(settings, "showButtons", true);
         
         const link1 = safeGetButton(settings, 'link1', { text: "Home", url: "/" });
-        const link2 = safeGetButton(settings, 'link2', { text: "About", url: "/about" });
-        const link3 = safeGetButton(settings, 'link3', { text: "Services", url: "/services" });
-        const link4 = safeGetButton(settings, 'link4', { text: "Contact", url: "/contact" });
+        const link2 = safeGetButton(settings, 'link2', { text: "Contact", url: "/contact" });
+        const link3 = safeGetButton(settings, 'link3', { text: "About", url: "/about" });
+        const link4 = safeGetButton(settings, 'link4', { text: "Services", url: "/services" });
         const cta = safeGetButton(settings, 'cta', { text: "Get Started", url: "#" });
         
         const logoValue = safeGetImage(settings, 'logo', undefined);
@@ -629,7 +637,7 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
             <div class="container flex h-16 max-w-[var(--max-width)] mx-auto items-center px-4 md:px-[var(--global-padding)]">
                 <!-- Logo -->
                 <div class="mr-4 hidden md:flex">
-                    <a class="mr-6 flex items-center space-x-2" href="/">
+                    <a class="mr-6 flex items-center space-x-2 nav-link" href="/" data-nav-link="true">
                         ${logoUrl 
                             ? `<img src="${logoUrl}" style="${logoStyle}" alt="Logo" class="h-8 w-auto object-contain" data-configurable-image="logo" />` 
                             : `<span class="hidden font-bold sm:inline-block text-xl font-sans tracking-tight">${logoText}</span>`
@@ -638,15 +646,15 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
                     
                     <!-- Desktop Nav -->
                     <nav class="flex items-center gap-6 text-sm font-medium">
-                        <a class="transition-colors hover:text-foreground text-foreground font-semibold" href="${link1.url}">${link1.text}</a>
-                        <a class="transition-colors hover:text-foreground text-foreground/60" href="${link2.url}">${link2.text}</a>
-                        <a class="transition-colors hover:text-foreground text-foreground/60" href="${link3.url}">${link3.text}</a>
-                        <a class="transition-colors hover:text-foreground text-foreground/60" href="${link4.url}">${link4.text}</a>
+                        ${showLink1 ? `<a class="transition-colors hover:text-foreground text-foreground font-semibold nav-link" href="${link1.url}" data-nav-link="true">${link1.text}</a>` : ''}
+                        ${showLink2 ? `<a class="transition-colors hover:text-foreground text-foreground/60 nav-link" href="${link2.url}" data-nav-link="true">${link2.text}</a>` : ''}
+                        ${showLink3 ? `<a class="transition-colors hover:text-foreground text-foreground/60 nav-link" href="${link3.url}" data-nav-link="true">${link3.text}</a>` : ''}
+                        ${showLink4 ? `<a class="transition-colors hover:text-foreground text-foreground/60 nav-link" href="${link4.url}" data-nav-link="true">${link4.text}</a>` : ''}
                     </nav>
                 </div>
 
                 <!-- Mobile Logo (Left Aligned) -->
-                 <a class="mr-6 flex items-center space-x-2 md:hidden" href="/">
+                 <a class="mr-6 flex items-center space-x-2 md:hidden nav-link" href="/" data-nav-link="true">
                     ${logoUrl 
                         ? `<img src="${logoUrl}" style="${logoStyle}" alt="Logo" class="h-8 w-auto object-contain" data-configurable-image="logo" />` 
                         : `<span class="font-bold inline-block text-xl font-sans tracking-tight">${logoText}</span>`
@@ -657,7 +665,7 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
                 <div class="flex flex-1 items-center justify-end space-x-4">
                     ${showCTA ? `
                     <nav class="flex items-center">
-                        <a href="${cta.url}" class="hidden md:inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50">
+                        <a href="${cta.url}" class="hidden md:inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 nav-link" data-nav-link="true">
                             ${cta.text}
                         </a>
                     </nav>
@@ -677,21 +685,13 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
                         <!-- Mobile Menu Dropdown -->
                         <div class="fixed inset-x-0 top-16 bottom-0 bg-background/95 backdrop-blur-sm z-50 p-6 hidden peer-checked:block animate-in slide-in-from-top-5 fade-in border-t border-border">
                             <div class="grid gap-6 text-lg font-medium">
-                                <a href="${link1.url}" class="flex items-center gap-2 hover:text-primary transition-colors">
-                                    ${link1.text}
-                                </a>
-                                <a href="${link2.url}" class="flex items-center gap-2 hover:text-primary transition-colors text-muted-foreground">
-                                    ${link2.text}
-                                </a>
-                                <a href="${link3.url}" class="flex items-center gap-2 hover:text-primary transition-colors text-muted-foreground">
-                                    ${link3.text}
-                                </a>
-                                <a href="${link4.url}" class="flex items-center gap-2 hover:text-primary transition-colors text-muted-foreground">
-                                    ${link4.text}
-                                </a>
+                                ${showLink1 ? `<a href="${link1.url}" class="flex items-center gap-2 hover:text-primary transition-colors nav-link" data-nav-link="true">${link1.text}</a>` : ''}
+                                ${showLink2 ? `<a href="${link2.url}" class="flex items-center gap-2 hover:text-primary transition-colors text-muted-foreground nav-link" data-nav-link="true">${link2.text}</a>` : ''}
+                                ${showLink3 ? `<a href="${link3.url}" class="flex items-center gap-2 hover:text-primary transition-colors text-muted-foreground nav-link" data-nav-link="true">${link3.text}</a>` : ''}
+                                ${showLink4 ? `<a href="${link4.url}" class="flex items-center gap-2 hover:text-primary transition-colors text-muted-foreground nav-link" data-nav-link="true">${link4.text}</a>` : ''}
                                 ${showCTA ? `
                                 <div class="pt-4 mt-4 border-t border-border">
-                                    <a href="${cta.url}" class="flex w-full items-center justify-center rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90">
+                                    <a href="${cta.url}" class="flex w-full items-center justify-center rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 nav-link" data-nav-link="true">
                                         ${cta.text}
                                     </a>
                                 </div>
