@@ -223,8 +223,8 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] p-0 gap-0 bg-background border-border">
-        <DialogHeader className="px-6 pt-6 pb-4 space-y-1.5">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] p-0 gap-0 bg-background border-border flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-4 space-y-1.5 shrink-0">
           <DialogTitle className="font-sans text-foreground" style={{ fontSize: 'var(--text-lg)' }}>
             Choose Image
           </DialogTitle>
@@ -233,8 +233,8 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="px-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col min-h-0 flex-1">
+          <div className="px-6 shrink-0">
             <TabsList className="grid w-full grid-cols-3 bg-muted">
               <TabsTrigger value="upload" className="font-sans">Upload</TabsTrigger>
               <TabsTrigger value="library" className="font-sans">Library</TabsTrigger>
@@ -242,7 +242,7 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
             </TabsList>
           </div>
 
-          <div className="px-6 pb-6 pt-4">
+          <div className="px-6 pb-6 pt-4 overflow-y-auto min-h-0 flex-1">
             {/* Upload Tab */}
             <TabsContent value="upload" className="mt-0">
               <div
