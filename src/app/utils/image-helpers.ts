@@ -6,6 +6,10 @@ export interface ImageSetting {
   fit?: 'cover' | 'contain' | 'fill' | 'scale-down';
   position?: 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   zoom?: number;
+  // Link settings for clickable images
+  linkType?: 'internal' | 'external';
+  linkUrl?: string;
+  linkPageId?: string;
 }
 
 /**
