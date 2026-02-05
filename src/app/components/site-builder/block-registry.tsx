@@ -897,7 +897,7 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
             const sessionTitle = safeGetText(settings, sessionKey, session.title);
             const hasSpeakers = session.speakers.length > 0 && showSpeakers;
             
-            return \`
+            return `
                 <div 
                     class="session-row group flex items-center gap-4 py-3 px-4 rounded-lg hover:bg-muted/50 cursor-pointer transition-all border border-transparent hover:border-border"
                     data-day="\${dayIndex}"
@@ -941,20 +941,20 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>
                 </div>
-            \`;
+            `;
         };
         
         // Render all sessions for a day
         const renderDayContent = (dayIndex) => {
             const sessions = sampleSessions.map((session, i) => renderSession(dayIndex, session, i)).join('');
-            return \`<div class="space-y-1">\${sessions}</div>\`;
+            return `<div class="space-y-1">\${sessions}</div>`;
         };
         
         // Horizontal day tabs
         const tabNavigation = Array.from({length: numDays}, (_, i) => {
             const dayName = dayNames[i % dayNames.length];
             const date = dates[i % dates.length];
-            return \`
+            return `
                 <button 
                     type="button"
                     class="day-tab flex-1 text-center px-4 py-3 cursor-pointer transition-all font-sans border-b-2 \${i === 0 ? 'border-primary text-foreground bg-muted/30' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/20'}"
@@ -974,17 +974,17 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
                     <span class="font-semibold text-sm">\${dayName}</span>
                     <span class="text-xs block opacity-70">\${date}</span>
                 </button>
-            \`;
+            `;
         }).join('');
         
         // Day panels (first expanded, others hidden)
-        const dayPanels = Array.from({length: numDays}, (_, i) => \`
+        const dayPanels = Array.from({length: numDays}, (_, i) => `
             <div class="day-panel" data-day="\${i}" style="display: \${i === 0 ? 'block' : 'none'};">
                 \${renderDayContent(i)}
             </div>
-        \`).join('');
+        `).join('');
 
-        return \`
+        return `
         <builder-section id="\${id}" class="relative block w-full transition-colors duration-300 \${getVariantClasses(variant)} \${getPaddingClass(settings, 'py-16')}" data-active-day="0">
             <div class="w-full max-w-[var(--max-width)] mx-auto px-[var(--global-padding)]">
                 \${renderSectionHeader(settings, "Event Schedule", "Browse sessions by day.")}
@@ -1033,7 +1033,7 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
                 </div>
             </div>
         </builder-section>
-        \`;
+        `;
     }
   },
   {
