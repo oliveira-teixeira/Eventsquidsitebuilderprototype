@@ -13,6 +13,7 @@ interface ResponsiveContainerProps {
   onContentChange?: (key: string, content: string) => void;
   onClick?: () => void;
   onImageClick?: (imageId: string) => void;
+  onNavLinkClick?: (url: string) => void;
 }
 
 export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({ 
@@ -22,7 +23,8 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
   title = "Component Preview",
   onContentChange,
   onClick,
-  onImageClick
+  onImageClick,
+  onNavLinkClick
 }) => {
   const [mountNode, setMountNode] = useState<HTMLElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -42,6 +44,18 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
           const imageId = target.getAttribute('data-configurable-image');
           if (imageId && onImageClick) {
               onImageClick(imageId);
+              return;
+          }
+      }
+      
+      // Check if a navigation link was clicked
+      const navLink = target.closest('a[data-nav-link="true"]') as HTMLAnchorElement | null;
+      if (navLink) {
+          e.stopPropagation();
+          e.preventDefault();
+          const href = navLink.getAttribute('href');
+          if (href && onNavLinkClick) {
+              onNavLinkClick(href);
               return;
           }
       }
@@ -108,7 +122,7 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
       mountNode.removeEventListener('click', handleClick);
       mountNode.removeEventListener('touchstart', handleClick);
     };
-  }, [mountNode, onContentChange, onClick, onImageClick]);
+  }, [mountNode, onContentChange, onClick, onImageClick, onNavLinkClick]);
 
   useEffect(() => {
     const iframe = iframeRef.current;

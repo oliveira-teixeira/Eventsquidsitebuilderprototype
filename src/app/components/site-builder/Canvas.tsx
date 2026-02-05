@@ -36,6 +36,7 @@ interface CanvasProps {
   onUpdateVariant: (id: string, variant: string) => void;
   onUpdateSettings: (id: string, settings: any) => void;
   onReorderBlock?: (dragIndex: number, hoverIndex: number) => void;
+  onNavLinkClick?: (url: string) => void;
 }
 
 export const Canvas: React.FC<CanvasProps> = ({
@@ -50,7 +51,8 @@ export const Canvas: React.FC<CanvasProps> = ({
   onEditSettings,
   onUpdateVariant,
   onUpdateSettings,
-  onReorderBlock
+  onReorderBlock,
+  onNavLinkClick
 }) => {
   const { config } = useTheme();
   const themeStyles = useMemo(() => {
@@ -247,6 +249,7 @@ export const Canvas: React.FC<CanvasProps> = ({
                 onUpdateVariant={onUpdateVariant}
                 onUpdateSettings={onUpdateSettings}
                 onReorderBlock={onReorderBlock}
+                onNavLinkClick={onNavLinkClick}
               />
             );
           })}
@@ -510,7 +513,8 @@ const CanvasBlockWrapper = ({
     onEditSettings,
     onUpdateVariant,
     onUpdateSettings,
-    onReorderBlock
+    onReorderBlock,
+    onNavLinkClick
 }: any) => {
     const settings = block.settings || {};
     const showInMobile = settings.showInMobile !== undefined ? settings.showInMobile : true;
@@ -699,6 +703,7 @@ const CanvasBlockWrapper = ({
                     onContentChange={handleContentChange}
                     onClick={() => onSelectBlock(block.id)}
                     onImageClick={handleImageClick}
+                    onNavLinkClick={onNavLinkClick}
                 />
                 
                 {/* Click Catcher - Only cover if locked */}
