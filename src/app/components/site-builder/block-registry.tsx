@@ -20,6 +20,8 @@ import { getImageUrl, getImageStyleString, ImageSetting } from '@/app/utils/imag
 export interface ButtonSetting {
   text: string;
   url: string;
+  linkType?: 'internal' | 'external'; // 'internal' for page links, 'external' for URLs
+  pageId?: string; // Used when linkType is 'internal'
 }
 
 export interface DividerSettings {
@@ -68,6 +70,7 @@ export interface BlockImageDefinition {
     defaultUrl: string;
     defaultFit?: 'cover' | 'contain' | 'fill' | 'scale-down';
     defaultPosition?: 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+    linkable?: boolean; // Whether this image can be linked to a page/URL
 }
 
 export interface BlockIconDefinition {
@@ -405,6 +408,15 @@ const safeGetImage = (settings: BlockSettings | undefined, key: string, defaultV
   if (!settings || !settings.images) return defaultValue;
   const value = settings.images[key];
   return value !== undefined ? value : defaultValue;
+};
+
+// Helper to get image link URL from ImageSetting
+const getImageLinkUrl = (imageValue: string | ImageSetting | undefined): string | undefined => {
+  if (!imageValue || typeof imageValue === 'string') return undefined;
+  if (imageValue.linkUrl && imageValue.linkType) {
+    return imageValue.linkUrl;
+  }
+  return undefined;
 };
 
 const safeGetIcon = (settings: BlockSettings | undefined, key: string, defaultValue: string): string => {
@@ -758,27 +770,28 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
         { id: "primary", label: "Primary Button", defaultText: "Get Tickets", defaultUrl: "#" },
         { id: "secondary", label: "Secondary Button", defaultText: "Learn More", defaultUrl: "#" }
     ],
-    configurableImages: [
-        { id: "hero", label: "Hero Image", defaultUrl: DEFAULT_IMAGES.hero, defaultFit: 'cover', defaultPosition: 'center' }
-    ],
-    configurableIcons: [
-        { id: "calendar", label: "Date Icon", defaultIcon: "CALENDAR" },
-        { id: "location", label: "Location Icon", defaultIcon: "MAP_PIN" }
-    ],
-    html: (id, variant, settings) => {
-        const showBadge = getVisibility(settings, "showBadge", true);
-        const showImage = getVisibility(settings, "showImage", true);
-        const showLocation = getVisibility(settings, "showLocation", true);
+configurableImages: [
+    { id: "hero", label: "Hero Image", defaultUrl: DEFAULT_IMAGES.hero, defaultFit: 'cover', defaultPosition: 'center', linkable: true }
+  ],
+  configurableIcons: [
+    { id: "calendar", label: "Date Icon", defaultIcon: "CALENDAR" },
+    { id: "location", label: "Location Icon", defaultIcon: "MAP_PIN" }
+  ],
+  html: (id, variant, settings) => {
+    const showBadge = getVisibility(settings, "showBadge", true);
+    const showImage = getVisibility(settings, "showImage", true);
+    const showLocation = getVisibility(settings, "showLocation", true);
 
         const btnPrimary = safeGetButton(settings, 'primary', { text: "Get Tickets", url: "#" });
         const btnSecondary = safeGetButton(settings, 'secondary', { text: "Learn More", url: "#" });
       
-        const imgHeroValue = safeGetImage(settings, 'hero', PLACEHOLDER_IMG);
-        const imgHeroUrl = getImageUrl(imgHeroValue, PLACEHOLDER_IMG);
-        const imgHeroStyle = getImageStyleString(imgHeroValue);
-        
-        const iconCalendar = safeGetIcon(settings, 'calendar', ICONS.CALENDAR);
-        const iconLocation = safeGetIcon(settings, 'location', ICONS.MAP_PIN);
+const imgHeroValue = safeGetImage(settings, 'hero', PLACEHOLDER_IMG);
+    const imgHeroUrl = getImageUrl(imgHeroValue, PLACEHOLDER_IMG);
+    const imgHeroStyle = getImageStyleString(imgHeroValue);
+    const imgHeroLink = getImageLinkUrl(imgHeroValue);
+    
+    const iconCalendar = safeGetIcon(settings, 'calendar', ICONS.CALENDAR);
+    const iconLocation = safeGetIcon(settings, 'location', ICONS.MAP_PIN);
 
         const title = safeGetText(settings, 'title', "Design Systems <br/> Summit");
         const description = safeGetText(settings, 'description', "Scale your design workflow with the latest tools and methodologies. Connect with 5,000+ designers globally.");
@@ -810,9 +823,11 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
                 </div>
               </div>` : ''}
             </div>
-            ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stretch min-h-[280px] md:min-h-[450px] lg:min-h-[500px]">
-              <img src="${imgHeroUrl}" style="${imgHeroStyle}" class="absolute inset-0 w-full h-full cursor-pointer" alt="Hero" data-configurable-image="hero" />
-            </div>` : ''}
+${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stretch min-h-[280px] md:min-h-[450px] lg:min-h-[500px]">
+    ${imgHeroLink ? `<a href="${imgHeroLink}" class="absolute inset-0 block">` : ''}
+    <img src="${imgHeroUrl}" style="${imgHeroStyle}" class="absolute inset-0 w-full h-full cursor-pointer" alt="Hero" data-configurable-image="hero" />
+    ${imgHeroLink ? `</a>` : ''}
+    </div>` : ''}
           </div>
         </div>
         ${getDividerHtml(settings)}

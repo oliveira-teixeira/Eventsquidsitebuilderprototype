@@ -1,5 +1,32 @@
 import React, { useCallback, useState, useEffect } from "react";
-import { Sliders, Check, AlignJustify, AlignLeft, AlignCenter, AlignRight, MoveVertical, Eye, Smartphone, Link, Layout, Image as ImageIcon, Box, Hash, Palette, Upload, Cloud, Monitor, Move, Maximize2, Minus, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Sliders,
+  Check,
+  AlignJustify,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  MoveVertical,
+  Eye,
+  Smartphone,
+  Link,
+  Layout,
+  Image as ImageIcon,
+  Box,
+  Hash,
+  Palette,
+  Upload,
+  Cloud,
+  Monitor,
+  Move,
+  Maximize2,
+  Minus,
+  ExternalLink,
+  FileText,
+  Plus,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { cn } from "../ui/utils";
 import { Switch } from "../ui/switch";
 import { 
@@ -13,6 +40,7 @@ import {
     BlockColorDefinition,
     BlockSelectDefinition,
     BlockRangeDefinition,
+    ButtonSetting,
     BLOCK_REGISTRY, 
     ICONS 
 } from "./block-registry";
@@ -30,6 +58,232 @@ import { Button } from "../ui/button";
 import { ImageCropModal } from "./ImageCropModal";
 import { Slider } from "../ui/slider";
 import { ImageSetting, getImageUrl as getHelpersImageUrl, getImageStyles } from "@/app/utils/image-helpers";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../ui/popover";
+
+// Page interface for internal linking
+interface Page {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+// LinkPicker component for selecting internal pages or external URLs
+interface LinkPickerProps {
+  value: ButtonSetting;
+  onChange: (value: ButtonSetting) => void;
+  pages: Page[];
+  onCreatePage?: (name: string, slug: string) => void;
+}
+
+const LinkPicker: React.FC<LinkPickerProps> = ({ value, onChange, pages, onCreatePage }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [showNewPageForm, setShowNewPageForm] = useState(false);
+  const [newPageName, setNewPageName] = useState("");
+  const [newPageSlug, setNewPageSlug] = useState("");
+
+  const linkType = value.linkType || 'external';
+  const selectedPage = pages.find(p => p.id === value.pageId);
+
+  const handleSelectPage = (page: Page) => {
+    onChange({
+      ...value,
+      linkType: 'internal',
+      pageId: page.id,
+      url: page.slug
+    });
+    setIsOpen(false);
+  };
+
+  const handleExternalUrl = (url: string) => {
+    onChange({
+      ...value,
+      linkType: 'external',
+      pageId: undefined,
+      url
+    });
+  };
+
+  const handleCreatePage = () => {
+    if (onCreatePage && newPageName) {
+      const slug = newPageSlug || `/${newPageName.toLowerCase().replace(/\s+/g, '-')}`;
+      onCreatePage(newPageName, slug);
+      // After creating, select the new page (we'll need to find it by name since we don't have the ID yet)
+      setShowNewPageForm(false);
+      setNewPageName("");
+      setNewPageSlug("");
+    }
+  };
+
+  const getLinkDisplayText = () => {
+    if (linkType === 'internal' && selectedPage) {
+      return selectedPage.name;
+    }
+    if (value.url) {
+      return value.url.length > 25 ? value.url.substring(0, 25) + '...' : value.url;
+    }
+    return 'Select link...';
+  };
+
+  return (
+    <div className="space-y-2">
+      {/* Link Type Toggle */}
+      <div className="flex gap-1 bg-muted/30 p-0.5 rounded-md border border-border">
+        <button
+          type="button"
+          onClick={() => onChange({ ...value, linkType: 'internal', url: selectedPage?.slug || '' })}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-sm text-[10px] font-medium transition-all",
+            linkType === 'internal' 
+              ? "bg-background shadow-sm text-foreground" 
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <FileText className="w-3 h-3" />
+          Page
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange({ ...value, linkType: 'external' })}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-sm text-[10px] font-medium transition-all",
+            linkType === 'external' 
+              ? "bg-background shadow-sm text-foreground" 
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <ExternalLink className="w-3 h-3" />
+          URL
+        </button>
+      </div>
+
+      {/* Internal Page Selector */}
+      {linkType === 'internal' && (
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                "flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm transition-colors",
+                "hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              )}
+            >
+              <span className={cn(
+                "truncate",
+                !selectedPage && "text-muted-foreground"
+              )}>
+                {selectedPage ? selectedPage.name : "Select a page..."}
+              </span>
+              <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[220px] p-0" align="start">
+            {!showNewPageForm ? (
+              <div className="max-h-[200px] overflow-y-auto">
+                {pages.length > 0 ? (
+                  <div className="p-1">
+                    {pages.map((page) => (
+                      <button
+                        key={page.id}
+                        type="button"
+                        onClick={() => handleSelectPage(page)}
+                        className={cn(
+                          "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs transition-colors",
+                          "hover:bg-muted",
+                          value.pageId === page.id && "bg-primary/10 text-primary"
+                        )}
+                      >
+                        <FileText className="h-3.5 w-3.5 opacity-70" />
+                        <span className="flex-1 text-left truncate">{page.name}</span>
+                        <span className="text-[10px] text-muted-foreground font-mono">{page.slug}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-xs text-muted-foreground">
+                    No pages available
+                  </div>
+                )}
+                {onCreatePage && (
+                  <>
+                    <div className="h-px bg-border" />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPageForm(true)}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-xs text-primary hover:bg-muted transition-colors"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Create new page
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="p-3 space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-medium">Page Name</Label>
+                  <Input
+                    value={newPageName}
+                    onChange={(e) => setNewPageName(e.target.value)}
+                    placeholder="e.g. About Us"
+                    className="h-7 text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-medium">Slug (optional)</Label>
+                  <Input
+                    value={newPageSlug}
+                    onChange={(e) => setNewPageSlug(e.target.value)}
+                    placeholder="e.g. /about"
+                    className="h-7 text-xs font-mono"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowNewPageForm(false);
+                      setNewPageName("");
+                      setNewPageSlug("");
+                    }}
+                    className="flex-1 h-7 text-xs"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleCreatePage}
+                    disabled={!newPageName}
+                    className="flex-1 h-7 text-xs"
+                  >
+                    Create
+                  </Button>
+                </div>
+              </div>
+            )}
+          </PopoverContent>
+        </Popover>
+      )}
+
+      {/* External URL Input */}
+      {linkType === 'external' && (
+        <input 
+          type="text" 
+          value={value.url}
+          onChange={(e) => handleExternalUrl(e.target.value)}
+          placeholder="https:// or #section"
+          className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono text-[10px]"
+        />
+      )}
+    </div>
+  );
+};
 
 interface PropertiesPanelProps {
   selectedBlockId: string | null;
@@ -48,6 +302,8 @@ interface PropertiesPanelProps {
   onChangeSettings: (settings: BlockSettings) => void;
   onChangeType?: (typeId: string) => void;
   blockName: string;
+  pages?: Page[];
+  onAddPage?: (name: string, slug: string) => void;
 }
 
 const VerticalPaddingIcon = () => (
@@ -188,7 +444,9 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
   onChangeVariant,
   onChangeSettings,
   onChangeType,
-  blockName
+  blockName,
+  pages = [],
+  onAddPage
 }) => {
   const [assetModalOpen, setAssetModalOpen] = useState(false);
   const [currentImageId, setCurrentImageId] = useState<string | null>(null);
@@ -594,11 +852,18 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                     <div className="space-y-4 bg-muted/30 p-3 rounded-md border border-border">
                         {configurableButtons.map((btn) => {
                             const buttons = selectedSettings.buttons || {};
-                            const currentBtn = buttons[btn.id] || { text: btn.defaultText, url: btn.defaultUrl };
+                            const currentBtn: ButtonSetting = buttons[btn.id] || { 
+                                text: btn.defaultText, 
+                                url: btn.defaultUrl,
+                                linkType: 'external'
+                            };
                             return (
-                                <div key={btn.id} className="space-y-2">
+                                <div key={btn.id} className="space-y-3">
                                     <label className="text-xs font-medium text-foreground">{btn.label}</label>
-                                    <div className="grid gap-2">
+                                    
+                                    {/* Button Text */}
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] text-muted-foreground">Button Text</label>
                                         <input 
                                             type="text" 
                                             value={currentBtn.text}
@@ -612,18 +877,22 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                                             placeholder="Label"
                                             className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                         />
-                                        <input 
-                                            type="text" 
-                                            value={currentBtn.url}
-                                            onChange={(e) => {
+                                    </div>
+                                    
+                                    {/* Link Picker */}
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] text-muted-foreground">Link To</label>
+                                        <LinkPicker
+                                            value={currentBtn}
+                                            onChange={(newValue) => {
                                                 const newButtons = { 
                                                     ...selectedSettings.buttons,
-                                                    [btn.id]: { ...currentBtn, url: e.target.value }
+                                                    [btn.id]: newValue
                                                 };
                                                 onChangeSettings({ ...selectedSettings, buttons: newButtons });
                                             }}
-                                            placeholder="URL (e.g. #about)"
-                                            className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono text-[10px]"
+                                            pages={pages}
+                                            onCreatePage={onAddPage}
                                         />
                                     </div>
                                 </div>
@@ -775,6 +1044,31 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                                             className="w-full"
                                         />
                                     </div>
+
+                                    {/* Image Link (if linkable) */}
+                                    {img.linkable && (
+                                        <div className="space-y-2 pt-2 border-t border-border/50">
+                                            <label className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1.5">
+                                                <Link className="w-3 h-3" />
+                                                Link To
+                                            </label>
+                                            <LinkPicker
+                                                value={{
+                                                    text: '',
+                                                    url: imageSettings?.linkUrl || '',
+                                                    linkType: imageSettings?.linkType || 'external',
+                                                    pageId: imageSettings?.linkPageId
+                                                }}
+                                                onChange={(newValue) => {
+                                                    handleImageSettingChange(img.id, 'linkType', newValue.linkType);
+                                                    handleImageSettingChange(img.id, 'linkUrl', newValue.url);
+                                                    handleImageSettingChange(img.id, 'linkPageId', newValue.pageId);
+                                                }}
+                                                pages={pages}
+                                                onCreatePage={onAddPage}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
