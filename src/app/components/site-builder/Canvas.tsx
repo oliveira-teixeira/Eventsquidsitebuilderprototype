@@ -231,7 +231,7 @@ export const Canvas: React.FC<CanvasProps> = ({
 
             return (
               <CanvasBlockWrapper
-                key={block.id}
+                key={block.id + index}
                 block={block}
                 definition={definition}
                 index={index}
