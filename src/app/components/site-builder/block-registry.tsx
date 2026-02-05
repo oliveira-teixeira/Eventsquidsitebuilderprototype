@@ -24,6 +24,15 @@ export interface ButtonSetting {
   pageId?: string; // Used when linkType is 'internal'
 }
 
+export interface DividerSettings {
+  enabled: boolean;
+  color?: string;
+  thickness?: number; // in pixels
+  width?: number; // percentage of page width (1-100)
+  marginTop?: number; // in pixels
+  marginBottom?: number; // in pixels
+}
+
 export interface BlockSettings {
   padding?: 'none' | 'small' | 'medium' | 'large' | 'xlarge';
   showInMobile?: boolean;
@@ -39,6 +48,7 @@ export interface BlockSettings {
   ranges?: Record<string, number>;
   cmsCollectionId?: string;
   cmsItems?: any[];
+  divider?: DividerSettings;
 }
 
 export interface ToggleableElement {
@@ -474,13 +484,31 @@ const getAlignmentJustifyClass = (settings: BlockSettings | undefined) => {
 const getPaddingClass = (settings: BlockSettings | undefined, defaultPadding: string = 'py-20') => {
   if (!settings || !settings.padding) return defaultPadding;
   switch (settings.padding) {
-    case 'none': return 'py-0';
-    case 'small': return 'py-8';
-    case 'medium': return 'py-16';
-    case 'large': return 'py-24';
-    case 'xlarge': return 'py-32';
-    default: return defaultPadding;
+  case 'none': return 'py-0';
+  case 'small': return 'py-8';
+  case 'medium': return 'py-16';
+  case 'large': return 'py-24';
+  case 'xlarge': return 'py-32';
+  default: return defaultPadding;
   }
+  };
+
+// Divider helper function - renders a configurable divider at the bottom of sections
+const getDividerHtml = (settings: BlockSettings | undefined) => {
+  if (!settings || !settings.divider || !settings.divider.enabled) return '';
+  
+  const divider = settings.divider;
+  const color = divider.color || 'var(--border)';
+  const thickness = divider.thickness || 1;
+  const width = divider.width || 100;
+  const marginTop = divider.marginTop || 0;
+  const marginBottom = divider.marginBottom || 0;
+  
+  return `
+  <div class="w-full flex justify-center" style="margin-top: ${marginTop}px; margin-bottom: ${marginBottom}px;">
+    <div style="width: ${width}%; height: ${thickness}px; background-color: ${color};"></div>
+  </div>
+  `;
 };
 
 // Contrast Helpers
@@ -722,6 +750,7 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
             </div>` : ''}
           </div>
         </div>
+        ${getDividerHtml(settings)}
       </builder-section>
     `
     }
@@ -801,6 +830,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
     </div>` : ''}
           </div>
         </div>
+        ${getDividerHtml(settings)}
       </builder-section>
     `
     }
@@ -845,6 +875,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                <span>ExCel Center</span>
            </div>
         </div>
+        ${getDividerHtml(settings)}
       </builder-section>
     `
     }
@@ -977,6 +1008,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                     ${tabPanels}
                 </div>
             </div>
+            ${getDividerHtml(settings)}
         </builder-section>
         `;
     }
@@ -1038,6 +1070,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                `).join('')}
             </div>
          </div>
+         ${getDividerHtml(settings)}
       </builder-section>
     `
     }
@@ -1105,6 +1138,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                `).join('')}
             </div>
          </div>
+         ${getDividerHtml(settings)}
       </builder-section>
     `
     }
@@ -1154,6 +1188,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                 `).join('')}
              </div>
         </div>
+        ${getDividerHtml(settings)}
       </builder-section>
     `
     }
@@ -1265,6 +1300,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
             </div>
           ` : ''}
         </div>
+        ${getDividerHtml(settings)}
       </builder-section>
     `
     }
@@ -1325,6 +1361,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
              `).join('')}
           </div>
         </div>
+        ${getDividerHtml(settings)}
       </builder-section>
     `
     }
@@ -1359,6 +1396,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                `).join('')}
             </div>
          </div>
+         ${getDividerHtml(settings)}
       </builder-section>
     `
     }
@@ -1397,6 +1435,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                </div>
             </div>
          </div>
+         ${getDividerHtml(settings)}
       </builder-section>
     `
   },
@@ -1438,6 +1477,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                 animation-play-state: paused;
             }
          </style>
+         ${getDividerHtml(settings)}
       </builder-section>
     `
   },
@@ -1479,6 +1519,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                `).join('')}
             </div>
          </div>
+         ${getDividerHtml(settings)}
       </builder-section>
     `
     }
@@ -1501,6 +1542,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
               </div>
               <a href="#" class="underline opacity-80 hover:opacity-100">Register Now</a>
           </div>
+          ${getDividerHtml(settings)}
       </builder-section>
     `
   },
@@ -1552,6 +1594,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
             </div>
          </div>
          </div>
+         ${getDividerHtml(settings)}
       </builder-section>
     `;
     }
@@ -1582,6 +1625,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                  </div>
              </div>
          </div>
+         ${getDividerHtml(settings)}
       </builder-section>
     `
   },
@@ -1644,6 +1688,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                `).join('')}
             </div>
          </div>
+         ${getDividerHtml(settings)}
       </builder-section>
     `
     }
@@ -1680,6 +1725,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                 `).join('')}
              </div>
          </div>
+         ${getDividerHtml(settings)}
       </builder-section>
     `
   }

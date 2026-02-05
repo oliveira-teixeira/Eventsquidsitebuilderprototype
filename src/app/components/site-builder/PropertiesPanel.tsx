@@ -1,9 +1,37 @@
 import React, { useCallback, useState, useEffect } from "react";
-import { Sliders, Check, AlignJustify, AlignLeft, AlignCenter, AlignRight, MoveVertical, Eye, Smartphone, Link, Layout, Image as ImageIcon, Box, Hash, Palette, Upload, Cloud, Monitor, Move, Maximize2, ExternalLink, FileText, Plus, ChevronDown } from "lucide-react";
+import {
+  Sliders,
+  Check,
+  AlignJustify,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  MoveVertical,
+  Eye,
+  Smartphone,
+  Link,
+  Layout,
+  Image as ImageIcon,
+  Box,
+  Hash,
+  Palette,
+  Upload,
+  Cloud,
+  Monitor,
+  Move,
+  Maximize2,
+  Minus,
+  ExternalLink,
+  FileText,
+  Plus,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { cn } from "../ui/utils";
 import { Switch } from "../ui/switch";
 import { 
     BlockSettings, 
+    DividerSettings,
     ToggleableElement, 
     BlockButtonDefinition, 
     BlockImageDefinition, 
@@ -1228,6 +1256,177 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                 <span className="text-[10px] text-muted-foreground">None</span>
                 <span className="text-[10px] text-muted-foreground">Max</span>
             </div>
+        </div>
+
+        <div className="h-px bg-border w-full" />
+
+        {/* Section Divider */}
+        <div className="space-y-3">
+            <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
+                    <Minus className="w-3.5 h-3.5" />
+                    Section Divider
+                </label>
+                <Switch 
+                    checked={selectedSettings.divider?.enabled || false} 
+                    onCheckedChange={(checked) => {
+                        const currentDivider = selectedSettings.divider || {};
+                        onChangeSettings({ 
+                            ...selectedSettings, 
+                            divider: { 
+                                ...currentDivider,
+                                enabled: checked,
+                                // Set defaults when enabling
+                                color: currentDivider.color || 'var(--border)',
+                                thickness: currentDivider.thickness || 1,
+                                width: currentDivider.width || 100,
+                                marginTop: currentDivider.marginTop || 0,
+                                marginBottom: currentDivider.marginBottom || 0
+                            } 
+                        });
+                    }}
+                    className="scale-75 origin-right"
+                />
+            </div>
+            
+            {selectedSettings.divider?.enabled && (
+                <div className="space-y-4 bg-muted/30 p-3 rounded-md border border-border">
+                    {/* Divider Color */}
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-semibold text-muted-foreground">Color</label>
+                        <div className="flex items-center gap-2">
+                            <input 
+                                type="color"
+                                value={selectedSettings.divider?.color?.startsWith('var') ? '#e5e7eb' : selectedSettings.divider?.color || '#e5e7eb'}
+                                onChange={(e) => {
+                                    const currentDivider = selectedSettings.divider || {};
+                                    onChangeSettings({ 
+                                        ...selectedSettings, 
+                                        divider: { ...currentDivider, color: e.target.value } as DividerSettings
+                                    });
+                                }}
+                                className="w-8 h-8 rounded cursor-pointer border border-border"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const currentDivider = selectedSettings.divider || {};
+                                    onChangeSettings({ 
+                                        ...selectedSettings, 
+                                        divider: { ...currentDivider, color: 'var(--border)' } as DividerSettings
+                                    });
+                                }}
+                                className={cn(
+                                    "px-2 py-1 rounded text-[10px] font-medium border transition-all",
+                                    selectedSettings.divider?.color === 'var(--border)' || !selectedSettings.divider?.color
+                                        ? "border-primary bg-primary/10 text-primary"
+                                        : "border-border bg-background text-muted-foreground hover:bg-muted"
+                                )}
+                            >
+                                Theme
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Divider Thickness */}
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-semibold text-muted-foreground">Thickness</label>
+                            <span className="text-[10px] font-mono text-muted-foreground">{selectedSettings.divider?.thickness || 1}px</span>
+                        </div>
+                        <input 
+                            type="range"
+                            min={1}
+                            max={8}
+                            step={1}
+                            value={selectedSettings.divider?.thickness || 1}
+                            onChange={(e) => {
+                                const currentDivider = selectedSettings.divider || {};
+                                onChangeSettings({ 
+                                    ...selectedSettings, 
+                                    divider: { ...currentDivider, thickness: parseInt(e.target.value) } as DividerSettings
+                                });
+                            }}
+                            className="w-full h-1.5 bg-background rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
+                        />
+                    </div>
+
+                    {/* Divider Width */}
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-semibold text-muted-foreground">Width</label>
+                            <span className="text-[10px] font-mono text-muted-foreground">{selectedSettings.divider?.width || 100}%</span>
+                        </div>
+                        <input 
+                            type="range"
+                            min={10}
+                            max={100}
+                            step={5}
+                            value={selectedSettings.divider?.width || 100}
+                            onChange={(e) => {
+                                const currentDivider = selectedSettings.divider || {};
+                                onChangeSettings({ 
+                                    ...selectedSettings, 
+                                    divider: { ...currentDivider, width: parseInt(e.target.value) } as DividerSettings
+                                });
+                            }}
+                            className="w-full h-1.5 bg-background rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
+                        />
+                    </div>
+
+                    {/* Divider Margins */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1">
+                                    <ChevronUp className="w-2.5 h-2.5" />
+                                    Top
+                                </label>
+                                <span className="text-[10px] font-mono text-muted-foreground">{selectedSettings.divider?.marginTop || 0}px</span>
+                            </div>
+                            <input 
+                                type="range"
+                                min={0}
+                                max={80}
+                                step={4}
+                                value={selectedSettings.divider?.marginTop || 0}
+                                onChange={(e) => {
+                                    const currentDivider = selectedSettings.divider || {};
+                                    onChangeSettings({ 
+                                        ...selectedSettings, 
+                                        divider: { ...currentDivider, marginTop: parseInt(e.target.value) } as DividerSettings
+                                    });
+                                }}
+                                className="w-full h-1.5 bg-background rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1">
+                                    <ChevronDown className="w-2.5 h-2.5" />
+                                    Bottom
+                                </label>
+                                <span className="text-[10px] font-mono text-muted-foreground">{selectedSettings.divider?.marginBottom || 0}px</span>
+                            </div>
+                            <input 
+                                type="range"
+                                min={0}
+                                max={80}
+                                step={4}
+                                value={selectedSettings.divider?.marginBottom || 0}
+                                onChange={(e) => {
+                                    const currentDivider = selectedSettings.divider || {};
+                                    onChangeSettings({ 
+                                        ...selectedSettings, 
+                                        divider: { ...currentDivider, marginBottom: parseInt(e.target.value) } as DividerSettings
+                                    });
+                                }}
+                                className="w-full h-1.5 bg-background rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
 
       </div>
