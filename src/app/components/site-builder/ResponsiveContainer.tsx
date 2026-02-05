@@ -429,7 +429,13 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
               // but this prevents Critical ResizeObserver loops in restricted environments like Figma.
               
               const currentHeight = iframeRef.current.offsetHeight;
-              const contentHeight = mountNode.scrollHeight;
+
+              let contentHeight = 0;
+              for (const child of Array.from(mountNode.children)) {
+                contentHeight += (child as HTMLElement).offsetHeight;
+              }
+
+              contentHeight = Math.min(contentHeight, mountNode.scrollHeight);
               
               // Validate contentHeight to prevent Infinity (but allow 0 as it might be transitional)
               if (!Number.isFinite(contentHeight)) return;
