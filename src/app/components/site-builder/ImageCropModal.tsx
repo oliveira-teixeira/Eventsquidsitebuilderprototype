@@ -72,8 +72,8 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] p-0 gap-0 bg-background border-border">
-        <DialogHeader className="px-6 pt-6 pb-4 space-y-1.5">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] p-0 gap-0 bg-background border-border flex flex-col">
+        <DialogHeader className="px-6 pt-6 pb-4 space-y-1.5 shrink-0">
           <DialogTitle className="font-sans text-foreground" style={{ fontSize: 'var(--text-lg)' }}>
             Adjust Image Display
           </DialogTitle>
@@ -82,7 +82,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="px-6 pb-6 space-y-6">
+        <div className="px-6 pb-6 space-y-6 overflow-y-auto min-h-0 flex-1">
           {/* Preview */}
           <div className="space-y-2">
             <label className="text-xs font-semibold text-muted-foreground">Preview</label>
@@ -178,7 +178,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
           </div>
         </div>
 
-        <DialogFooter className="px-6 pb-6 flex gap-2">
+        <DialogFooter className="px-6 pb-6 flex gap-2 shrink-0">
           <Button variant="outline" onClick={onClose} className="font-sans">
             Cancel
           </Button>
