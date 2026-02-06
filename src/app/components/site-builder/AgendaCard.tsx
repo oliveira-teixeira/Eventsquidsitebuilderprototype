@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from "react";
 import { MapPin, Clock, CalendarPlus } from "lucide-react";
 import { Badge } from "../ui/badge";
