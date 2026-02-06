@@ -26,6 +26,11 @@ import {
   Plus,
   ChevronDown,
   ChevronUp,
+  Type,
+  Link2,
+  LinkIcon,
+  Unlink,
+  Info,
 } from "lucide-react";
 import { cn } from "../ui/utils";
 import { Switch } from "../ui/switch";
@@ -619,6 +624,14 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
         <p className="font-medium text-sm truncate">{blockName}</p>
       </div>
 
+      {/* Text Formatting Hint */}
+      <div className="flex items-start gap-2 bg-muted/40 border border-border rounded-md p-2.5">
+        <Info className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+        <p className="text-[10px] leading-relaxed text-muted-foreground">
+          Text styles follow the theme. Only basic formatting is available.
+        </p>
+      </div>
+
       <div className="space-y-6">
         
         {/* Layout Selection */}
@@ -714,6 +727,100 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                         <option.icon className="w-4 h-4" />
                     </button>
                 ))}
+            </div>
+        </div>
+
+        <div className="h-px bg-border w-full" />
+
+        {/* Font Weight */}
+        <div className="space-y-3">
+            <label className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
+                <Type className="w-3.5 h-3.5" />
+                Font Weight
+            </label>
+            <div className="grid grid-cols-2 gap-2 bg-muted/30 p-1 rounded-md border border-border">
+                {[
+                    { id: 'normal', label: 'Regular' },
+                    { id: 'semibold', label: 'Semibold' },
+                ].map((option) => (
+                    <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => onChangeSettings({ ...selectedSettings, fontWeight: option.id as 'normal' | 'semibold' })}
+                        onMouseDown={(e) => e.preventDefault()}
+                        className={cn(
+                            "flex items-center justify-center py-1.5 rounded-sm transition-all text-xs",
+                            (selectedSettings.fontWeight === option.id || (!selectedSettings.fontWeight && option.id === 'normal'))
+                                ? "bg-background shadow-sm text-primary font-medium" 
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        )}
+                    >
+                        <span className={option.id === 'semibold' ? 'font-semibold' : 'font-normal'}>{option.label}</span>
+                    </button>
+                ))}
+            </div>
+        </div>
+
+        <div className="h-px bg-border w-full" />
+
+        {/* Hyperlink */}
+        <div className="space-y-3">
+            <label className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
+                <Link2 className="w-3.5 h-3.5" />
+                Text Link
+            </label>
+            <div className="bg-muted/30 p-3 rounded-md border border-border space-y-3">
+                <div className="space-y-1.5">
+                    <label className="text-[10px] text-muted-foreground">Link Label</label>
+                    <input 
+                        type="text" 
+                        value={(selectedSettings.textLinks && selectedSettings.textLinks['inline'] && selectedSettings.textLinks['inline'].label) || ''}
+                        onChange={(e) => {
+                            const currentLinks = selectedSettings.textLinks || {};
+                            const currentInline = currentLinks['inline'] || { url: '', label: '' };
+                            const newLinks = {
+                                ...currentLinks,
+                                inline: { ...currentInline, label: e.target.value }
+                            };
+                            onChangeSettings({ ...selectedSettings, textLinks: newLinks });
+                        }}
+                        placeholder="e.g. Learn more"
+                        className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    />
+                </div>
+                <div className="space-y-1.5">
+                    <label className="text-[10px] text-muted-foreground">URL</label>
+                    <input 
+                        type="text" 
+                        value={(selectedSettings.textLinks && selectedSettings.textLinks['inline'] && selectedSettings.textLinks['inline'].url) || ''}
+                        onChange={(e) => {
+                            const currentLinks = selectedSettings.textLinks || {};
+                            const currentInline = currentLinks['inline'] || { url: '', label: '' };
+                            const newLinks = {
+                                ...currentLinks,
+                                inline: { ...currentInline, url: e.target.value }
+                            };
+                            onChangeSettings({ ...selectedSettings, textLinks: newLinks });
+                        }}
+                        placeholder="https:// or #section"
+                        className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono text-[10px]"
+                    />
+                </div>
+                {/* Remove Link button - only show when a link exists */}
+                {selectedSettings.textLinks && selectedSettings.textLinks['inline'] && selectedSettings.textLinks['inline'].url && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const currentLinks = { ...selectedSettings.textLinks };
+                            delete currentLinks['inline'];
+                            onChangeSettings({ ...selectedSettings, textLinks: Object.keys(currentLinks).length > 0 ? currentLinks : undefined });
+                        }}
+                        className="flex items-center gap-1.5 text-[10px] text-destructive hover:text-destructive/80 transition-colors"
+                    >
+                        <Unlink className="w-3 h-3" />
+                        Remove link
+                    </button>
+                )}
             </div>
         </div>
 
@@ -864,7 +971,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
             </>
         )}
 
-        {/* Colors */}
+        {/* Colors - Restricted to Color Variant only */}
         {configurableColors && configurableColors.length > 0 && (
             <>
                 <div className="space-y-3">
@@ -872,32 +979,11 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                         <Palette className="w-3.5 h-3.5" />
                         Colors
                     </label>
-                    <div className="space-y-4 bg-muted/30 p-3 rounded-md border border-border">
-                        {configurableColors.map((colorDef) => {
-                            const colors = selectedSettings.colors || {};
-                            const value = colors[colorDef.id] || colorDef.defaultValue;
-                            return (
-                                <div key={colorDef.id} className="flex items-center justify-between gap-4">
-                                    <label className="text-xs font-medium text-foreground">{colorDef.label}</label>
-                                    <div className="flex items-center gap-2">
-                                        <div className="h-6 w-6 rounded-full border border-border overflow-hidden relative shadow-sm">
-                                            <input 
-                                                type="color" 
-                                                value={value}
-                                                onChange={(e) => {
-                                                    const newColors = {
-                                                        ...selectedSettings.colors,
-                                                        [colorDef.id]: e.target.value
-                                                    };
-                                                    onChangeSettings({ ...selectedSettings, colors: newColors });
-                                                }}
-                                                className="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] cursor-pointer p-0 border-0"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                    <div className="flex items-start gap-2 bg-muted/30 border border-border rounded-md p-2.5">
+                        <Info className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                        <p className="text-[10px] leading-relaxed text-muted-foreground">
+                            Colors are controlled by the <span className="font-semibold text-foreground">Color Variant</span> setting above. Select Default, Primary, Secondary, or Accent to change colors.
+                        </p>
                     </div>
                 </div>
                 <div className="h-px bg-border w-full" />
@@ -1557,7 +1643,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
 
       <div className="pt-4 border-t border-border">
         <div className="bg-primary/10 text-primary p-3 rounded-md text-xs">
-          <strong>Tip:</strong> Toggle elements to customize the layout. Double-click text on the canvas to edit.
+          <strong>Tip:</strong> Double-click text on the canvas to edit content. Use font weight and alignment controls above for basic formatting.
         </div>
       </div>
 

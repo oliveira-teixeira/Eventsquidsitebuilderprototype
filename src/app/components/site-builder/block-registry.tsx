@@ -42,6 +42,8 @@ export interface BlockSettings {
   icons?: Record<string, string>;
   text?: Record<string, string>;
   textAlign?: 'left' | 'center' | 'right';
+  fontWeight?: 'normal' | 'semibold';
+  textLinks?: Record<string, { url: string; label?: string }>;
   counts?: Record<string, number>;
   colors?: Record<string, string>;
   selects?: Record<string, string>;

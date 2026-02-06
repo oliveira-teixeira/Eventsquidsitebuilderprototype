@@ -714,28 +714,7 @@ export const SiteBuilderLayout = () => {
                                         </ToggleGroup>
                                     </div>
 
-                                    {/* Text Size */}
-                                    <div className="space-y-3">
-                                        <Label>Text Size</Label>
-                                        <div className="grid grid-cols-4 gap-2">
-                                            {['sm', 'md', 'lg', 'xl'].map((size) => (
-                                                <Button
-                                                    key={size}
-                                                    variant={(getSelectedBlock() && getSelectedBlock().props && getSelectedBlock().props.textSize === size) ? "default" : "outline"}
-                                                    size="sm"
-                                                    className="text-xs"
-                                                    onClick={() => {
-                                                        const newBlocks = blocks.map(b => 
-                                                            b.id === selectedBlockId ? { ...b, props: { ...b.props, textSize: size as any } } : b
-                                                        );
-                                                        setBlocks(newBlocks);
-                                                    }}
-                                                >
-                                                    {size.toUpperCase()}
-                                                </Button>
-                                            ))}
-                                        </div>
-                                    </div>
+                                    {/* Text Size - Removed: sizes follow the design system */}
 
                                     {/* Media */}
                                     <div className="space-y-3">
@@ -793,13 +772,12 @@ export const SiteBuilderLayout = () => {
                                         </div>
                                     </div>
 
-                                    <div className="space-y-3">
-                                        <Label>Background Color</Label>
-                                        <div className="flex gap-2">
-                                            <div className="w-8 h-8 rounded-full bg-background border-2 border-primary cursor-pointer ring-offset-2 ring-2 ring-transparent" />
-                                            <div className="w-8 h-8 rounded-full bg-muted border border-border cursor-pointer hover:border-primary" />
-                                            <div className="w-8 h-8 rounded-full bg-primary/10 border border-border cursor-pointer hover:border-primary" />
-                                        </div>
+                                    {/* Background Color - Controlled by theme */}
+                                    <div className="flex items-start gap-2 bg-muted/40 border border-border rounded-md p-2.5">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                                        <p className="text-[10px] leading-relaxed text-muted-foreground">
+                                            Colors and text styles are controlled by the theme. Only basic formatting is available.
+                                        </p>
                                     </div>
 
                                     <div className="h-px bg-border my-4" />
