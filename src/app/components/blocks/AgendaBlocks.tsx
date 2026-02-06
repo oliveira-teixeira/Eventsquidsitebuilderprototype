@@ -9,12 +9,78 @@ import { cn } from "../ui/utils";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 
 const SAMPLE_AGENDA = [
-    { time: "09:00 AM", title: "Registration & Breakfast", location: "Main Hall", type: "General", speaker: "Staff", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" },
-    { time: "10:00 AM", title: "Opening Keynote", location: "Auditorium A", type: "Keynote", speaker: "Sarah Connor", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" },
-    { time: "11:30 AM", title: "React Server Components", location: "Room 204", type: "Workshop", speaker: "Dan Abramov", img: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop" },
-    { time: "01:00 PM", title: "Networking Lunch", location: "Dining Area", type: "Networking", speaker: "All", img: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop" },
-    { time: "02:30 PM", title: "Design Systems", location: "Auditorium B", type: "Panel", speaker: "Design Team", img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop" },
+    { time: "09:00 AM", title: "Registration & Breakfast", location: "Main Hall", type: "General", speaker: "Staff",
+      people: [
+        { name: "Anna M", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" },
+        { name: "Ben L", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" },
+      ],
+    },
+    { time: "10:00 AM", title: "Opening Keynote", location: "Auditorium A", type: "Keynote", speaker: "Sarah Connor",
+      people: [
+        { name: "Sarah C", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" },
+        { name: "James R", img: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop" },
+        { name: "Li Wei" },
+        { name: "Priya S", img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop" },
+      ],
+    },
+    { time: "11:30 AM", title: "React Server Components", location: "Room 204", type: "Workshop", speaker: "Dan Abramov",
+      people: [
+        { name: "Dan A", img: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop" },
+        { name: "Kent D", img: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop" },
+        { name: "Tina H" },
+      ],
+    },
+    { time: "01:00 PM", title: "Networking Lunch", location: "Dining Area", type: "Networking", speaker: "All",
+      people: [
+        { name: "All", img: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop" },
+      ],
+    },
+    { time: "02:30 PM", title: "Design Systems", location: "Auditorium B", type: "Panel", speaker: "Design Team",
+      people: [
+        { name: "Emma K", img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop" },
+        { name: "Oscar T", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" },
+        { name: "Lena R", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" },
+        { name: "Ravi P" },
+        { name: "Zoe M" },
+      ],
+    },
 ];
+
+// Reusable avatar cluster: shows up to 3 circular 22px avatars, then a "+N" overflow circle
+const AvatarCluster = ({ people }: { people: { name: string; img?: string }[] }) => {
+  const visible = people.slice(0, 3);
+  const overflow = people.length - 3;
+
+  return (
+    <div className="shrink-0 flex items-center -space-x-1.5 justify-end" role="group" aria-label="Speakers and sponsors">
+      {visible.map((p, i) => (
+        <div
+          key={i}
+          className="w-[22px] h-[22px] rounded-full border-2 border-background overflow-hidden bg-muted"
+          title={p.name}
+        >
+          {p.img ? (
+            <ImageWithFallback src={p.img} alt={p.name} className="w-full h-full object-cover" />
+          ) : (
+            <span className="flex items-center justify-center w-full h-full text-[9px] font-semibold text-muted-foreground select-none">
+              {p.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+            </span>
+          )}
+        </div>
+      ))}
+      {overflow > 0 && (
+        <div
+          className="w-[22px] h-[22px] rounded-full border-2 border-background bg-muted flex items-center justify-center"
+          title={`${overflow} more`}
+        >
+          <span className="text-[8px] font-semibold text-muted-foreground leading-none select-none">
+            +{overflow}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Variant 1: Compact Scannable List
 export const AgendaVariant1 = () => {
@@ -74,15 +140,8 @@ export const AgendaVariant1 = () => {
                         </p>
                     </div>
 
-                    {/* Thumbnail Cluster */}
-                    <div className="shrink-0 flex items-center -space-x-2 w-[72px] justify-end">
-                        <div className="w-7 h-7 rounded-full bg-muted border-2 border-background overflow-hidden">
-                            <ImageWithFallback src={item.img} alt={item.speaker} className="w-full h-full object-cover" />
-                        </div>
-                        <div className="w-7 h-7 rounded-full bg-muted border-2 border-background overflow-hidden flex items-center justify-center">
-                            <span className="text-[9px] font-medium text-muted-foreground">+1</span>
-                        </div>
-                    </div>
+                    {/* Avatar Cluster */}
+                    <AvatarCluster people={item.people} />
                 </div>
               ))}
           </div>
@@ -109,7 +168,10 @@ export const AgendaVariant2 = () => (
                         </div>
                         <div className="lg:col-span-4 mt-2 lg:mt-0">
                             <div className="bg-card p-6 rounded-lg border-none shadow-md space-y-3">
-                                <Badge variant="outline" className="w-fit">{item.type}</Badge>
+                                <div className="flex items-center justify-between">
+                                    <Badge variant="outline" className="w-fit">{item.type}</Badge>
+                                    <AvatarCluster people={item.people} />
+                                </div>
                                 <h3 className="text-xl font-bold text-foreground">{item.title}</h3>
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                     <MapPin className="h-4 w-4 text-primary" /> {item.location}
@@ -170,15 +232,8 @@ export const AgendaVariant3 = () => {
                         </p>
                     </div>
 
-                    {/* Thumbnail Cluster */}
-                    <div className="shrink-0 flex items-center -space-x-2 w-[72px] justify-end">
-                        <div className="w-7 h-7 rounded-full bg-muted border-2 border-background overflow-hidden">
-                            <ImageWithFallback src={item.img} alt={item.speaker} className="w-full h-full object-cover" />
-                        </div>
-                        <div className="w-7 h-7 rounded-full bg-muted border-2 border-background overflow-hidden flex items-center justify-center">
-                            <span className="text-[9px] font-medium text-muted-foreground">+1</span>
-                        </div>
-                    </div>
+                    {/* Avatar Cluster */}
+                    <AvatarCluster people={item.people} />
 
                     <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
@@ -218,7 +273,7 @@ export const AgendaVariant4 = () => (
                             <div className="flex items-center gap-4 text-sm text-muted-foreground font-mono">
                                 <span>{item.location}</span>
                                 <span>•</span>
-                                <span className="uppercase">{item.speaker}</span>
+                                <AvatarCluster people={item.people} />
                             </div>
                         </div>
                     </div>
@@ -252,8 +307,11 @@ export const AgendaVariant5 = () => {
                                         <span className="font-mono text-sm text-muted-foreground w-20">{item.time}</span>
                                         <span className="font-bold text-lg font-sans">{item.title}</span>
                                     </div>
-                                    <div className="bg-foreground text-background rounded-full p-1">
-                                        {isOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                                    <div className="flex items-center gap-3">
+                                        <AvatarCluster people={item.people} />
+                                        <div className="bg-foreground text-background rounded-full p-1">
+                                            {isOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                                        </div>
                                     </div>
                                 </button>
                                 
@@ -406,12 +464,7 @@ export const AgendaVariant7 = () => (
                                 
                                 {!isLunch && (
                                     <div className="flex items-center justify-between mt-6 pt-6 border-t border-border/10">
-                                        <div className="flex items-center gap-2 text-sm font-medium">
-                                            <div className="h-6 w-6 rounded-full bg-muted overflow-hidden">
-                                                <ImageWithFallback src={item.img} alt={item.speaker} className="h-full w-full object-cover" />
-                                            </div>
-                                            <span className="font-sans">{item.speaker}</span>
-                                        </div>
+                                        <AvatarCluster people={item.people} />
                                         <Button size="icon" variant={isKeynote ? "secondary" : "ghost"} className={cn("rounded-full h-8 w-8", isKeynote ? "bg-white text-primary hover:bg-white/90" : "")}>
                                             <ArrowUpRight className="h-4 w-4" />
                                         </Button>

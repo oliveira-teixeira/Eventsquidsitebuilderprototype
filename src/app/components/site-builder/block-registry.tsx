@@ -930,7 +930,10 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
         const dayAbbr = ['Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
         const dates = ['Dec 15', 'Dec 16', 'Dec 17', 'Dec 18', 'Dec 19', 'Dec 20', 'Dec 21'];
         
-        // Render a single session row with time, title, description, and thumbnail cluster
+        // Pool of placeholder speaker/sponsor initials for avatar clusters
+        const speakerPool = ['AJ','SK','DR','MK','LP','TC','NV','RH','EW','JB','QF','ZA','UM','GO'];
+
+        // Render a single session row with time, title, description, and avatar cluster
         const renderSession = (dayIndex, sessionIndex) => {
             const hour = 8 + sessionIndex;
             const time = hour < 12 ? `${String(hour).padStart(2, '0')}:00 AM` : `${String(hour === 12 ? 12 : hour - 12).padStart(2, '0')}:00 PM`;
@@ -938,7 +941,21 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
             const descKey = `desc-d${dayIndex}-s${sessionIndex}`;
             const sessionTitle = safeGetText(settings, sessionKey, `Session ${sessionIndex + 1}: Innovation Workshop`);
             const sessionDesc = safeGetText(settings, descKey, `Join us for an engaging discussion on the latest trends and innovations in technology.`);
-            
+
+            // Deterministic people count per session (2-5 speakers/sponsors)
+            const totalPeople = 2 + ((dayIndex * 5 + sessionIndex * 3) % 4);
+            const visible = Math.min(totalPeople, 3);
+            const overflow = totalPeople - 3;
+
+            const avatarCircles = Array.from({length: visible}, (_, k) => {
+                const initials = speakerPool[(dayIndex * 7 + sessionIndex * 3 + k) % speakerPool.length];
+                return `<div class="w-[22px] h-[22px] rounded-full border-2 border-background bg-muted flex items-center justify-center" title="${initials}"><span class="text-[9px] font-semibold text-muted-foreground leading-none select-none">${initials}</span></div>`;
+            }).join('');
+
+            const overflowCircle = overflow > 0
+                ? `<div class="w-[22px] h-[22px] rounded-full border-2 border-background bg-muted flex items-center justify-center" title="${overflow} more"><span class="text-[8px] font-semibold text-muted-foreground leading-none select-none">+${overflow}</span></div>`
+                : '';
+
             return `
                 <div class="session-item group flex items-center gap-4 py-2.5 border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors cursor-pointer" data-day="${dayIndex}">
                     <!-- Time Column (fixed width) -->
@@ -956,17 +973,9 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                         </p>
                     </div>
                     
-                    <!-- Thumbnail Cluster (reserved space) -->
-                    <div class="flex-shrink-0 flex items-center -space-x-2 w-[72px] justify-end">
-                        <div class="w-7 h-7 rounded-full bg-muted border-2 border-background overflow-hidden">
-                            <div class="w-full h-full bg-muted-foreground/10"></div>
-                        </div>
-                        <div class="w-7 h-7 rounded-full bg-muted border-2 border-background overflow-hidden">
-                            <div class="w-full h-full bg-muted-foreground/10"></div>
-                        </div>
-                        <div class="w-7 h-7 rounded-full bg-muted border-2 border-background overflow-hidden flex items-center justify-center">
-                            <span class="text-[9px] font-medium text-muted-foreground">+2</span>
-                        </div>
+                    <!-- Avatar Cluster -->
+                    <div class="flex-shrink-0 flex items-center -space-x-1.5 justify-end" role="group" aria-label="Speakers and sponsors">
+                        ${avatarCircles}${overflowCircle}
                     </div>
                 </div>
             `;
