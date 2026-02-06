@@ -9,39 +9,146 @@ import { cn } from "../ui/utils";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 
 const SAMPLE_AGENDA = [
-    { time: "09:00 AM", title: "Registration & Breakfast", location: "Main Hall", type: "General", speaker: "Staff", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" },
-    { time: "10:00 AM", title: "Opening Keynote", location: "Auditorium A", type: "Keynote", speaker: "Sarah Connor", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" },
-    { time: "11:30 AM", title: "React Server Components", location: "Room 204", type: "Workshop", speaker: "Dan Abramov", img: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop" },
-    { time: "01:00 PM", title: "Networking Lunch", location: "Dining Area", type: "Networking", speaker: "All", img: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop" },
-    { time: "02:30 PM", title: "Design Systems", location: "Auditorium B", type: "Panel", speaker: "Design Team", img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop" },
+    { time: "09:00 AM", title: "Registration & Breakfast", location: "Main Hall", type: "General", speaker: "Staff",
+      people: [
+        { name: "Anna M", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" },
+        { name: "Ben L", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" },
+      ],
+    },
+    { time: "10:00 AM", title: "Opening Keynote", location: "Auditorium A", type: "Keynote", speaker: "Sarah Connor",
+      people: [
+        { name: "Sarah C", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" },
+        { name: "James R", img: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop" },
+        { name: "Li Wei" },
+        { name: "Priya S", img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop" },
+      ],
+    },
+    { time: "11:30 AM", title: "React Server Components", location: "Room 204", type: "Workshop", speaker: "Dan Abramov",
+      people: [
+        { name: "Dan A", img: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop" },
+        { name: "Kent D", img: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop" },
+        { name: "Tina H" },
+      ],
+    },
+    { time: "01:00 PM", title: "Networking Lunch", location: "Dining Area", type: "Networking", speaker: "All",
+      people: [
+        { name: "All", img: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop" },
+      ],
+    },
+    { time: "02:30 PM", title: "Design Systems", location: "Auditorium B", type: "Panel", speaker: "Design Team",
+      people: [
+        { name: "Emma K", img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop" },
+        { name: "Oscar T", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" },
+        { name: "Lena R", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" },
+        { name: "Ravi P" },
+        { name: "Zoe M" },
+      ],
+    },
 ];
 
-// Variant 1: Simple List
-export const AgendaVariant1 = () => (
-  <div className="w-full py-12 bg-background">
-    <div className="mx-auto w-full" style={{ maxWidth: 'var(--max-width)', paddingLeft: 'var(--global-padding)', paddingRight: 'var(--global-padding)' }}>
-        <h2 className="text-3xl font-bold mb-8 text-center text-foreground">Event Schedule</h2>
-        <div className="space-y-4">
-            {SAMPLE_AGENDA.map((item, i) => (
-                <Card key={i} className="hover:shadow-md transition-shadow border-none bg-card shadow-sm">
-                    <CardContent className="flex flex-col lg:flex-row items-start lg:items-center gap-4 p-6">
-                        <div className="min-w-[100px] font-mono text-primary font-bold">
-                            {item.time}
-                        </div>
-                        <div className="flex-1 space-y-1">
-                            <h3 className="font-semibold text-lg text-foreground">{item.title}</h3>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-1"><MapPin className="h-3 w-3 text-primary" /> {item.location}</span>
-                                <Badge variant="secondary" className="text-xs">{item.type}</Badge>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            ))}
+// Reusable avatar cluster: shows up to 3 circular 22px avatars, then a "+N" overflow circle
+const AvatarCluster = ({ people }: { people: { name: string; img?: string }[] }) => {
+  const visible = people.slice(0, 3);
+  const overflow = people.length - 3;
+
+  return (
+    <div className="shrink-0 flex items-center -space-x-1.5 justify-end" role="group" aria-label="Speakers and sponsors">
+      {visible.map((p, i) => (
+        <div
+          key={i}
+          className="w-[22px] h-[22px] rounded-full border-2 border-background overflow-hidden bg-muted"
+          title={p.name}
+        >
+          {p.img ? (
+            <ImageWithFallback src={p.img} alt={p.name} className="w-full h-full object-cover" />
+          ) : (
+            <span className="flex items-center justify-center w-full h-full text-[9px] font-semibold text-muted-foreground select-none">
+              {p.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+            </span>
+          )}
         </div>
+      ))}
+      {overflow > 0 && (
+        <div
+          className="w-[22px] h-[22px] rounded-full border-2 border-background bg-muted flex items-center justify-center"
+          title={`${overflow} more`}
+        >
+          <span className="text-[8px] font-semibold text-muted-foreground leading-none select-none">
+            +{overflow}
+          </span>
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
+
+// Variant 1: Compact Scannable List
+export const AgendaVariant1 = () => {
+  const [activeDay, setActiveDay] = useState(0);
+  const days = ["Fri", "Sat", "Sun"];
+
+  return (
+    <div className="w-full py-12 bg-background">
+      <div className="mx-auto w-full" style={{ maxWidth: 'var(--max-width)', paddingLeft: 'var(--global-padding)', paddingRight: 'var(--global-padding)' }}>
+          <h2 className="text-2xl font-bold mb-2 text-foreground">Event Schedule</h2>
+          <p className="text-muted-foreground text-sm mb-6">Browse sessions by day.</p>
+
+          {/* Search */}
+          <div className="mb-4 relative max-w-md">
+              <input
+                type="text"
+                placeholder="Search sessions..."
+                className="w-full px-4 py-2 pr-10 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-all"
+              />
+          </div>
+
+          {/* Day Tabs */}
+          <div className="flex gap-0 mb-6 border-b border-border">
+              {days.map((day, i) => (
+                <button
+                  key={day}
+                  onClick={() => setActiveDay(i)}
+                  className={cn(
+                    "flex-1 text-center px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
+                    activeDay === i
+                      ? "border-foreground text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {day}
+                </button>
+              ))}
+          </div>
+
+          {/* Session Rows */}
+          <div>
+              {SAMPLE_AGENDA.map((item, i) => (
+                <div
+                  key={i}
+                  className="group flex items-center gap-4 py-2.5 border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
+                >
+                    {/* Time */}
+                    <div className="shrink-0 w-[80px]">
+                        <span className="text-xs font-mono font-medium text-muted-foreground">{item.time}</span>
+                    </div>
+
+                    {/* Title + Description */}
+                    <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-sm text-foreground leading-tight truncate">{item.title}</h4>
+                        <p className="text-xs text-muted-foreground leading-snug truncate mt-0.5">
+                          A deep-dive session led by {item.speaker} at {item.location}.
+                        </p>
+                    </div>
+
+                    {/* Avatar Cluster */}
+                    <AvatarCluster people={item.people} />
+                </div>
+              ))}
+          </div>
+      </div>
+    </div>
+  );
+};
 
 // Variant 2: Timeline View
 export const AgendaVariant2 = () => (
@@ -61,7 +168,10 @@ export const AgendaVariant2 = () => (
                         </div>
                         <div className="lg:col-span-4 mt-2 lg:mt-0">
                             <div className="bg-card p-6 rounded-lg border-none shadow-md space-y-3">
-                                <Badge variant="outline" className="w-fit">{item.type}</Badge>
+                                <div className="flex items-center justify-between">
+                                    <Badge variant="outline" className="w-fit">{item.type}</Badge>
+                                    <AvatarCluster people={item.people} />
+                                </div>
                                 <h3 className="text-xl font-bold text-foreground">{item.title}</h3>
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                     <MapPin className="h-4 w-4 text-primary" /> {item.location}
@@ -77,42 +187,62 @@ export const AgendaVariant2 = () => (
 );
 
 // Variant 3: Compact Tabbed View
-export const AgendaVariant3 = () => (
-  <div className="w-full py-12 bg-background">
-    <div className="mx-auto w-full" style={{ maxWidth: 'var(--max-width)', paddingLeft: 'var(--global-padding)', paddingRight: 'var(--global-padding)' }}>
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 pb-4 gap-4 lg:gap-0">
-             <div>
-                <h2 className="text-2xl font-bold text-foreground">Sessions</h2>
-                <p className="text-muted-foreground">Explore the tracks and sessions.</p>
-             </div>
-             <div className="flex flex-col lg:flex-row gap-2 w-full lg:w-auto mt-0">
-                 <Button variant="default" size="sm" className="w-full lg:w-auto">Day 1</Button>
-                 <Button variant="ghost" size="sm" className="w-full lg:w-auto">Day 2</Button>
-                 <Button variant="ghost" size="sm" className="w-full lg:w-auto">Day 3</Button>
-             </div>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {SAMPLE_AGENDA.map((item, i) => (
-                <div key={i} className="group p-5 rounded-xl border-none bg-card shadow-md hover:shadow-lg transition-all cursor-pointer">
-                    <div className="flex justify-between items-start mb-4">
-                        <Badge variant="secondary" className="font-mono">{item.time}</Badge>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+export const AgendaVariant3 = () => {
+  const [activeDay, setActiveDay] = useState(0);
+  const days = ["Day 1", "Day 2", "Day 3"];
+
+  return (
+    <div className="w-full py-12 bg-background">
+      <div className="mx-auto w-full" style={{ maxWidth: 'var(--max-width)', paddingLeft: 'var(--global-padding)', paddingRight: 'var(--global-padding)' }}>
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+              <div>
+                  <h2 className="text-2xl font-bold text-foreground">Sessions</h2>
+                  <p className="text-sm text-muted-foreground">Explore the tracks and sessions.</p>
+              </div>
+              <div className="flex gap-1">
+                  {days.map((day, i) => (
+                    <Button
+                      key={day}
+                      variant={activeDay === i ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setActiveDay(i)}
+                    >
+                      {day}
+                    </Button>
+                  ))}
+              </div>
+          </div>
+
+          <div>
+              {SAMPLE_AGENDA.map((item, i) => (
+                <div
+                  key={i}
+                  className="group flex items-center gap-4 py-2.5 border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
+                >
+                    {/* Time */}
+                    <div className="shrink-0 w-[80px]">
+                        <span className="text-xs font-mono font-medium text-muted-foreground">{item.time}</span>
                     </div>
-                    <h3 className="font-bold text-lg mb-2 text-foreground group-hover:text-primary transition-colors">{item.title}</h3>
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                        Join us for an in-depth session about {item.title.toLowerCase()} and learn from industry experts.
-                    </p>
-                    <div className="flex justify-between items-center text-xs text-muted-foreground pt-4">
-                        <span className="flex items-center gap-1"><User className="h-3 w-3 text-primary"/> Speaker Name</span>
-                        <span className="flex items-center gap-1"><MapPin className="h-3 w-3 text-primary"/> {item.location}</span>
+
+                    {/* Title + Description */}
+                    <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-sm text-foreground leading-tight truncate">{item.title}</h4>
+                        <p className="text-xs text-muted-foreground leading-snug truncate mt-0.5">
+                          In-depth session about {item.title.toLowerCase()} with industry experts.
+                        </p>
                     </div>
+
+                    {/* Avatar Cluster */}
+                    <AvatarCluster people={item.people} />
+
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
-            ))}
-        </div>
+              ))}
+          </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Variant 4: Brutalist Split
 export const AgendaVariant4 = () => (
@@ -143,7 +273,7 @@ export const AgendaVariant4 = () => (
                             <div className="flex items-center gap-4 text-sm text-muted-foreground font-mono">
                                 <span>{item.location}</span>
                                 <span>•</span>
-                                <span className="uppercase">{item.speaker}</span>
+                                <AvatarCluster people={item.people} />
                             </div>
                         </div>
                     </div>
@@ -177,8 +307,11 @@ export const AgendaVariant5 = () => {
                                         <span className="font-mono text-sm text-muted-foreground w-20">{item.time}</span>
                                         <span className="font-bold text-lg font-sans">{item.title}</span>
                                     </div>
-                                    <div className="bg-foreground text-background rounded-full p-1">
-                                        {isOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                                    <div className="flex items-center gap-3">
+                                        <AvatarCluster people={item.people} />
+                                        <div className="bg-foreground text-background rounded-full p-1">
+                                            {isOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                                        </div>
                                     </div>
                                 </button>
                                 
@@ -331,12 +464,7 @@ export const AgendaVariant7 = () => (
                                 
                                 {!isLunch && (
                                     <div className="flex items-center justify-between mt-6 pt-6 border-t border-border/10">
-                                        <div className="flex items-center gap-2 text-sm font-medium">
-                                            <div className="h-6 w-6 rounded-full bg-muted overflow-hidden">
-                                                <ImageWithFallback src={item.img} alt={item.speaker} className="h-full w-full object-cover" />
-                                            </div>
-                                            <span className="font-sans">{item.speaker}</span>
-                                        </div>
+                                        <AvatarCluster people={item.people} />
                                         <Button size="icon" variant={isKeynote ? "secondary" : "ghost"} className={cn("rounded-full h-8 w-8", isKeynote ? "bg-white text-primary hover:bg-white/90" : "")}>
                                             <ArrowUpRight className="h-4 w-4" />
                                         </Button>
