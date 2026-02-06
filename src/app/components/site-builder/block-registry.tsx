@@ -987,10 +987,12 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
     ],
     toggleableElements: [
         { id: 'showTitle', label: 'Show Title', defaultValue: true },
-        { id: 'showSubtitle', label: 'Show Subtitle', defaultValue: true }
+        { id: 'showSubtitle', label: 'Show Subtitle', defaultValue: true },
+        { id: 'showSessionType', label: 'Session Type Badge', defaultValue: true }
     ],
     html: (id, variant, settings) => {
         const numDays = safeGetCount(settings, 'days', 3);
+        const showSessionType = safeGetVisibility(settings, 'showSessionType', true);
         
         // Get per-day session counts, fallback to global count for backwards compatibility
         const getSessionsForDay = (dayIndex) => {
@@ -1024,7 +1026,9 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
             const locations = ['Main Hall', 'Auditorium A', 'Room 204', 'Room 305', 'Auditorium B', 'Workshop Lab'];
             const location = locations[(dayIndex * 3 + sessionIndex) % locations.length];
             const types = ['Workshop', 'Keynote', 'Panel', 'Networking', 'Talk', 'Fireside Chat'];
-            const sessionType = types[(dayIndex + sessionIndex) % types.length];
+            const defaultType = types[(dayIndex + sessionIndex) % types.length];
+            const typeKey = `type-d${dayIndex}-s${sessionIndex}`;
+            const sessionType = safeGetText(settings, typeKey, defaultType);
 
             // Deterministic people count per session (2-5 speakers/sponsors)
             const totalPeople = 2 + ((dayIndex * 5 + sessionIndex * 3) % 4);
@@ -1057,6 +1061,10 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
             };
             const badgeStyle = badgeColors[sessionType] || badgeColors['Talk'];
 
+            const badgeHtml = showSessionType && sessionType
+                ? `<span style="display:inline-flex; align-items:center; padding:1px 7px; border-radius:var(--radius, 4px); font-size:10px; font-weight:600; font-family:var(--font-sans); letter-spacing:0.03em; text-transform:uppercase; white-space:nowrap; line-height:1.6; ${badgeStyle}">${sessionType}</span>`
+                : '';
+
             return `
                 <div class="session-item group"
                      style="display:flex; align-items:center; gap:0; padding:0; border-bottom:1px solid var(--border); cursor:pointer; transition:background 0.15s;"
@@ -1085,7 +1093,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                             <h4 style="font-size:14px; font-weight:600; color:var(--foreground); font-family:var(--font-sans); line-height:1.3; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;" contenteditable="true" data-key="${sessionKey}">
                                 ${sessionTitle}
                             </h4>
-                            <span style="display:inline-flex; align-items:center; padding:1px 7px; border-radius:var(--radius, 4px); font-size:10px; font-weight:600; font-family:var(--font-sans); letter-spacing:0.03em; text-transform:uppercase; white-space:nowrap; line-height:1.6; ${badgeStyle}">${sessionType}</span>
+                            ${badgeHtml}
                         </div>
                         <p style="font-size:12px; color:var(--muted-foreground); font-family:var(--font-sans); line-height:1.4; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" contenteditable="true" data-key="${descKey}">
                             ${sessionDesc}

@@ -810,6 +810,51 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                                             />
                                         </div>
                                     )}
+                                    
+                                    {/* Session Type Badge controls - per-session inputs shown when toggle is on */}
+                                    {element.id === 'showSessionType' && isVisible && (() => {
+                                        const counts = selectedSettings.counts || {};
+                                        const dayCountKey = `day${activeAgendaDay}Count`;
+                                        const sessionsForDay = counts[dayCountKey] || counts['count'] || 6;
+                                        const defaultTypes = ['Workshop', 'Keynote', 'Panel', 'Networking', 'Talk', 'Fireside Chat'];
+                                        
+                                        return (
+                                            <div className="ml-1 mt-2 mb-1 pl-3 border-l-2 border-primary/20 space-y-2">
+                                                <div className="flex items-center gap-2 mb-1.5">
+                                                    <span className="text-[10px] font-medium text-muted-foreground">Types for</span>
+                                                    <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded font-medium">
+                                                        Day {activeAgendaDay + 1}
+                                                    </span>
+                                                </div>
+                                                {Array.from({ length: sessionsForDay }, (_, sIdx) => {
+                                                    const typeKey = `type-d${activeAgendaDay}-s${sIdx}`;
+                                                    const defaultType = defaultTypes[(activeAgendaDay + sIdx) % defaultTypes.length];
+                                                    const currentVal = (selectedSettings.text && selectedSettings.text[typeKey]) || '';
+                                                    
+                                                    return (
+                                                        <div key={typeKey} className="space-y-0.5">
+                                                            <label className="text-[10px] text-muted-foreground font-medium">
+                                                                Session {sIdx + 1}
+                                                            </label>
+                                                            <input 
+                                                                type="text" 
+                                                                value={currentVal}
+                                                                onChange={(e) => {
+                                                                    const newText = {
+                                                                        ...selectedSettings.text,
+                                                                        [typeKey]: e.target.value
+                                                                    };
+                                                                    onChangeSettings({ ...selectedSettings, text: newText });
+                                                                }}
+                                                                placeholder={defaultType}
+                                                                className="flex h-7 w-full rounded-md border border-input bg-background px-2.5 py-1 text-[11px] shadow-sm transition-colors placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-sans"
+                                                            />
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             );
                         })}
