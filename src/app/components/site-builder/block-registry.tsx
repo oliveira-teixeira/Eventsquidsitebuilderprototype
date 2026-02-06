@@ -158,11 +158,36 @@ const Schematics = {
   ),
   Agenda: (
     <svg viewBox="0 0 100 60" className="w-full h-full text-foreground/20 fill-current">
-      {/* Clean List - horizontal rows with subtle dividers */}
-      <rect x="10" y="10" width="30" height="6" rx="1" />
-      <rect x="10" y="22" width="80" height="8" rx="1" className="text-muted-foreground/10" />
-      <rect x="10" y="32" width="80" height="8" rx="1" className="text-muted-foreground/10" />
-      <rect x="10" y="42" width="80" height="8" rx="1" className="text-muted-foreground/10" />
+      {/* Schedule List (Compact) - time | title+badge | avatars */}
+      {/* Row 1 */}
+      <rect x="6" y="8" width="14" height="3" rx="0.5" className="opacity-60" />
+      <rect x="24" y="7" width="30" height="4" rx="0.5" />
+      <rect x="24" y="12" width="20" height="2" rx="0.5" className="opacity-40" />
+      <circle cx="82" cy="10" r="3" className="opacity-50" />
+      <circle cx="88" cy="10" r="3" className="opacity-50" />
+      <line x1="6" y1="17" x2="94" y2="17" stroke="currentColor" strokeWidth="0.3" className="opacity-30" />
+      {/* Row 2 */}
+      <rect x="6" y="21" width="14" height="3" rx="0.5" className="opacity-60" />
+      <rect x="24" y="20" width="34" height="4" rx="0.5" />
+      <rect x="24" y="25" width="18" height="2" rx="0.5" className="opacity-40" />
+      <rect x="56" y="20" width="10" height="3" rx="1" className="text-primary/30" />
+      <circle cx="82" cy="23" r="3" className="opacity-50" />
+      <circle cx="88" cy="23" r="3" className="opacity-50" />
+      <circle cx="94" cy="23" r="3" className="opacity-50" />
+      <line x1="6" y1="30" x2="94" y2="30" stroke="currentColor" strokeWidth="0.3" className="opacity-30" />
+      {/* Row 3 */}
+      <rect x="6" y="34" width="14" height="3" rx="0.5" className="opacity-60" />
+      <rect x="24" y="33" width="28" height="4" rx="0.5" />
+      <rect x="24" y="38" width="22" height="2" rx="0.5" className="opacity-40" />
+      <circle cx="82" cy="36" r="3" className="opacity-50" />
+      <circle cx="88" cy="36" r="3" className="opacity-50" />
+      <line x1="6" y1="43" x2="94" y2="43" stroke="currentColor" strokeWidth="0.3" className="opacity-30" />
+      {/* Row 4 */}
+      <rect x="6" y="47" width="14" height="3" rx="0.5" className="opacity-60" />
+      <rect x="24" y="46" width="32" height="4" rx="0.5" />
+      <rect x="24" y="51" width="16" height="2" rx="0.5" className="opacity-40" />
+      <rect x="56" y="46" width="8" height="3" rx="1" className="text-primary/30" />
+      <circle cx="82" cy="49" r="3" className="opacity-50" />
     </svg>
   ),
   AgendaGrid: (
@@ -951,9 +976,9 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
   // --- AGENDA ---
   {
     id: "agenda-clean",
-    name: "Agenda: Clean List",
+    name: "Agenda: Schedule List",
     category: "Agenda",
-    description: "A clean, scannable list with day-based navigation.",
+    description: "Dense, scannable schedule with times, titles, badges, and speaker avatars.",
     icon: Schematics.Agenda,
     configurableIcons: [],
     configurableCounts: [
@@ -962,10 +987,12 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
     ],
     toggleableElements: [
         { id: 'showTitle', label: 'Show Title', defaultValue: true },
-        { id: 'showSubtitle', label: 'Show Subtitle', defaultValue: true }
+        { id: 'showSubtitle', label: 'Show Subtitle', defaultValue: true },
+        { id: 'showSessionType', label: 'Session Type Badge', defaultValue: true }
     ],
     html: (id, variant, settings) => {
         const numDays = safeGetCount(settings, 'days', 3);
+        const showSessionType = safeGetVisibility(settings, 'showSessionType', true);
         
         // Get per-day session counts, fallback to global count for backwards compatibility
         const getSessionsForDay = (dayIndex) => {
@@ -985,19 +1012,23 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
         // Pool of placeholder speaker/sponsor initials for avatar clusters
         const speakerPool = ['AJ','SK','DR','MK','LP','TC','NV','RH','EW','JB','QF','ZA','UM','GO'];
 
-        // Render a single session row with time, title, description, and avatar cluster
+        // Render a single session row: Time | Title + subtitle + badge | Avatars
         const renderSession = (dayIndex, sessionIndex) => {
             const hour = 8 + sessionIndex;
-            const time = hour < 12 ? `${String(hour).padStart(2, '0')}:00 AM` : `${String(hour === 12 ? 12 : hour - 12).padStart(2, '0')}:00 PM`;
+            const startTime = hour < 12 ? `${String(hour).padStart(2, '0')}:00 AM` : `${String(hour === 12 ? 12 : hour - 12).padStart(2, '0')}:00 PM`;
+            const endHour = hour + 1;
+            const endTime = endHour < 12 ? `${String(endHour).padStart(2, '0')}:00 AM` : `${String(endHour === 12 ? 12 : endHour - 12).padStart(2, '0')}:00 PM`;
             const sessionKey = `session-d${dayIndex}-s${sessionIndex}`;
             const descKey = `desc-d${dayIndex}-s${sessionIndex}`;
             const sessionTitle = safeGetText(settings, sessionKey, `Session ${sessionIndex + 1}: Innovation Workshop`);
-            const sessionDesc = safeGetText(settings, descKey, `Join us for an engaging discussion on the latest trends and innovations in technology.`);
+            const sessionDesc = safeGetText(settings, descKey, `Join us for an engaging discussion on the latest trends and innovations.`);
             const dayLabel = `${dayNames[dayIndex % dayNames.length]}, ${dates[dayIndex % dates.length]}`;
             const locations = ['Main Hall', 'Auditorium A', 'Room 204', 'Room 305', 'Auditorium B', 'Workshop Lab'];
             const location = locations[(dayIndex * 3 + sessionIndex) % locations.length];
             const types = ['Workshop', 'Keynote', 'Panel', 'Networking', 'Talk', 'Fireside Chat'];
-            const sessionType = types[(dayIndex + sessionIndex) % types.length];
+            const defaultType = types[(dayIndex + sessionIndex) % types.length];
+            const typeKey = `type-d${dayIndex}-s${sessionIndex}`;
+            const sessionType = safeGetText(settings, typeKey, defaultType);
 
             // Deterministic people count per session (2-5 speakers/sponsors)
             const totalPeople = 2 + ((dayIndex * 5 + sessionIndex * 3) % 4);
@@ -1012,44 +1043,68 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
 
             const avatarCircles = Array.from({length: visible}, (_, k) => {
                 const initials = speakerPool[(dayIndex * 7 + sessionIndex * 3 + k) % speakerPool.length];
-                return `<div class="w-[22px] h-[22px] rounded-full border-2 border-background bg-muted flex items-center justify-center" title="${initials}"><span class="text-[9px] font-semibold text-muted-foreground leading-none select-none">${initials}</span></div>`;
+                return `<div style="width:24px; height:24px; border-radius:50%; border:2px solid var(--background); background:var(--muted); display:flex; align-items:center; justify-content:center; flex-shrink:0;" title="${initials}"><span style="font-size:9px; font-weight:600; color:var(--muted-foreground); line-height:1; user-select:none; font-family:var(--font-sans);">${initials}</span></div>`;
             }).join('');
 
             const overflowCircle = overflow > 0
-                ? `<div class="w-[22px] h-[22px] rounded-full border-2 border-background bg-muted flex items-center justify-center" title="${overflow} more"><span class="text-[8px] font-semibold text-muted-foreground leading-none select-none">+${overflow}</span></div>`
+                ? `<div style="width:24px; height:24px; border-radius:50%; border:2px solid var(--background); background:var(--muted); display:flex; align-items:center; justify-content:center; flex-shrink:0;" title="${overflow} more"><span style="font-size:8px; font-weight:600; color:var(--muted-foreground); line-height:1; user-select:none; font-family:var(--font-sans);">+${overflow}</span></div>`
+                : '';
+
+            // Badge color per type
+            const badgeColors = {
+                'Workshop': 'background:color-mix(in srgb, var(--primary) 12%, transparent); color:var(--primary); border:1px solid color-mix(in srgb, var(--primary) 25%, transparent);',
+                'Keynote': 'background:color-mix(in srgb, var(--foreground) 8%, transparent); color:var(--foreground); border:1px solid var(--border);',
+                'Panel': 'background:color-mix(in srgb, var(--primary) 8%, transparent); color:var(--primary); border:1px solid color-mix(in srgb, var(--primary) 20%, transparent);',
+                'Networking': 'background:color-mix(in srgb, var(--muted-foreground) 10%, transparent); color:var(--muted-foreground); border:1px solid var(--border);',
+                'Talk': 'background:color-mix(in srgb, var(--primary) 10%, transparent); color:var(--primary); border:1px solid color-mix(in srgb, var(--primary) 20%, transparent);',
+                'Fireside Chat': 'background:color-mix(in srgb, var(--foreground) 6%, transparent); color:var(--foreground); border:1px solid var(--border);'
+            };
+            const badgeStyle = badgeColors[sessionType] || badgeColors['Talk'];
+
+            const badgeHtml = showSessionType && sessionType
+                ? `<span style="display:inline-flex; align-items:center; padding:1px 7px; border-radius:var(--radius, 4px); font-size:10px; font-weight:600; font-family:var(--font-sans); letter-spacing:0.03em; text-transform:uppercase; white-space:nowrap; line-height:1.6; ${badgeStyle}">${sessionType}</span>`
                 : '';
 
             return `
-                <div class="session-item group flex items-center gap-4 py-2.5 border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
+                <div class="session-item group"
+                     style="display:flex; align-items:center; gap:0; padding:0; border-bottom:1px solid var(--border); cursor:pointer; transition:background 0.15s;"
                      data-day="${dayIndex}"
                      data-session-click="true"
                      data-session-title="${sessionTitle.replace(/"/g, '&quot;')}"
-                     data-session-time="${time}"
+                     data-session-time="${startTime} \u2013 ${endTime}"
                      data-session-day="${dayLabel}"
                      data-session-location="${location}"
                      data-session-type="${sessionType}"
                      data-session-desc="${sessionDesc.replace(/"/g, '&quot;')}"
                      data-session-speakers="${allSpeakers.join(',')}"
                      role="button" tabindex="0"
+                     onmouseover="this.style.background='var(--muted)'"
+                     onmouseout="this.style.background='transparent'"
                 >
-                    <!-- Time Column (fixed width) -->
-                    <div class="flex-shrink-0 w-[80px]">
-                        <span class="text-xs font-mono font-medium text-muted-foreground">${time}</span>
+                    <!-- Left: Time column -->
+                    <div style="flex-shrink:0; width:120px; padding:10px 16px 10px 0; display:flex; flex-direction:column; align-items:flex-start; gap:1px;">
+                        <span style="font-size:13px; font-weight:600; font-family:var(--font-mono, monospace); color:var(--foreground); line-height:1.3; white-space:nowrap;">${startTime}</span>
+                        <span style="font-size:11px; font-family:var(--font-mono, monospace); color:var(--muted-foreground); line-height:1.3; white-space:nowrap;">${endTime}</span>
                     </div>
-                    
-                    <!-- Title + Description -->
-                    <div class="flex-1 min-w-0">
-                        <h4 class="font-semibold text-sm text-foreground font-sans leading-tight truncate group-hover:text-primary transition-colors ${getTextAlignClass(settings)}" contenteditable="true" data-key="${sessionKey}">
-                            ${sessionTitle}
-                        </h4>
-                        <p class="text-xs text-muted-foreground font-sans leading-snug truncate mt-0.5 ${getTextAlignClass(settings)}" contenteditable="true" data-key="${descKey}">
+
+                    <!-- Middle: Title + description + badge -->
+                    <div style="flex:1; min-width:0; padding:10px 12px; display:flex; flex-direction:column; gap:2px;">
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <h4 style="font-size:14px; font-weight:600; color:var(--foreground); font-family:var(--font-sans); line-height:1.3; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;" contenteditable="true" data-key="${sessionKey}">
+                                ${sessionTitle}
+                            </h4>
+                            ${badgeHtml}
+                        </div>
+                        <p style="font-size:12px; color:var(--muted-foreground); font-family:var(--font-sans); line-height:1.4; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" contenteditable="true" data-key="${descKey}">
                             ${sessionDesc}
                         </p>
                     </div>
-                    
-                    <!-- Avatar Cluster -->
-                    <div class="flex-shrink-0 flex items-center -space-x-1.5 justify-end" role="group" aria-label="Speakers and sponsors">
-                        ${avatarCircles}${overflowCircle}
+
+                    <!-- Right: Avatar cluster -->
+                    <div style="flex-shrink:0; display:flex; align-items:center; padding:10px 0 10px 8px; margin-left:auto;" role="group" aria-label="Speakers and sponsors">
+                        <div style="display:flex; align-items:center;">
+                            ${avatarCircles}${overflowCircle}
+                        </div>
                     </div>
                 </div>
             `;
@@ -1060,7 +1115,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
             const sessionsForThisDay = getSessionsForDay(dayIndex);
             const sessions = Array.from({length: sessionsForThisDay}, (_, i) => renderSession(dayIndex, i)).join('');
             return `
-                <div class="sessions-list">
+                <div class="sessions-list" style="border-top:1px solid var(--border);">
                     ${sessions}
                 </div>
             `;
@@ -1073,12 +1128,13 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
             return `
                 <button 
                     type="button"
-                    class="tab-btn flex-1 text-center px-4 py-3 cursor-pointer transition-all font-sans border-b-2 ${i === 0 ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground'} hover:text-foreground"
+                    class="tab-btn"
+                    style="flex:1; text-align:center; padding:10px 16px; cursor:pointer; transition:all 0.15s; font-family:var(--font-sans); border:none; background:none; border-bottom:2px solid ${i === 0 ? 'var(--foreground)' : 'transparent'}; color:${i === 0 ? 'var(--foreground)' : 'var(--muted-foreground)'};"
                     data-tab-index="${i}"
                     data-day-index="${i}"
                 >
-                    <span class="font-medium text-sm">${dayShort}</span>
-                    <span class="text-xs ml-1.5">${date}</span>
+                    <span style="font-weight:600; font-size:14px;">${dayShort}</span>
+                    <span style="font-size:12px; margin-left:6px; opacity:0.7;">${date}</span>
                 </button>
             `;
         }).join('');
@@ -1090,27 +1146,27 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
         `).join('');
 
         return `
-        <builder-section id="${id}" class="relative block w-full transition-colors duration-300 ${getVariantClasses(variant)} ${getPaddingClass(settings, 'py-20')}" data-active-day="0">
+        <builder-section id="${id}" class="relative block w-full transition-colors duration-300 ${getVariantClasses(variant)} ${getPaddingClass(settings, 'py-16')}" data-active-day="0">
             <div class="w-full max-w-[var(--max-width)] mx-auto px-[var(--global-padding)]">
                 ${renderSectionHeader(settings, "Event Schedule", "Browse sessions by day.")}
                 
                 <!-- Search Bar -->
-                <div class="mb-6">
-                    <div class="relative max-w-md">
+                <div style="margin-bottom:16px;">
+                    <div style="position:relative; max-width:320px;">
                         <input 
                             type="text" 
                             placeholder="Search sessions..."
-                            class="w-full px-4 py-2.5 pr-10 bg-background border border-border rounded-[var(--radius)] text-foreground placeholder:text-muted-foreground font-sans focus:outline-none focus:ring-2 focus:ring-ring transition-all"
+                            style="width:100%; padding:8px 36px 8px 12px; background:var(--background); border:1px solid var(--border); border-radius:var(--radius, 6px); color:var(--foreground); font-family:var(--font-sans); font-size:13px; outline:none; transition:all 0.15s;"
                             data-search-input="true"
                         />
-                        <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg style="position:absolute; right:10px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--muted-foreground); pointer-events:none;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
                     </div>
                 </div>
                 
                 <!-- Horizontal Day Navigation -->
-                <div class="flex gap-0 mb-8 border-b ${getBorderColor(variant)}">
+                <div style="display:flex; gap:0; margin-bottom:0; border-bottom:1px solid var(--border);">
                     ${tabNavigation}
                 </div>
                 

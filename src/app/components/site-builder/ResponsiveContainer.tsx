@@ -391,13 +391,20 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                                 // Update data-active-day attribute
                                 agendaSection.setAttribute('data-active-day', tabIndex);
                                 
-                                // Update tab styles
+                                // Update tab styles (supports both inline-style and class-based tabs)
                                 const allTabs = agendaSection.querySelectorAll('.tab-btn');
                                 allTabs.forEach((tab, idx) => {
+                                    const tabEl = tab as HTMLElement;
                                     if (idx === dayIndex) {
+                                        // Inline style approach (Schedule List)
+                                        tabEl.style.borderBottomColor = 'var(--foreground)';
+                                        tabEl.style.color = 'var(--foreground)';
+                                        // Class approach (legacy)
                                         tab.classList.add('border-foreground', 'text-foreground');
                                         tab.classList.remove('border-transparent', 'text-muted-foreground');
                                     } else {
+                                        tabEl.style.borderBottomColor = 'transparent';
+                                        tabEl.style.color = 'var(--muted-foreground)';
                                         tab.classList.remove('border-foreground', 'text-foreground');
                                         tab.classList.add('border-transparent', 'text-muted-foreground');
                                     }
@@ -790,7 +797,7 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
           });
       };
 
-      // Apply session modal to all builder-sections (runs for both clean list and grid)
+      // Apply session modal to all builder-sections (runs for both schedule list and grid)
       const allFigmaSections = container.querySelectorAll('builder-section');
       allFigmaSections.forEach((section: Element) => {
           if (section.querySelector('.session-modal-overlay')) {
