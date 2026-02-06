@@ -19,7 +19,8 @@ import {
   Globe,
   Share2,
   Check,
-  X
+  X,
+  MessageSquare
 } from "lucide-react";
 import { cn } from "../ui/utils";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "../ui/dialog";
@@ -44,6 +45,7 @@ interface TopNavProps {
   blocks?: {id: string, typeId: string, hidden?: boolean, settings?: any, variant?: string}[];
   isPreviewMode?: boolean;
   setIsPreviewMode?: (isPreview: boolean) => void;
+  onOpenMessaging?: () => void;
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
@@ -61,7 +63,8 @@ export const TopNav: React.FC<TopNavProps> = ({
   setIsNavigatorOpen,
   blocks = [],
   isPreviewMode = false,
-  setIsPreviewMode
+  setIsPreviewMode,
+  onOpenMessaging
 }) => {
   const [isPublishOpen, setIsPublishOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -285,6 +288,16 @@ export const TopNav: React.FC<TopNavProps> = ({
           <Share2 className="w-3.5 h-3.5" />
           Share
         </button>
+
+        {onOpenMessaging && (
+          <button
+            onClick={onOpenMessaging}
+            className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            Messaging
+          </button>
+        )}
 
         <Dialog open={isPublishOpen} onOpenChange={(open) => {
             setIsPublishOpen(open);
