@@ -179,6 +179,10 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                 width: 100%;
                 overflow: hidden;
               }
+              /* Allow modal overlay to render on top */
+              .session-modal-overlay {
+                overflow-y: auto;
+              }
               #root {
                 width: 100%;
                 min-height: 0;
@@ -267,6 +271,106 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                 
                 mountNode.innerHTML = html;
                 
+                // --- Session Detail Modal Handler (applies to all agenda blocks) ---
+                const setupSessionModal = (sectionContainer: Element) => {
+                    const overlay = sectionContainer.querySelector('.session-modal-overlay') as HTMLElement;
+                    if (!overlay) return;
+
+                    const closeModal = () => {
+                        overlay.style.display = 'none';
+                    };
+
+                    const openModal = (el: HTMLElement) => {
+                        const title = el.getAttribute('data-session-title') || '';
+                        const time = el.getAttribute('data-session-time') || '';
+                        const day = el.getAttribute('data-session-day') || '';
+                        const location = el.getAttribute('data-session-location') || '';
+                        const type = el.getAttribute('data-session-type') || '';
+                        const desc = el.getAttribute('data-session-desc') || '';
+                        const speakersRaw = el.getAttribute('data-session-speakers') || '';
+
+                        const badgeEl = overlay.querySelector('.session-modal-badge') as HTMLElement;
+                        const titleEl = overlay.querySelector('.session-modal-title') as HTMLElement;
+                        const timeEl = overlay.querySelector('.session-modal-time') as HTMLElement;
+                        const locationEl = overlay.querySelector('.session-modal-location') as HTMLElement;
+                        const descEl = overlay.querySelector('.session-modal-desc') as HTMLElement;
+                        const speakersSection = overlay.querySelector('.session-modal-speakers-section') as HTMLElement;
+                        const speakersContainer = overlay.querySelector('.session-modal-speakers') as HTMLElement;
+
+                        if (badgeEl) badgeEl.textContent = type;
+                        if (titleEl) titleEl.textContent = title;
+                        if (timeEl) timeEl.textContent = `${time} \u00B7 ${day}`;
+                        if (locationEl) locationEl.textContent = location;
+                        if (descEl) descEl.textContent = desc;
+
+                        if (speakersContainer && speakersSection) {
+                            const speakers = speakersRaw.split(',').filter(Boolean);
+                            if (speakers.length > 0) {
+                                speakersSection.style.display = 'block';
+                                speakersContainer.innerHTML = speakers.map(initials => `
+                                    <div style="display:flex; align-items:center; gap:12px;">
+                                        <div style="width:32px; height:32px; border-radius:50%; background:var(--muted); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                            <span style="font-size:12px; font-weight:600; color:var(--muted-foreground); font-family:var(--font-sans);">${initials.trim()}</span>
+                                        </div>
+                                        <span style="font-size:14px; font-weight:500; color:var(--foreground); font-family:var(--font-sans);">Speaker ${initials.trim()}</span>
+                                    </div>
+                                `).join('');
+                            } else {
+                                speakersSection.style.display = 'none';
+                            }
+                        }
+
+                        overlay.style.display = 'block';
+                    };
+
+                    // Close on overlay click
+                    overlay.addEventListener('click', (e: Event) => {
+                        const target = e.target as HTMLElement;
+                        if (target === overlay || target.closest('.session-modal-close')) {
+                            closeModal();
+                        }
+                    });
+
+                    // Close on Escape
+                    const doc = overlay.ownerDocument;
+                    doc.addEventListener('keydown', (e: KeyboardEvent) => {
+                        if (e.key === 'Escape' && overlay.style.display !== 'none') {
+                            closeModal();
+                        }
+                    });
+
+                    // Session item click delegation
+                    sectionContainer.addEventListener('click', (e: Event) => {
+                        const target = e.target as HTMLElement;
+                        // Don't open modal if user is editing text
+                        if (target.isContentEditable || target.closest('[contenteditable="true"]')) return;
+                        const sessionEl = target.closest('[data-session-click]') as HTMLElement;
+                        if (sessionEl) {
+                            openModal(sessionEl);
+                        }
+                    });
+
+                    // Keyboard support
+                    sectionContainer.addEventListener('keydown', (e: KeyboardEvent) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            const target = e.target as HTMLElement;
+                            const sessionEl = target.closest('[data-session-click]') as HTMLElement;
+                            if (sessionEl) {
+                                e.preventDefault();
+                                openModal(sessionEl);
+                            }
+                        }
+                    });
+                };
+
+                // Apply session modal to all builder-sections that have one
+                const allSections = mountNode.querySelectorAll('builder-section');
+                allSections.forEach((section: Element) => {
+                    if (section.querySelector('.session-modal-overlay')) {
+                        setupSessionModal(section);
+                    }
+                });
+
                 // Setup event listeners for agenda day tabs
                 const agendaSection = mountNode.querySelector('builder-section[data-active-day]');
                 if (agendaSection) {
@@ -613,6 +717,87 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
     
     try {
       const container = figmaContainerRef.current;
+
+      // --- Session Detail Modal Handler for Figma mode ---
+      const setupFigmaSessionModal = (containerEl: Element) => {
+          const overlay = containerEl.querySelector('.session-modal-overlay') as HTMLElement;
+          if (!overlay) return;
+
+          const closeModal = () => { overlay.style.display = 'none'; };
+
+          const openModal = (el: HTMLElement) => {
+              const title = el.getAttribute('data-session-title') || '';
+              const time = el.getAttribute('data-session-time') || '';
+              const day = el.getAttribute('data-session-day') || '';
+              const location = el.getAttribute('data-session-location') || '';
+              const type = el.getAttribute('data-session-type') || '';
+              const desc = el.getAttribute('data-session-desc') || '';
+              const speakersRaw = el.getAttribute('data-session-speakers') || '';
+
+              const badgeEl = overlay.querySelector('.session-modal-badge') as HTMLElement;
+              const titleEl = overlay.querySelector('.session-modal-title') as HTMLElement;
+              const timeEl = overlay.querySelector('.session-modal-time') as HTMLElement;
+              const locationEl = overlay.querySelector('.session-modal-location') as HTMLElement;
+              const descEl = overlay.querySelector('.session-modal-desc') as HTMLElement;
+              const speakersSection = overlay.querySelector('.session-modal-speakers-section') as HTMLElement;
+              const speakersContainer = overlay.querySelector('.session-modal-speakers') as HTMLElement;
+
+              if (badgeEl) badgeEl.textContent = type;
+              if (titleEl) titleEl.textContent = title;
+              if (timeEl) timeEl.textContent = `${time} \u00B7 ${day}`;
+              if (locationEl) locationEl.textContent = location;
+              if (descEl) descEl.textContent = desc;
+
+              if (speakersContainer && speakersSection) {
+                  const speakers = speakersRaw.split(',').filter(Boolean);
+                  if (speakers.length > 0) {
+                      speakersSection.style.display = 'block';
+                      speakersContainer.innerHTML = speakers.map(initials => `
+                          <div style="display:flex; align-items:center; gap:12px;">
+                              <div style="width:32px; height:32px; border-radius:50%; background:var(--muted); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                  <span style="font-size:12px; font-weight:600; color:var(--muted-foreground); font-family:var(--font-sans);">${initials.trim()}</span>
+                              </div>
+                              <span style="font-size:14px; font-weight:500; color:var(--foreground); font-family:var(--font-sans);">Speaker ${initials.trim()}</span>
+                          </div>
+                      `).join('');
+                  } else {
+                      speakersSection.style.display = 'none';
+                  }
+              }
+              overlay.style.display = 'block';
+          };
+
+          overlay.addEventListener('click', (e) => {
+              const target = e.target as HTMLElement;
+              if (target === overlay || target.closest('.session-modal-close')) closeModal();
+          });
+          document.addEventListener('keydown', (e) => {
+              if (e.key === 'Escape' && overlay.style.display !== 'none') closeModal();
+          });
+          containerEl.addEventListener('click', (e) => {
+              const target = e.target as HTMLElement;
+              if (target.isContentEditable || target.closest('[contenteditable="true"]')) return;
+              const sessionEl = target.closest('[data-session-click]') as HTMLElement;
+              if (sessionEl) openModal(sessionEl);
+          });
+          containerEl.addEventListener('keydown', (e: Event) => {
+              const ke = e as KeyboardEvent;
+              if (ke.key === 'Enter' || ke.key === ' ') {
+                  const target = ke.target as HTMLElement;
+                  const sessionEl = target.closest('[data-session-click]') as HTMLElement;
+                  if (sessionEl) { ke.preventDefault(); openModal(sessionEl); }
+              }
+          });
+      };
+
+      // Apply session modal to all builder-sections (runs for both clean list and grid)
+      const allFigmaSections = container.querySelectorAll('builder-section');
+      allFigmaSections.forEach((section: Element) => {
+          if (section.querySelector('.session-modal-overlay')) {
+              setupFigmaSessionModal(section);
+          }
+      });
+
       const agendaSection = container.querySelector('builder-section[data-active-day]');
       
       if (!agendaSection) return;
@@ -718,16 +903,12 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
         };
         
         searchInput.addEventListener('input', handleSearch);
-        
-        return () => {
-          agendaSection.removeEventListener('click', handleTabClick);
-          searchInput.removeEventListener('input', handleSearch);
-        };
-      } else {
-        return () => {
-          agendaSection.removeEventListener('click', handleTabClick);
-        };
       }
+      
+      return () => {
+          agendaSection.removeEventListener('click', handleTabClick);
+          if (searchInput) searchInput.removeEventListener('input', handleSearch);
+      };
     } catch (err) {
       console.warn('Error setting up Figma event listeners:', err);
     }

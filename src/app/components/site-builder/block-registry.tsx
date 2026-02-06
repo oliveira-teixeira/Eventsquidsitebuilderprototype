@@ -511,6 +511,58 @@ const getDividerHtml = (settings: BlockSettings | undefined) => {
   `;
 };
 
+// Session Detail Modal — injected into agenda blocks, driven by vanilla JS in ResponsiveContainer
+const getSessionModalHtml = () => `
+  <div class="session-modal-overlay" style="display:none; position:absolute; inset:0; z-index:9999; background:rgba(0,0,0,0.5); backdrop-filter:blur(2px); min-height:100%; overflow:auto; padding:40px 0;">
+    <div class="session-modal-container" style="position:relative; margin:0 auto; width:90%; max-width:480px; border-radius:var(--radius, 12px);">
+      <div style="background:var(--card); color:var(--card-foreground); border:1px solid var(--border); border-radius:var(--radius, 12px); box-shadow:0 20px 60px rgba(0,0,0,0.3); padding:24px; position:relative;">
+        <!-- Close button -->
+        <button class="session-modal-close" style="position:absolute; top:12px; right:12px; width:32px; height:32px; border-radius:var(--radius, 6px); border:1px solid var(--border); background:var(--muted); color:var(--muted-foreground); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.15s;" aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
+
+        <!-- Badge -->
+        <div class="session-modal-badge" style="display:inline-block; padding:2px 8px; border-radius:var(--radius, 4px); border:1px solid var(--border); font-size:10px; font-family:monospace; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted-foreground); margin-bottom:8px;"></div>
+
+        <!-- Title -->
+        <h3 class="session-modal-title" style="font-size:20px; font-weight:700; line-height:1.3; margin:0 0 16px 0; padding-right:32px; color:var(--foreground); font-family:var(--font-sans);"></h3>
+
+        <!-- Time & Location -->
+        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:16px;">
+          <div style="display:flex; align-items:center; gap:8px; font-size:14px; color:var(--muted-foreground); font-family:var(--font-sans);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span class="session-modal-time"></span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; font-size:14px; color:var(--muted-foreground); font-family:var(--font-sans);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span class="session-modal-location"></span>
+          </div>
+        </div>
+
+        <div style="height:1px; background:var(--border); margin:16px 0;"></div>
+
+        <!-- Description -->
+        <p class="session-modal-desc" style="font-size:14px; line-height:1.6; color:var(--foreground); white-space:pre-line; margin:0 0 16px 0; font-family:var(--font-sans);"></p>
+
+        <!-- Speakers -->
+        <div class="session-modal-speakers-section" style="display:none;">
+          <div style="height:1px; background:var(--border); margin:16px 0;"></div>
+          <h4 style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted-foreground); margin:0 0 12px 0; font-family:var(--font-sans);">Speakers</h4>
+          <div class="session-modal-speakers" style="display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+
+        <div style="height:1px; background:var(--border); margin:16px 0;"></div>
+
+        <!-- Action Button -->
+        <button class="session-modal-action" style="width:100%; padding:12px 24px; border-radius:var(--radius, 8px); background:var(--primary); color:var(--primary-foreground); font-size:14px; font-weight:500; font-family:var(--font-sans); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:opacity 0.15s;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M10 14h4"/></svg>
+          Add to Schedule
+        </button>
+      </div>
+    </div>
+  </div>
+`;
+
 // Contrast Helpers
 const getMutedColor = (variant?: string) => {
   if (!variant || variant === 'default') {
@@ -941,11 +993,22 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
             const descKey = `desc-d${dayIndex}-s${sessionIndex}`;
             const sessionTitle = safeGetText(settings, sessionKey, `Session ${sessionIndex + 1}: Innovation Workshop`);
             const sessionDesc = safeGetText(settings, descKey, `Join us for an engaging discussion on the latest trends and innovations in technology.`);
+            const dayLabel = `${dayNames[dayIndex % dayNames.length]}, ${dates[dayIndex % dates.length]}`;
+            const locations = ['Main Hall', 'Auditorium A', 'Room 204', 'Room 305', 'Auditorium B', 'Workshop Lab'];
+            const location = locations[(dayIndex * 3 + sessionIndex) % locations.length];
+            const types = ['Workshop', 'Keynote', 'Panel', 'Networking', 'Talk', 'Fireside Chat'];
+            const sessionType = types[(dayIndex + sessionIndex) % types.length];
 
             // Deterministic people count per session (2-5 speakers/sponsors)
             const totalPeople = 2 + ((dayIndex * 5 + sessionIndex * 3) % 4);
             const visible = Math.min(totalPeople, 3);
             const overflow = totalPeople - 3;
+
+            // Build full speaker list for modal
+            const allSpeakers = Array.from({length: totalPeople}, (_, k) => {
+                const initials = speakerPool[(dayIndex * 7 + sessionIndex * 3 + k) % speakerPool.length];
+                return initials;
+            });
 
             const avatarCircles = Array.from({length: visible}, (_, k) => {
                 const initials = speakerPool[(dayIndex * 7 + sessionIndex * 3 + k) % speakerPool.length];
@@ -957,7 +1020,18 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                 : '';
 
             return `
-                <div class="session-item group flex items-center gap-4 py-2.5 border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors cursor-pointer" data-day="${dayIndex}">
+                <div class="session-item group flex items-center gap-4 py-2.5 border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
+                     data-day="${dayIndex}"
+                     data-session-click="true"
+                     data-session-title="${sessionTitle.replace(/"/g, '&quot;')}"
+                     data-session-time="${time}"
+                     data-session-day="${dayLabel}"
+                     data-session-location="${location}"
+                     data-session-type="${sessionType}"
+                     data-session-desc="${sessionDesc.replace(/"/g, '&quot;')}"
+                     data-session-speakers="${allSpeakers.join(',')}"
+                     role="button" tabindex="0"
+                >
                     <!-- Time Column (fixed width) -->
                     <div class="flex-shrink-0 w-[80px]">
                         <span class="text-xs font-mono font-medium text-muted-foreground">${time}</span>
@@ -965,7 +1039,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                     
                     <!-- Title + Description -->
                     <div class="flex-1 min-w-0">
-                        <h4 class="font-semibold text-sm text-foreground font-sans leading-tight truncate ${getTextAlignClass(settings)}" contenteditable="true" data-key="${sessionKey}">
+                        <h4 class="font-semibold text-sm text-foreground font-sans leading-tight truncate group-hover:text-primary transition-colors ${getTextAlignClass(settings)}" contenteditable="true" data-key="${sessionKey}">
                             ${sessionTitle}
                         </h4>
                         <p class="text-xs text-muted-foreground font-sans leading-snug truncate mt-0.5 ${getTextAlignClass(settings)}" contenteditable="true" data-key="${descKey}">
@@ -1045,6 +1119,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                     ${tabPanels}
                 </div>
             </div>
+            ${getSessionModalHtml()}
             ${getDividerHtml(settings)}
         </builder-section>
         `;
@@ -1158,8 +1233,22 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
          <div class="w-full max-w-[var(--max-width)] mx-auto px-[var(--global-padding)]">
             ${renderSectionHeader(settings, "Sessions", "Explore the tracks.")}
             <div class="grid ${gridClass} gap-6">
-               ${Array.from({length: count}, (_, i) => i + 1).map(i => `
-                  <div class="group p-6 rounded-xl border border-border bg-card text-card-foreground hover:border-primary/50 transition-colors cursor-pointer shadow-sm ${getTextAlignClass(settings)}">
+               ${Array.from({length: count}, (_, i) => i + 1).map(i => {
+                   const types = ['Workshop', 'Keynote', 'Panel', 'Networking', 'Talk', 'Fireside Chat'];
+                   const locations = ['Main Hall', 'Auditorium A', 'Room 204', 'Room 305', 'Auditorium B', 'Workshop Lab'];
+                   const speakers = ['AJ','SK','DR','MK','LP','TC'];
+                   return `
+                  <div class="group p-6 rounded-xl border border-border bg-card text-card-foreground hover:border-primary/50 hover:shadow-md transition-all cursor-pointer shadow-sm ${getTextAlignClass(settings)}"
+                       data-session-click="true"
+                       data-session-title="Future of Tech Session ${i}"
+                       data-session-time="0${8+i}:00 AM"
+                       data-session-day="Friday, Dec 15"
+                       data-session-location="${locations[i % locations.length]}"
+                       data-session-type="${types[i % types.length]}"
+                       data-session-desc="Join us for an in-depth session about the topic and learn from industry experts. This session covers the latest developments, practical strategies, and hands-on techniques you can apply immediately."
+                       data-session-speakers="${speakers[i % speakers.length]},${speakers[(i+1) % speakers.length]}"
+                       role="button" tabindex="0"
+                  >
                      <div class="flex justify-between items-start mb-4">
                         <span class="inline-block px-2 py-1 rounded bg-secondary text-xs font-mono">0${8+i}:00 AM</span>
                         <div class="text-muted-foreground group-hover:text-primary transition-colors">${ICONS.CHEVRON_RIGHT}</div>
@@ -1169,12 +1258,13 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                      <div class="h-px bg-border w-full my-3"></div>
                      <div class="flex justify-between items-center text-xs text-muted-foreground font-sans">
                         <span class="flex items-center gap-1">${ICONS.USER} Speaker Name</span>
-                        <span class="flex items-center gap-1">${ICONS.MAP_PIN} Room 10${i}</span>
+                        <span class="flex items-center gap-1">${ICONS.MAP_PIN} ${locations[i % locations.length]}</span>
                      </div>
                   </div>
-               `).join('')}
+               `}).join('')}
             </div>
          </div>
+         ${getSessionModalHtml()}
          ${getDividerHtml(settings)}
       </builder-section>
     `
