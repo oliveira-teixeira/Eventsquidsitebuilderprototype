@@ -930,7 +930,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
         const dayAbbr = ['Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
         const dates = ['Dec 15', 'Dec 16', 'Dec 17', 'Dec 18', 'Dec 19', 'Dec 20', 'Dec 21'];
         
-        // Render a single session row with time, title, and description
+        // Render a single session row with time, title, description, and thumbnail cluster
         const renderSession = (dayIndex, sessionIndex) => {
             const hour = 8 + sessionIndex;
             const time = hour < 12 ? `${String(hour).padStart(2, '0')}:00 AM` : `${String(hour === 12 ? 12 : hour - 12).padStart(2, '0')}:00 PM`;
@@ -940,20 +940,33 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
             const sessionDesc = safeGetText(settings, descKey, `Join us for an engaging discussion on the latest trends and innovations in technology.`);
             
             return `
-                <div class="session-item group py-4 flex items-start gap-6 border-b ${getBorderColor(variant)} last:border-0 hover:bg-muted/20 transition-colors" data-day="${dayIndex}">
-                    <!-- Time -->
-                    <div class="flex-shrink-0 w-20">
-                        <span class="text-sm font-medium text-muted-foreground font-sans">${time}</span>
+                <div class="session-item group flex items-center gap-4 py-2.5 border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors cursor-pointer" data-day="${dayIndex}">
+                    <!-- Time Column (fixed width) -->
+                    <div class="flex-shrink-0 w-[80px]">
+                        <span class="text-xs font-mono font-medium text-muted-foreground">${time}</span>
                     </div>
                     
-                    <!-- Content -->
+                    <!-- Title + Description -->
                     <div class="flex-1 min-w-0">
-                        <h4 class="font-medium text-foreground font-sans ${getTextAlignClass(settings)} mb-1" contenteditable="true" data-key="${sessionKey}">
+                        <h4 class="font-semibold text-sm text-foreground font-sans leading-tight truncate ${getTextAlignClass(settings)}" contenteditable="true" data-key="${sessionKey}">
                             ${sessionTitle}
                         </h4>
-                        <p class="text-sm text-muted-foreground font-sans ${getTextAlignClass(settings)}" contenteditable="true" data-key="${descKey}">
+                        <p class="text-xs text-muted-foreground font-sans leading-snug truncate mt-0.5 ${getTextAlignClass(settings)}" contenteditable="true" data-key="${descKey}">
                             ${sessionDesc}
                         </p>
+                    </div>
+                    
+                    <!-- Thumbnail Cluster (reserved space) -->
+                    <div class="flex-shrink-0 flex items-center -space-x-2 w-[72px] justify-end">
+                        <div class="w-7 h-7 rounded-full bg-muted border-2 border-background overflow-hidden">
+                            <div class="w-full h-full bg-muted-foreground/10"></div>
+                        </div>
+                        <div class="w-7 h-7 rounded-full bg-muted border-2 border-background overflow-hidden">
+                            <div class="w-full h-full bg-muted-foreground/10"></div>
+                        </div>
+                        <div class="w-7 h-7 rounded-full bg-muted border-2 border-background overflow-hidden flex items-center justify-center">
+                            <span class="text-[9px] font-medium text-muted-foreground">+2</span>
+                        </div>
                     </div>
                 </div>
             `;

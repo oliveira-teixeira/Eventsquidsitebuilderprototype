@@ -16,32 +16,80 @@ const SAMPLE_AGENDA = [
     { time: "02:30 PM", title: "Design Systems", location: "Auditorium B", type: "Panel", speaker: "Design Team", img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop" },
 ];
 
-// Variant 1: Simple List
-export const AgendaVariant1 = () => (
-  <div className="w-full py-12 bg-background">
-    <div className="mx-auto w-full" style={{ maxWidth: 'var(--max-width)', paddingLeft: 'var(--global-padding)', paddingRight: 'var(--global-padding)' }}>
-        <h2 className="text-3xl font-bold mb-8 text-center text-foreground">Event Schedule</h2>
-        <div className="space-y-4">
-            {SAMPLE_AGENDA.map((item, i) => (
-                <Card key={i} className="hover:shadow-md transition-shadow border-none bg-card shadow-sm">
-                    <CardContent className="flex flex-col lg:flex-row items-start lg:items-center gap-4 p-6">
-                        <div className="min-w-[100px] font-mono text-primary font-bold">
-                            {item.time}
+// Variant 1: Compact Scannable List
+export const AgendaVariant1 = () => {
+  const [activeDay, setActiveDay] = useState(0);
+  const days = ["Fri", "Sat", "Sun"];
+
+  return (
+    <div className="w-full py-12 bg-background">
+      <div className="mx-auto w-full" style={{ maxWidth: 'var(--max-width)', paddingLeft: 'var(--global-padding)', paddingRight: 'var(--global-padding)' }}>
+          <h2 className="text-2xl font-bold mb-2 text-foreground">Event Schedule</h2>
+          <p className="text-muted-foreground text-sm mb-6">Browse sessions by day.</p>
+
+          {/* Search */}
+          <div className="mb-4 relative max-w-md">
+              <input
+                type="text"
+                placeholder="Search sessions..."
+                className="w-full px-4 py-2 pr-10 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-all"
+              />
+          </div>
+
+          {/* Day Tabs */}
+          <div className="flex gap-0 mb-6 border-b border-border">
+              {days.map((day, i) => (
+                <button
+                  key={day}
+                  onClick={() => setActiveDay(i)}
+                  className={cn(
+                    "flex-1 text-center px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
+                    activeDay === i
+                      ? "border-foreground text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {day}
+                </button>
+              ))}
+          </div>
+
+          {/* Session Rows */}
+          <div>
+              {SAMPLE_AGENDA.map((item, i) => (
+                <div
+                  key={i}
+                  className="group flex items-center gap-4 py-2.5 border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
+                >
+                    {/* Time */}
+                    <div className="shrink-0 w-[80px]">
+                        <span className="text-xs font-mono font-medium text-muted-foreground">{item.time}</span>
+                    </div>
+
+                    {/* Title + Description */}
+                    <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-sm text-foreground leading-tight truncate">{item.title}</h4>
+                        <p className="text-xs text-muted-foreground leading-snug truncate mt-0.5">
+                          A deep-dive session led by {item.speaker} at {item.location}.
+                        </p>
+                    </div>
+
+                    {/* Thumbnail Cluster */}
+                    <div className="shrink-0 flex items-center -space-x-2 w-[72px] justify-end">
+                        <div className="w-7 h-7 rounded-full bg-muted border-2 border-background overflow-hidden">
+                            <ImageWithFallback src={item.img} alt={item.speaker} className="w-full h-full object-cover" />
                         </div>
-                        <div className="flex-1 space-y-1">
-                            <h3 className="font-semibold text-lg text-foreground">{item.title}</h3>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-1"><MapPin className="h-3 w-3 text-primary" /> {item.location}</span>
-                                <Badge variant="secondary" className="text-xs">{item.type}</Badge>
-                            </div>
+                        <div className="w-7 h-7 rounded-full bg-muted border-2 border-background overflow-hidden flex items-center justify-center">
+                            <span className="text-[9px] font-medium text-muted-foreground">+1</span>
                         </div>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
+                    </div>
+                </div>
+              ))}
+          </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Variant 2: Timeline View
 export const AgendaVariant2 = () => (
@@ -77,42 +125,69 @@ export const AgendaVariant2 = () => (
 );
 
 // Variant 3: Compact Tabbed View
-export const AgendaVariant3 = () => (
-  <div className="w-full py-12 bg-background">
-    <div className="mx-auto w-full" style={{ maxWidth: 'var(--max-width)', paddingLeft: 'var(--global-padding)', paddingRight: 'var(--global-padding)' }}>
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 pb-4 gap-4 lg:gap-0">
-             <div>
-                <h2 className="text-2xl font-bold text-foreground">Sessions</h2>
-                <p className="text-muted-foreground">Explore the tracks and sessions.</p>
-             </div>
-             <div className="flex flex-col lg:flex-row gap-2 w-full lg:w-auto mt-0">
-                 <Button variant="default" size="sm" className="w-full lg:w-auto">Day 1</Button>
-                 <Button variant="ghost" size="sm" className="w-full lg:w-auto">Day 2</Button>
-                 <Button variant="ghost" size="sm" className="w-full lg:w-auto">Day 3</Button>
-             </div>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {SAMPLE_AGENDA.map((item, i) => (
-                <div key={i} className="group p-5 rounded-xl border-none bg-card shadow-md hover:shadow-lg transition-all cursor-pointer">
-                    <div className="flex justify-between items-start mb-4">
-                        <Badge variant="secondary" className="font-mono">{item.time}</Badge>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+export const AgendaVariant3 = () => {
+  const [activeDay, setActiveDay] = useState(0);
+  const days = ["Day 1", "Day 2", "Day 3"];
+
+  return (
+    <div className="w-full py-12 bg-background">
+      <div className="mx-auto w-full" style={{ maxWidth: 'var(--max-width)', paddingLeft: 'var(--global-padding)', paddingRight: 'var(--global-padding)' }}>
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+              <div>
+                  <h2 className="text-2xl font-bold text-foreground">Sessions</h2>
+                  <p className="text-sm text-muted-foreground">Explore the tracks and sessions.</p>
+              </div>
+              <div className="flex gap-1">
+                  {days.map((day, i) => (
+                    <Button
+                      key={day}
+                      variant={activeDay === i ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setActiveDay(i)}
+                    >
+                      {day}
+                    </Button>
+                  ))}
+              </div>
+          </div>
+
+          <div>
+              {SAMPLE_AGENDA.map((item, i) => (
+                <div
+                  key={i}
+                  className="group flex items-center gap-4 py-2.5 border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
+                >
+                    {/* Time */}
+                    <div className="shrink-0 w-[80px]">
+                        <span className="text-xs font-mono font-medium text-muted-foreground">{item.time}</span>
                     </div>
-                    <h3 className="font-bold text-lg mb-2 text-foreground group-hover:text-primary transition-colors">{item.title}</h3>
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                        Join us for an in-depth session about {item.title.toLowerCase()} and learn from industry experts.
-                    </p>
-                    <div className="flex justify-between items-center text-xs text-muted-foreground pt-4">
-                        <span className="flex items-center gap-1"><User className="h-3 w-3 text-primary"/> Speaker Name</span>
-                        <span className="flex items-center gap-1"><MapPin className="h-3 w-3 text-primary"/> {item.location}</span>
+
+                    {/* Title + Description */}
+                    <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-sm text-foreground leading-tight truncate">{item.title}</h4>
+                        <p className="text-xs text-muted-foreground leading-snug truncate mt-0.5">
+                          In-depth session about {item.title.toLowerCase()} with industry experts.
+                        </p>
                     </div>
+
+                    {/* Thumbnail Cluster */}
+                    <div className="shrink-0 flex items-center -space-x-2 w-[72px] justify-end">
+                        <div className="w-7 h-7 rounded-full bg-muted border-2 border-background overflow-hidden">
+                            <ImageWithFallback src={item.img} alt={item.speaker} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="w-7 h-7 rounded-full bg-muted border-2 border-background overflow-hidden flex items-center justify-center">
+                            <span className="text-[9px] font-medium text-muted-foreground">+1</span>
+                        </div>
+                    </div>
+
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
-            ))}
-        </div>
+              ))}
+          </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Variant 4: Brutalist Split
 export const AgendaVariant4 = () => (
