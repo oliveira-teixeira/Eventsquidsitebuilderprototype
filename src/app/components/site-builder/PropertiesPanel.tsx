@@ -628,7 +628,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
       <div className="flex items-start gap-2 bg-muted/40 border border-border rounded-md p-2.5">
         <Info className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
         <p className="text-[10px] leading-relaxed text-muted-foreground">
-          Text styles follow the theme. Only basic formatting is available.
+          Select text on the canvas to apply <strong>Bold</strong>, <em>Italic</em>, or <span className="underline">Underline</span>. Font, size, and color are controlled by the Theme.
         </p>
       </div>
 
@@ -1643,7 +1643,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
 
       <div className="pt-4 border-t border-border">
         <div className="bg-primary/10 text-primary p-3 rounded-md text-xs">
-          <strong>Tip:</strong> Double-click text on the canvas to edit content. Use font weight and alignment controls above for basic formatting.
+          <strong>Tip:</strong> Double-click text on the canvas to edit. Select text to see Bold, Italic, and Underline controls. Use alignment and font weight above for block-level formatting.
         </div>
       </div>
 

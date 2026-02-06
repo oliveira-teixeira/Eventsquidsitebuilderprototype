@@ -5,6 +5,32 @@ import { useTheme, generateThemeStyles } from './ThemeBuilder';
 import { cn } from '../ui/utils';
 import gsap from 'gsap';
 
+// Allowed tags for pasted content: only inline formatting tags
+const ALLOWED_TAGS = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'BR']);
+
+function sanitizeHtml(node: Node): string {
+  let result = '';
+  for (const child of Array.from(node.childNodes)) {
+    if (child.nodeType === Node.TEXT_NODE) {
+      const text = child.textContent || '';
+      result += text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    } else if (child.nodeType === Node.ELEMENT_NODE) {
+      const el = child as HTMLElement;
+      const tag = el.tagName;
+      if (tag === 'BR') {
+        result += '<br>';
+      } else if (ALLOWED_TAGS.has(tag)) {
+        const lower = tag.toLowerCase();
+        result += `<${lower}>${sanitizeHtml(el)}</${lower}>`;
+      } else {
+        // Unwrap: keep child content but drop the wrapping tag
+        result += sanitizeHtml(el);
+      }
+    }
+  }
+  return result;
+}
+
 interface ResponsiveContainerProps {
   children?: React.ReactNode;
   html?: string;
@@ -69,27 +95,124 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
   useEffect(() => {
     if (!mountNode) return;
 
-    const handleBlur = (e: Event) => {
-      if (!onContentChange) return;
-      const target = e.target as HTMLElement;
-      if (target.isContentEditable) {
-        const key = target.getAttribute('data-key');
-        if (key) {
-          onContentChange(key, target.innerHTML);
+    const doc = mountNode.ownerDocument;
+
+    // --- Inline Text Formatting Toolbar ---
+    let toolbar: HTMLDivElement | null = doc.querySelector('.text-format-toolbar');
+    if (!toolbar) {
+      toolbar = doc.createElement('div');
+      toolbar.className = 'text-format-toolbar';
+      toolbar.setAttribute('role', 'toolbar');
+      toolbar.setAttribute('aria-label', 'Text formatting');
+      toolbar.innerHTML = `
+        <button data-cmd="bold" title="Bold (Ctrl+B)" aria-label="Bold"><strong>B</strong></button>
+        <button data-cmd="italic" title="Italic (Ctrl+I)" aria-label="Italic"><em>I</em></button>
+        <button data-cmd="underline" title="Underline (Ctrl+U)" aria-label="Underline"><span style="text-decoration:underline">U</span></button>
+      `;
+      doc.body.appendChild(toolbar);
+    }
+
+    const updateToolbarState = () => {
+      if (!toolbar) return;
+      const btns = toolbar.querySelectorAll('button[data-cmd]');
+      btns.forEach((btn) => {
+        const cmd = btn.getAttribute('data-cmd');
+        if (cmd) {
+          const isActive = doc.queryCommandState(cmd);
+          btn.classList.toggle('active', isActive);
         }
-      }
-    };
-    
-    const handleClick = (e: Event) => {
-        handleInteraction(e.target as HTMLElement, e);
+      });
     };
 
-    // We use capturing to ensure we catch the blur event
-    mountNode.addEventListener('blur', handleBlur, true);
-    
-    // Forward key events to parent for navigation
+    const showToolbar = () => {
+      if (!toolbar) return;
+      const sel = doc.getSelection();
+      if (!sel || sel.isCollapsed || !sel.rangeCount) {
+        toolbar.classList.remove('visible');
+        return;
+      }
+
+      // Only show when selection is inside a contenteditable element
+      const anchorNode = sel.anchorNode;
+      const editableParent = anchorNode instanceof HTMLElement
+        ? (anchorNode.isContentEditable ? anchorNode : anchorNode.closest('[contenteditable="true"]'))
+        : anchorNode?.parentElement?.closest('[contenteditable="true"]');
+
+      if (!editableParent) {
+        toolbar.classList.remove('visible');
+        return;
+      }
+
+      const range = sel.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+
+      // Position relative to the iframe body (which is mountNode)
+      const bodyRect = doc.body.getBoundingClientRect();
+      const left = rect.left + rect.width / 2 - bodyRect.left;
+      const top = rect.top - bodyRect.top - 40;
+
+      toolbar.style.left = `${Math.max(50, Math.min(left, bodyRect.width - 50))}px`;
+      toolbar.style.top = `${Math.max(4, top)}px`;
+      toolbar.classList.add('visible');
+      updateToolbarState();
+    };
+
+    const hideToolbar = () => {
+      if (toolbar) toolbar.classList.remove('visible');
+    };
+
+    // Toolbar button clicks
+    const handleToolbarClick = (e: Event) => {
+      const target = e.target as HTMLElement;
+      const btn = target.closest('button[data-cmd]') as HTMLElement | null;
+      if (!btn) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const cmd = btn.getAttribute('data-cmd');
+      if (cmd && (cmd === 'bold' || cmd === 'italic' || cmd === 'underline')) {
+        doc.execCommand(cmd, false);
+        updateToolbarState();
+      }
+    };
+
+    toolbar.addEventListener('mousedown', (e) => e.preventDefault()); // Keep selection
+    toolbar.addEventListener('click', handleToolbarClick);
+
+    // Track selection changes
+    const handleSelectionChange = () => {
+      // Small delay to let the selection settle
+      requestAnimationFrame(showToolbar);
+    };
+    doc.addEventListener('selectionchange', handleSelectionChange);
+
+    // Intercept keyboard shortcuts to restrict to allowed commands only
     const handleKeyDown = (e: KeyboardEvent) => {
         const target = e.target as HTMLElement;
+        
+        if (target.isContentEditable) {
+          const isModKey = e.ctrlKey || e.metaKey;
+          if (isModKey) {
+            const key = e.key.toLowerCase();
+            // Allow bold, italic, underline
+            if (key === 'b' || key === 'i' || key === 'u') {
+              // Let the browser default handle it, then update toolbar state
+              setTimeout(updateToolbarState, 10);
+              return;
+            }
+            // Block other formatting shortcuts that might change font, size, etc.
+            // Allow copy (c), paste (v), cut (x), select all (a), undo (z), redo (y/shift+z)
+            if ('cvxazy'.includes(key)) {
+              return;
+            }
+          }
+          // Let all non-modifier keys through (typing, arrows, delete, etc.)
+          if (!e.ctrlKey && !e.metaKey) {
+            return;
+          }
+        }
+        
         if (target.isContentEditable || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
             return;
         }
@@ -112,15 +235,77 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
     };
     mountNode.addEventListener('keydown', handleKeyDown);
 
+    // Sanitize pasted content: only allow <b>, <i>, <u>, <strong>, <em>, <br>
+    const handlePaste = (e: ClipboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.isContentEditable) return;
+
+      e.preventDefault();
+      const clipboardData = e.clipboardData;
+      if (!clipboardData) return;
+
+      const html = clipboardData.getData('text/html');
+      const plain = clipboardData.getData('text/plain');
+
+      let sanitized: string;
+      if (html) {
+        // Parse and strip everything except bold/italic/underline
+        const temp = doc.createElement('div');
+        temp.innerHTML = html;
+        sanitized = sanitizeHtml(temp);
+      } else {
+        sanitized = plain.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      doc.execCommand('insertHTML', false, sanitized);
+    };
+    mountNode.addEventListener('paste', handlePaste, true);
+
+    const handleBlur = (e: Event) => {
+      if (!onContentChange) return;
+      const target = e.target as HTMLElement;
+      if (target.isContentEditable) {
+        const key = target.getAttribute('data-key');
+        if (key) {
+          onContentChange(key, target.innerHTML);
+        }
+      }
+    };
+    
+    const handleClick = (e: Event) => {
+        handleInteraction(e.target as HTMLElement, e);
+    };
+
+    // We use capturing to ensure we catch the blur event
+    mountNode.addEventListener('blur', handleBlur, true);
+
     // Listen for clicks on the body to handle selection
     mountNode.addEventListener('click', handleClick);
     mountNode.addEventListener('touchstart', handleClick, { passive: true });
+
+    // Hide toolbar when clicking outside contenteditable
+    const handleMouseDown = (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (toolbar && toolbar.contains(target)) return; // clicking toolbar itself
+      const editableParent = target.closest('[contenteditable="true"]');
+      if (!editableParent) {
+        hideToolbar();
+      }
+    };
+    mountNode.addEventListener('mousedown', handleMouseDown);
     
     return () => {
+      doc.removeEventListener('selectionchange', handleSelectionChange);
       mountNode.removeEventListener('blur', handleBlur, true);
       mountNode.removeEventListener('keydown', handleKeyDown);
       mountNode.removeEventListener('click', handleClick);
       mountNode.removeEventListener('touchstart', handleClick);
+      mountNode.removeEventListener('paste', handlePaste, true);
+      mountNode.removeEventListener('mousedown', handleMouseDown);
+      if (toolbar) {
+        toolbar.removeEventListener('click', handleToolbarClick);
+        toolbar.remove();
+      }
     };
   }, [mountNode, onContentChange, onClick, onImageClick, onNavLinkClick]);
 
@@ -191,6 +376,72 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                 display: block;
                 width: 100%;
                 min-height: 0;
+              }
+              /* Inline text formatting toolbar */
+              .text-format-toolbar {
+                position: absolute;
+                display: none;
+                z-index: 9999;
+                background: var(--background, #fff);
+                border: 1px solid var(--border, #e5e7eb);
+                border-radius: 8px;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.08);
+                padding: 2px;
+                gap: 1px;
+                align-items: center;
+                pointer-events: auto;
+                user-select: none;
+                font-family: var(--font-sans, system-ui, sans-serif);
+                transform: translateX(-50%);
+                white-space: nowrap;
+              }
+              .text-format-toolbar.visible {
+                display: flex;
+              }
+              .text-format-toolbar button {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 28px;
+                height: 28px;
+                border: none;
+                background: transparent;
+                border-radius: 5px;
+                cursor: pointer;
+                color: var(--muted-foreground, #6b7280);
+                transition: background 0.15s, color 0.15s;
+                padding: 0;
+                font-size: 13px;
+                font-weight: 600;
+                line-height: 1;
+              }
+              .text-format-toolbar button:hover {
+                background: var(--muted, #f3f4f6);
+                color: var(--foreground, #111827);
+              }
+              .text-format-toolbar button.active {
+                background: var(--primary, #2563eb);
+                color: var(--primary-foreground, #fff);
+              }
+              .text-format-toolbar .separator {
+                width: 1px;
+                height: 16px;
+                background: var(--border, #e5e7eb);
+                margin: 0 2px;
+                flex-shrink: 0;
+              }
+              /* Prevent font-family/size changes in contenteditable */
+              [contenteditable="true"] {
+                font-family: inherit !important;
+                font-size: inherit !important;
+                line-height: inherit !important;
+                letter-spacing: inherit !important;
+              }
+              [contenteditable="true"] * {
+                font-family: inherit !important;
+                font-size: inherit !important;
+                line-height: inherit !important;
+                letter-spacing: inherit !important;
               }
             `;
             doc.head.appendChild(customStyle);
