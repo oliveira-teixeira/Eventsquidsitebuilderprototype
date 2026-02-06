@@ -215,8 +215,8 @@ export const ThemeBuilder: React.FC = () => {
   };
 
   return (
-    <div className="p-4 space-y-6 animate-in fade-in duration-300">
-      <div className="flex items-center justify-between mb-2">
+    <div className="animate-in fade-in duration-300">
+      <div className="flex items-center justify-between p-4 pb-3 sticky top-0 bg-background z-10 border-b border-border">
         <h3 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
           <Palette className="w-4 h-4" /> Theme Engine
         </h3>
@@ -225,7 +225,7 @@ export const ThemeBuilder: React.FC = () => {
         </button>
       </div>
 
-      <div className="space-y-5">
+      <div className="p-4 space-y-5">
         
         {/* Mode Toggle */}
         <div className="flex bg-muted/50 p-1 rounded-lg border border-border">
@@ -374,7 +374,7 @@ export const ThemeBuilder: React.FC = () => {
 
       </div>
 
-      <div className="pt-4 border-t border-border">
+      <div className="px-4 pt-4 pb-4 border-t border-border">
          <button 
            onClick={() => toast.success("Theme preset saved")}
            className="w-full py-2 bg-primary text-primary-foreground text-xs font-bold uppercase tracking-wider rounded-md hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"

@@ -644,8 +644,8 @@ function AppContent() {
 
     if (rightPanel === 'theme') {
       return (
-        <div className="flex flex-1 overflow-hidden relative justify-center bg-muted/20 p-6">
-           <div className="w-full max-w-lg h-fit bg-background border border-border rounded-xl shadow-lg overflow-hidden">
+        <div className="flex-1 overflow-y-auto relative flex justify-center bg-muted/20 p-6 custom-scrollbar">
+           <div className="w-full max-w-lg h-fit bg-background border border-border rounded-xl shadow-lg">
               <ThemeBuilder />
            </div>
         </div>
