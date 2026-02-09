@@ -419,10 +419,22 @@ const getVariantClasses = (variant?: string) => {
 };
 
 // --- Helper Functions for Settings Access (without optional chaining for Figma compatibility) ---
+
+// Sanitize inline HTML: only allow <b>, <i>, <u>, <strong>, <em>, <br>, <br/> tags.
+// Strips all other HTML tags to prevent injection while preserving formatting.
+const sanitizeInlineHtml = (html: string): string => {
+  if (!html) return html;
+  // Only process if it looks like it contains HTML tags
+  if (!html.includes('<')) return html;
+  // Allow only safe inline formatting tags
+  return html.replace(/<\/?(?!b>|\/b>|i>|\/i>|u>|\/u>|strong>|\/strong>|em>|\/em>|br\s*\/?>)[^>]*>/gi, '');
+};
+
 const safeGetText = (settings: BlockSettings | undefined, key: string, defaultValue: string): string => {
   if (!settings || !settings.text) return defaultValue;
   const value = settings.text[key];
-  return value !== undefined ? value : defaultValue;
+  if (value === undefined) return defaultValue;
+  return sanitizeInlineHtml(value);
 };
 
 const safeGetButton = (settings: BlockSettings | undefined, key: string, defaultValue: ButtonSetting): ButtonSetting => {

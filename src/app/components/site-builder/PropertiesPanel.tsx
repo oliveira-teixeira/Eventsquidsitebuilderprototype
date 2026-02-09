@@ -26,7 +26,6 @@ import {
   Plus,
   ChevronDown,
   ChevronUp,
-  Type,
   Link2,
   LinkIcon,
   Unlink,
@@ -627,9 +626,14 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
       {/* Text Formatting Hint */}
       <div className="flex items-start gap-2 bg-muted/40 border border-border rounded-md p-2.5">
         <Info className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
-        <p className="text-[10px] leading-relaxed text-muted-foreground">
-          Text styles follow the theme. Only basic formatting is available.
-        </p>
+        <div className="space-y-1">
+          <p className="text-[10px] leading-relaxed text-muted-foreground">
+            Select text on the canvas to format it. Allowed: <span className="font-semibold text-foreground">Bold</span>, <span className="italic text-foreground">Italic</span>, <span className="underline text-foreground">Underline</span>.
+          </p>
+          <p className="text-[10px] leading-relaxed text-muted-foreground">
+            Font, size, and color are controlled by the Theme.
+          </p>
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -725,37 +729,6 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                         title={option.label}
                     >
                         <option.icon className="w-4 h-4" />
-                    </button>
-                ))}
-            </div>
-        </div>
-
-        <div className="h-px bg-border w-full" />
-
-        {/* Font Weight */}
-        <div className="space-y-3">
-            <label className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
-                <Type className="w-3.5 h-3.5" />
-                Font Weight
-            </label>
-            <div className="grid grid-cols-2 gap-2 bg-muted/30 p-1 rounded-md border border-border">
-                {[
-                    { id: 'normal', label: 'Regular' },
-                    { id: 'semibold', label: 'Semibold' },
-                ].map((option) => (
-                    <button
-                        key={option.id}
-                        type="button"
-                        onClick={() => onChangeSettings({ ...selectedSettings, fontWeight: option.id as 'normal' | 'semibold' })}
-                        onMouseDown={(e) => e.preventDefault()}
-                        className={cn(
-                            "flex items-center justify-center py-1.5 rounded-sm transition-all text-xs",
-                            (selectedSettings.fontWeight === option.id || (!selectedSettings.fontWeight && option.id === 'normal'))
-                                ? "bg-background shadow-sm text-primary font-medium" 
-                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                        )}
-                    >
-                        <span className={option.id === 'semibold' ? 'font-semibold' : 'font-normal'}>{option.label}</span>
                     </button>
                 ))}
             </div>
