@@ -897,14 +897,21 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                             const speakers = speakersRaw.split(',').filter(Boolean);
                             if (speakers.length > 0) {
                                 speakersSection.style.display = 'block';
-                                speakersContainer.innerHTML = speakers.map(initials => `
+                                speakersContainer.innerHTML = speakers.map(name => {
+                                    const trimmed = name.trim();
+                                    const parts = trimmed.split(/\s+/);
+                                    const initials = parts.length >= 2
+                                        ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+                                        : (parts[0] ? parts[0][0].toUpperCase() : '?');
+                                    return `
                                     <div style="display:flex; align-items:center; gap:12px;">
                                         <div style="width:32px; height:32px; border-radius:50%; background:var(--muted); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                                            <span style="font-size:12px; font-weight:600; color:var(--muted-foreground); font-family:var(--font-sans);">${initials.trim()}</span>
+                                            <span style="font-size:12px; font-weight:600; color:var(--muted-foreground); font-family:var(--font-sans);">${initials}</span>
                                         </div>
-                                        <span style="font-size:14px; font-weight:500; color:var(--foreground); font-family:var(--font-sans);">Speaker ${initials.trim()}</span>
+                                        <span style="font-size:14px; font-weight:500; color:var(--foreground); font-family:var(--font-sans);">${trimmed}</span>
                                     </div>
-                                `).join('');
+                                    `;
+                                }).join('');
                             } else {
                                 speakersSection.style.display = 'none';
                             }
@@ -1349,14 +1356,21 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                   const speakers = speakersRaw.split(',').filter(Boolean);
                   if (speakers.length > 0) {
                       speakersSection.style.display = 'block';
-                      speakersContainer.innerHTML = speakers.map(initials => `
+                      speakersContainer.innerHTML = speakers.map(name => {
+                          const trimmed = name.trim();
+                          const parts = trimmed.split(/\s+/);
+                          const initials = parts.length >= 2
+                              ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+                              : (parts[0] ? parts[0][0].toUpperCase() : '?');
+                          return `
                           <div style="display:flex; align-items:center; gap:12px;">
                               <div style="width:32px; height:32px; border-radius:50%; background:var(--muted); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                                  <span style="font-size:12px; font-weight:600; color:var(--muted-foreground); font-family:var(--font-sans);">${initials.trim()}</span>
+                                  <span style="font-size:12px; font-weight:600; color:var(--muted-foreground); font-family:var(--font-sans);">${initials}</span>
                               </div>
-                              <span style="font-size:14px; font-weight:500; color:var(--foreground); font-family:var(--font-sans);">Speaker ${initials.trim()}</span>
+                              <span style="font-size:14px; font-weight:500; color:var(--foreground); font-family:var(--font-sans);">${trimmed}</span>
                           </div>
-                      `).join('');
+                          `;
+                      }).join('');
                   } else {
                       speakersSection.style.display = 'none';
                   }
