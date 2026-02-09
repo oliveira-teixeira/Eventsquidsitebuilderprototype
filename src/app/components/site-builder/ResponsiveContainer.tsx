@@ -82,6 +82,7 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
       const boldSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>';
       const italicSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>';
       const underlineSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v6a6 6 0 0 0 12 0V4"/><line x1="4" y1="20" x2="20" y2="20"/></svg>';
+      const colorSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-7 7c0 3 2.5 6.5 7 13 4.5-6.5 7-10 7-13a7 7 0 0 0-7-7z"/></svg>';
 
       const createBtn = (cmd: string, svg: string, title: string) => {
         const btn = doc.createElement('button');
@@ -100,6 +101,135 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
       toolbar.appendChild(createBtn('bold', boldSvg, 'Bold (Ctrl+B)'));
       toolbar.appendChild(createBtn('italic', italicSvg, 'Italic (Ctrl+I)'));
       toolbar.appendChild(createBtn('underline', underlineSvg, 'Underline (Ctrl+U)'));
+
+      // Separator before color picker
+      const separator = doc.createElement('span');
+      separator.className = 'separator';
+      toolbar.appendChild(separator);
+
+      // Color picker button with dropdown
+      const colorBtnWrap = doc.createElement('div');
+      colorBtnWrap.className = 'color-picker-wrap';
+      colorBtnWrap.setAttribute('data-format-toolbar', 'true');
+
+      const colorBtn = doc.createElement('button');
+      colorBtn.type = 'button';
+      colorBtn.title = 'Text Color';
+      colorBtn.className = 'color-btn';
+      colorBtn.innerHTML = `<span class="color-btn-icon">${colorSvg}</span><span class="color-btn-bar" data-color-bar></span>`;
+      colorBtnWrap.appendChild(colorBtn);
+
+      // Color dropdown panel
+      const colorDropdown = doc.createElement('div');
+      colorDropdown.className = 'color-dropdown';
+      colorDropdown.setAttribute('data-format-toolbar', 'true');
+
+      const presetColors = [
+        { label: 'Default', value: '' },
+        { label: 'Black', value: '#18181b' },
+        { label: 'Dark Gray', value: '#52525b' },
+        { label: 'Gray', value: '#a1a1aa' },
+        { label: 'White', value: '#ffffff' },
+        { label: 'Red', value: '#ef4444' },
+        { label: 'Orange', value: '#f97316' },
+        { label: 'Amber', value: '#f59e0b' },
+        { label: 'Green', value: '#22c55e' },
+        { label: 'Teal', value: '#14b8a6' },
+        { label: 'Blue', value: '#3b82f6' },
+        { label: 'Indigo', value: '#6366f1' },
+        { label: 'Purple', value: '#a855f7' },
+        { label: 'Pink', value: '#ec4899' },
+        { label: 'Rose', value: '#f43f5e' },
+      ];
+
+      // Preset color grid
+      const gridLabel = doc.createElement('div');
+      gridLabel.className = 'color-dropdown-label';
+      gridLabel.textContent = 'Presets';
+      colorDropdown.appendChild(gridLabel);
+
+      const colorGrid = doc.createElement('div');
+      colorGrid.className = 'color-grid';
+      presetColors.forEach(({ label, value }) => {
+        const swatch = doc.createElement('button');
+        swatch.type = 'button';
+        swatch.className = 'color-swatch';
+        swatch.title = label;
+        if (value === '') {
+          // "Default" swatch - show a slash-through
+          swatch.innerHTML = '<span class="swatch-default"></span>';
+        } else {
+          swatch.style.setProperty('--swatch-color', value);
+          swatch.innerHTML = `<span class="swatch-fill" style="background:${value}"></span>`;
+        }
+        swatch.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (value === '') {
+            doc.execCommand('removeFormat', false);
+          } else {
+            doc.execCommand('foreColor', false, value);
+          }
+          // Update the bar indicator
+          const bar = toolbar?.querySelector('[data-color-bar]') as HTMLElement;
+          if (bar) bar.style.background = value || 'var(--foreground, #18181b)';
+          colorDropdown.classList.remove('open');
+        });
+        colorGrid.appendChild(swatch);
+      });
+      colorDropdown.appendChild(colorGrid);
+
+      // Custom color input row
+      const customRow = doc.createElement('div');
+      customRow.className = 'color-custom-row';
+      const customLabel = doc.createElement('div');
+      customLabel.className = 'color-dropdown-label';
+      customLabel.textContent = 'Custom';
+      customRow.appendChild(customLabel);
+
+      const customInputWrap = doc.createElement('div');
+      customInputWrap.className = 'color-custom-input-wrap';
+      const customInput = doc.createElement('input');
+      customInput.type = 'color';
+      customInput.className = 'color-custom-input';
+      customInput.value = '#3b82f6';
+      customInputWrap.appendChild(customInput);
+
+      const applyCustomBtn = doc.createElement('button');
+      applyCustomBtn.type = 'button';
+      applyCustomBtn.className = 'color-custom-apply';
+      applyCustomBtn.textContent = 'Apply';
+      applyCustomBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const color = customInput.value;
+        doc.execCommand('foreColor', false, color);
+        const bar = toolbar?.querySelector('[data-color-bar]') as HTMLElement;
+        if (bar) bar.style.background = color;
+        colorDropdown.classList.remove('open');
+      });
+      customInputWrap.appendChild(applyCustomBtn);
+      customRow.appendChild(customInputWrap);
+      colorDropdown.appendChild(customRow);
+
+      colorBtnWrap.appendChild(colorDropdown);
+
+      // Toggle dropdown on click
+      colorBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        colorDropdown.classList.toggle('open');
+      });
+
+      // Close dropdown when clicking outside
+      doc.addEventListener('mousedown', (e) => {
+        const target = e.target as HTMLElement;
+        if (!target.closest?.('.color-picker-wrap')) {
+          colorDropdown.classList.remove('open');
+        }
+      });
+
+      toolbar.appendChild(colorBtnWrap);
 
       doc.body.appendChild(toolbar);
     } catch (e) {
@@ -121,46 +251,101 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
           }
         }
       });
+      // Update color bar to reflect current text color
+      try {
+        const bar = toolbar.querySelector('[data-color-bar]') as HTMLElement;
+        if (bar) {
+          const colorVal = doc.queryCommandValue('foreColor');
+          if (colorVal) {
+            bar.style.background = colorVal;
+          }
+        }
+      } catch (e) {
+        // Ignore color detection errors
+      }
+    };
+
+    // Track the currently focused contenteditable element
+    let activeEditableElement: HTMLElement | null = null;
+
+    // Helper to find the contenteditable parent of a node
+    const findEditableParent = (node: Node | null): HTMLElement | null => {
+      if (!node) return null;
+      if (node.nodeType === 3) {
+        // Text node - check parent
+        const parent = node.parentElement;
+        if (!parent) return null;
+        return parent.closest('[contenteditable="true"]') as HTMLElement ||
+          (parent.getAttribute('contenteditable') === 'true' ? parent : null);
+      }
+      const el = node as HTMLElement;
+      return el.closest?.('[contenteditable="true"]') as HTMLElement || null;
     };
 
     // Position and show/hide the toolbar
     const positionToolbar = () => {
       if (!toolbar) return;
       const selection = doc.getSelection();
-      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+
+      // Determine if we're inside a contenteditable
+      let editableParent: HTMLElement | null = null;
+      if (selection && selection.rangeCount > 0) {
+        editableParent = findEditableParent(selection.anchorNode);
+      }
+
+      // Update the active editable element tracking
+      if (editableParent) {
+        activeEditableElement = editableParent;
+      }
+
+      // If we have no active editable element, hide toolbar
+      if (!activeEditableElement) {
         toolbar.classList.remove('visible');
         return;
       }
 
-      // Only show for contenteditable elements
-      const anchorNode = selection.anchorNode;
-      const editableParent = anchorNode?.nodeType === 3 
-        ? (anchorNode.parentElement?.closest('[contenteditable="true"]') || (anchorNode.parentElement?.getAttribute('contenteditable') === 'true' ? anchorNode.parentElement : null))
-        : (anchorNode as HTMLElement)?.closest?.('[contenteditable="true"]');
-
-      if (!editableParent) {
-        toolbar.classList.remove('visible');
-        return;
-      }
-
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      if (rect.width === 0) {
-        toolbar.classList.remove('visible');
-        return;
-      }
-
-      // Position above the selection
+      // Determine positioning anchor: use selection rect if text is selected,
+      // otherwise use the editable element's bounding rect
       const toolbarHeight = 34;
       const gap = 8;
-      let top = rect.top - toolbarHeight - gap;
-      let left = rect.left + (rect.width / 2) - 52; // Center the toolbar (~104px wide / 2)
+      let top: number;
+      let left: number;
+
+      const toolbarWidth = 168; // Approx width: 3 format btns + separator + color picker + padding
+      const halfToolbar = toolbarWidth / 2;
+      const hasSelection = selection && selection.rangeCount > 0 && !selection.isCollapsed && editableParent;
+
+      if (hasSelection) {
+        // Position above the text selection
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) {
+          // Fallback to element positioning if range rect is zero
+          const elRect = activeEditableElement.getBoundingClientRect();
+          top = elRect.top - toolbarHeight - gap;
+          left = elRect.left + (elRect.width / 2) - halfToolbar;
+        } else {
+          top = rect.top - toolbarHeight - gap;
+          left = rect.left + (rect.width / 2) - halfToolbar;
+        }
+      } else {
+        // Cursor active but no selection - anchor above the editable element
+        const elRect = activeEditableElement.getBoundingClientRect();
+        top = elRect.top - toolbarHeight - gap;
+        left = elRect.left + (elRect.width / 2) - halfToolbar;
+      }
 
       // Keep within viewport
       if (top < 4) {
-        top = rect.bottom + gap;
+        const fallbackRect = hasSelection 
+          ? selection.getRangeAt(0).getBoundingClientRect()
+          : activeEditableElement.getBoundingClientRect();
+        top = fallbackRect.bottom + gap;
       }
       if (left < 4) left = 4;
+      // Prevent toolbar from going off the right edge
+      const viewportWidth = doc.documentElement?.clientWidth || 800;
+      if (left + toolbarWidth > viewportWidth) left = viewportWidth - toolbarWidth - 4;
 
       toolbar.style.top = `${top}px`;
       toolbar.style.left = `${left}px`;
@@ -178,12 +363,57 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
 
     doc.addEventListener('selectionchange', handleSelectionChange);
 
+    // Handle focus into contenteditable elements to show toolbar immediately
+    const handleFocusIn = (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (target.getAttribute('contenteditable') === 'true' || target.closest?.('[contenteditable="true"]')) {
+        const editable = target.getAttribute('contenteditable') === 'true' 
+          ? target 
+          : target.closest('[contenteditable="true"]') as HTMLElement;
+        if (editable) {
+          activeEditableElement = editable;
+          // Small delay to let the cursor settle before positioning
+          setTimeout(positionToolbar, 30);
+        }
+      }
+    };
+    doc.addEventListener('focusin', handleFocusIn);
+
+    // Handle focus leaving contenteditable to hide toolbar
+    const handleFocusOut = (e: Event) => {
+      const relatedTarget = (e as FocusEvent).relatedTarget as HTMLElement | null;
+      // Don't hide if focus moved to the toolbar itself or color picker
+      if (relatedTarget?.closest?.('[data-format-toolbar]')) return;
+      if (relatedTarget?.closest?.('.color-picker-wrap')) return;
+      // Don't hide if focus moved to another contenteditable
+      if (relatedTarget?.getAttribute('contenteditable') === 'true' || 
+          relatedTarget?.closest?.('[contenteditable="true"]')) return;
+      
+      // Delay hiding to allow toolbar button clicks to register
+      setTimeout(() => {
+        // Re-check: if focus is now on toolbar, color picker, or another editable, keep visible
+        const currentActive = doc.activeElement;
+        if (currentActive?.closest?.('[data-format-toolbar]')) return;
+        if (currentActive?.closest?.('.color-picker-wrap')) return;
+        if (currentActive?.getAttribute('contenteditable') === 'true' || 
+            currentActive?.closest?.('[contenteditable="true"]')) return;
+        // Also check if color dropdown is open
+        const dropdown = doc.querySelector('.color-dropdown.open');
+        if (dropdown) return;
+        
+        activeEditableElement = null;
+        if (toolbar) toolbar.classList.remove('visible');
+      }, 150);
+    };
+    doc.addEventListener('focusout', handleFocusOut);
+
     // Hide toolbar when clicking outside contenteditable
     const handleMouseDown = (e: Event) => {
       const target = e.target as HTMLElement;
       // Don't hide if clicking the toolbar itself
       if (target.closest?.('[data-format-toolbar]')) return;
       if (!target.isContentEditable && !target.closest?.('[contenteditable="true"]')) {
+        activeEditableElement = null;
         if (toolbar) toolbar.classList.remove('visible');
       }
     };
@@ -273,7 +503,10 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
       mountNode.removeEventListener('click', handleClick);
       mountNode.removeEventListener('touchstart', handleClick);
       doc.removeEventListener('selectionchange', handleSelectionChange);
+      doc.removeEventListener('focusin', handleFocusIn);
+      doc.removeEventListener('focusout', handleFocusOut);
       doc.removeEventListener('mousedown', handleMouseDown);
+      activeEditableElement = null;
       if (selectionTimer) clearTimeout(selectionTimer);
       if (toolbar && toolbar.parentNode) {
         toolbar.parentNode.removeChild(toolbar);
@@ -399,12 +632,155 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                 height: 16px;
                 background: var(--border, #e4e4e7);
                 margin: 0 2px;
+                flex-shrink: 0;
+              }
+              /* Color picker wrapper */
+              .color-picker-wrap {
+                position: relative;
+                display: flex;
+                align-items: center;
+              }
+              .color-btn {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                width: 28px !important;
+                height: 28px !important;
+                gap: 1px !important;
+                padding: 2px 0 0 0 !important;
+              }
+              .color-btn-icon {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              }
+              .color-btn-icon svg {
+                width: 13px !important;
+                height: 13px !important;
+              }
+              .color-btn-bar {
+                width: 14px;
+                height: 3px;
+                border-radius: 1px;
+                background: var(--foreground, #18181b);
+                flex-shrink: 0;
+              }
+              /* Color dropdown */
+              .color-dropdown {
+                display: none;
+                position: absolute;
+                top: calc(100% + 6px);
+                left: 50%;
+                transform: translateX(-50%);
+                width: 192px;
+                background: var(--background, #fff);
+                border: 1px solid var(--border, #e4e4e7);
+                border-radius: 10px;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.14), 0 2px 6px rgba(0,0,0,0.08);
+                padding: 8px;
+                z-index: 10000;
+                font-family: var(--font-sans, system-ui, sans-serif);
+              }
+              .color-dropdown.open {
+                display: block;
+              }
+              .color-dropdown-label {
+                font-size: 10px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: var(--muted-foreground, #71717a);
+                margin-bottom: 6px;
+              }
+              /* Color grid */
+              .color-grid {
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
+                gap: 4px;
+                margin-bottom: 8px;
+              }
+              .color-swatch {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                width: 28px !important;
+                height: 28px !important;
+                border-radius: 6px !important;
+                border: 1px solid var(--border, #e4e4e7) !important;
+                background: transparent !important;
+                cursor: pointer !important;
+                padding: 0 !important;
+                transition: transform 0.1s ease, box-shadow 0.1s ease !important;
+                margin: 0 auto;
+              }
+              .color-swatch:hover {
+                transform: scale(1.15) !important;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
+              }
+              .swatch-fill {
+                display: block;
+                width: 18px;
+                height: 18px;
+                border-radius: 4px;
+              }
+              .swatch-default {
+                display: block;
+                width: 18px;
+                height: 18px;
+                border-radius: 4px;
+                background: linear-gradient(135deg, transparent 45%, var(--muted-foreground, #71717a) 45%, var(--muted-foreground, #71717a) 55%, transparent 55%);
+              }
+              /* Custom color row */
+              .color-custom-row {
+                border-top: 1px solid var(--border, #e4e4e7);
+                padding-top: 8px;
+              }
+              .color-custom-input-wrap {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+              }
+              .color-custom-input {
+                width: 32px;
+                height: 28px;
+                border: 1px solid var(--border, #e4e4e7);
+                border-radius: 6px;
+                padding: 2px;
+                cursor: pointer;
+                background: transparent;
+                -webkit-appearance: none;
+                appearance: none;
+              }
+              .color-custom-input::-webkit-color-swatch-wrapper { padding: 0; }
+              .color-custom-input::-webkit-color-swatch {
+                border: none;
+                border-radius: 3px;
+              }
+              .color-custom-apply {
+                flex: 1;
+                height: 28px !important;
+                width: auto !important;
+                font-size: 11px !important;
+                font-weight: 600 !important;
+                border-radius: 6px !important;
+                background: var(--primary, #2563eb) !important;
+                color: var(--primary-foreground, #fff) !important;
+                border: none !important;
+                cursor: pointer !important;
+                font-family: var(--font-sans, system-ui, sans-serif) !important;
+                transition: opacity 0.15s ease !important;
+              }
+              .color-custom-apply:hover {
+                opacity: 0.9 !important;
               }
               /* Subtle focus ring for contenteditable elements */
               [contenteditable="true"]:focus {
                 outline: 2px solid color-mix(in srgb, var(--primary, #2563eb) 30%, transparent);
                 outline-offset: 2px;
                 border-radius: 4px;
+                background: color-mix(in srgb, var(--primary, #2563eb) 3%, transparent);
+                transition: outline-color 0.15s ease, background 0.15s ease;
               }
             `;
             doc.head.appendChild(customStyle);
