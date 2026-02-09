@@ -1023,11 +1023,24 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
         const dayAbbr = ['Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
         const dates = ['Dec 15', 'Dec 16', 'Dec 17', 'Dec 18', 'Dec 19', 'Dec 20', 'Dec 21'];
         
-        // Pool of placeholder speaker/sponsor initials for avatar clusters
-        const speakerPool = ['AJ','SK','DR','MK','LP','TC','NV','RH','EW','JB','QF','ZA','UM','GO'];
+        // Helper: derive initials from a full name
+        const getInitials = (fullName: string): string => {
+            const trimmed = fullName.trim();
+            if (!trimmed) return '?';
+            const parts = trimmed.split(/\s+/);
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            }
+            return parts[0][0].toUpperCase();
+        };
+
+        // Default speaker names pool (used when no custom name is set)
+        const defaultSpeakerNames = ['Anna Martin', 'Sarah Kim', 'Dan Rodriguez', 'Michael Kranitz', 'Lisa Park', 'Tom Chen', 'Nina Volkov', 'Robb Hartzog', 'Elena Wu', 'James Bell', 'Quinn Foster', 'Zara Ahmed', 'Uma Mehta', 'Grace Okafor'];
+
+        const maxVisibleAvatars = 3;
 
         // Render a single session row: Time | Title + subtitle + badge | Avatars
-        const renderSession = (dayIndex, sessionIndex) => {
+        const renderSession = (dayIndex: number, sessionIndex: number) => {
             const hour = 8 + sessionIndex;
             const startTime = hour < 12 ? `${String(hour).padStart(2, '0')}:00 AM` : `${String(hour === 12 ? 12 : hour - 12).padStart(2, '0')}:00 PM`;
             const endHour = hour + 1;
@@ -1044,20 +1057,28 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
             const typeKey = `type-d${dayIndex}-s${sessionIndex}`;
             const sessionType = safeGetText(settings, typeKey, defaultType);
 
-            // Deterministic people count per session (2-5 speakers/sponsors)
-            const totalPeople = 2 + ((dayIndex * 5 + sessionIndex * 3) % 4);
-            const visible = Math.min(totalPeople, 3);
-            const overflow = totalPeople - 3;
+            // Speaker count per session — configurable, defaults to a deterministic 2-4
+            const speakerCountKey = `speakers-d${dayIndex}-s${sessionIndex}`;
+            const defaultSpeakerCount = 2 + ((dayIndex * 5 + sessionIndex * 3) % 3);
+            const totalPeople = safeGetCount(settings, speakerCountKey, defaultSpeakerCount);
 
-            // Build full speaker list for modal
-            const allSpeakers = Array.from({length: totalPeople}, (_, k) => {
-                const initials = speakerPool[(dayIndex * 7 + sessionIndex * 3 + k) % speakerPool.length];
-                return initials;
-            });
+            // Build speaker names list from settings
+            const allSpeakerNames: string[] = [];
+            for (let k = 0; k < totalPeople; k++) {
+                const nameKey = `speaker-d${dayIndex}-s${sessionIndex}-${k}`;
+                const defaultName = defaultSpeakerNames[(dayIndex * 7 + sessionIndex * 3 + k) % defaultSpeakerNames.length];
+                allSpeakerNames.push(safeGetText(settings, nameKey, defaultName));
+            }
 
-            const avatarCircles = Array.from({length: visible}, (_, k) => {
-                const initials = speakerPool[(dayIndex * 7 + sessionIndex * 3 + k) % speakerPool.length];
-                return `<div style="width:24px; height:24px; border-radius:50%; border:2px solid var(--background); background:var(--muted); display:flex; align-items:center; justify-content:center; flex-shrink:0;" title="${initials}"><span style="font-size:9px; font-weight:600; color:var(--muted-foreground); line-height:1; user-select:none; font-family:var(--font-sans);">${initials}</span></div>`;
+            const visible = Math.min(totalPeople, maxVisibleAvatars);
+            const overflow = totalPeople - maxVisibleAvatars;
+
+            // Build initials for data attribute (for modal)
+            const allSpeakerInitials = allSpeakerNames.map(n => getInitials(n));
+
+            const avatarCircles = allSpeakerNames.slice(0, visible).map(name => {
+                const initials = getInitials(name);
+                return `<div style="width:24px; height:24px; border-radius:50%; border:2px solid var(--background); background:var(--muted); display:flex; align-items:center; justify-content:center; flex-shrink:0;" title="${name.replace(/"/g, '&quot;')}"><span style="font-size:9px; font-weight:600; color:var(--muted-foreground); line-height:1; user-select:none; font-family:var(--font-sans);">${initials}</span></div>`;
             }).join('');
 
             const overflowCircle = overflow > 0
@@ -1090,7 +1111,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                      data-session-location="${location}"
                      data-session-type="${sessionType}"
                      data-session-desc="${sessionDesc.replace(/"/g, '&quot;')}"
-                     data-session-speakers="${allSpeakers.join(',')}"
+                     data-session-speakers="${allSpeakerNames.map(n => n.replace(/"/g, '&quot;')).join(',')}"
                      role="button" tabindex="0"
                      onmouseover="this.style.background='var(--muted)'"
                      onmouseout="this.style.background='transparent'"
