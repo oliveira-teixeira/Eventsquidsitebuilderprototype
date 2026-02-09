@@ -69,6 +69,126 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
   useEffect(() => {
     if (!mountNode) return;
 
+    // --- Inline Formatting Toolbar ---
+    const doc = mountNode.ownerDocument;
+    let toolbar: HTMLDivElement | null = null;
+
+    // Create the formatting toolbar element
+    try {
+      toolbar = doc.createElement('div');
+      toolbar.className = 'text-format-toolbar';
+      toolbar.setAttribute('data-format-toolbar', 'true');
+
+      const boldSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>';
+      const italicSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>';
+      const underlineSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v6a6 6 0 0 0 12 0V4"/><line x1="4" y1="20" x2="20" y2="20"/></svg>';
+
+      const createBtn = (cmd: string, svg: string, title: string) => {
+        const btn = doc.createElement('button');
+        btn.type = 'button';
+        btn.innerHTML = svg;
+        btn.title = title;
+        btn.setAttribute('data-command', cmd);
+        btn.addEventListener('mousedown', (e) => {
+          e.preventDefault(); // Prevent losing selection
+          doc.execCommand(cmd, false);
+          updateToolbarState();
+        });
+        return btn;
+      };
+
+      toolbar.appendChild(createBtn('bold', boldSvg, 'Bold (Ctrl+B)'));
+      toolbar.appendChild(createBtn('italic', italicSvg, 'Italic (Ctrl+I)'));
+      toolbar.appendChild(createBtn('underline', underlineSvg, 'Underline (Ctrl+U)'));
+
+      doc.body.appendChild(toolbar);
+    } catch (e) {
+      console.warn('Failed to create formatting toolbar:', e);
+    }
+
+    // Update toolbar button active states based on current selection
+    const updateToolbarState = () => {
+      if (!toolbar) return;
+      const buttons = toolbar.querySelectorAll('button[data-command]');
+      buttons.forEach((btn) => {
+        const cmd = btn.getAttribute('data-command');
+        if (cmd) {
+          try {
+            const isActive = doc.queryCommandState(cmd);
+            btn.classList.toggle('active', isActive);
+          } catch (e) {
+            // queryCommandState can throw in some cases
+          }
+        }
+      });
+    };
+
+    // Position and show/hide the toolbar
+    const positionToolbar = () => {
+      if (!toolbar) return;
+      const selection = doc.getSelection();
+      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+        toolbar.classList.remove('visible');
+        return;
+      }
+
+      // Only show for contenteditable elements
+      const anchorNode = selection.anchorNode;
+      const editableParent = anchorNode?.nodeType === 3 
+        ? (anchorNode.parentElement?.closest('[contenteditable="true"]') || (anchorNode.parentElement?.getAttribute('contenteditable') === 'true' ? anchorNode.parentElement : null))
+        : (anchorNode as HTMLElement)?.closest?.('[contenteditable="true"]');
+
+      if (!editableParent) {
+        toolbar.classList.remove('visible');
+        return;
+      }
+
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      if (rect.width === 0) {
+        toolbar.classList.remove('visible');
+        return;
+      }
+
+      // Position above the selection
+      const toolbarHeight = 34;
+      const gap = 8;
+      let top = rect.top - toolbarHeight - gap;
+      let left = rect.left + (rect.width / 2) - 52; // Center the toolbar (~104px wide / 2)
+
+      // Keep within viewport
+      if (top < 4) {
+        top = rect.bottom + gap;
+      }
+      if (left < 4) left = 4;
+
+      toolbar.style.top = `${top}px`;
+      toolbar.style.left = `${left}px`;
+      toolbar.classList.add('visible');
+
+      updateToolbarState();
+    };
+
+    // Debounced selection change handler
+    let selectionTimer: ReturnType<typeof setTimeout> | null = null;
+    const handleSelectionChange = () => {
+      if (selectionTimer) clearTimeout(selectionTimer);
+      selectionTimer = setTimeout(positionToolbar, 50);
+    };
+
+    doc.addEventListener('selectionchange', handleSelectionChange);
+
+    // Hide toolbar when clicking outside contenteditable
+    const handleMouseDown = (e: Event) => {
+      const target = e.target as HTMLElement;
+      // Don't hide if clicking the toolbar itself
+      if (target.closest?.('[data-format-toolbar]')) return;
+      if (!target.isContentEditable && !target.closest?.('[contenteditable="true"]')) {
+        if (toolbar) toolbar.classList.remove('visible');
+      }
+    };
+    doc.addEventListener('mousedown', handleMouseDown);
+
     const handleBlur = (e: Event) => {
       if (!onContentChange) return;
       const target = e.target as HTMLElement;
@@ -87,10 +207,29 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
     // We use capturing to ensure we catch the blur event
     mountNode.addEventListener('blur', handleBlur, true);
     
-    // Forward key events to parent for navigation
+    // Intercept keyboard shortcuts to limit formatting to B/I/U only
     const handleKeyDown = (e: KeyboardEvent) => {
         const target = e.target as HTMLElement;
-        if (target.isContentEditable || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        
+        // Inside contenteditable: restrict formatting shortcuts
+        if (target.isContentEditable || target.closest('[contenteditable="true"]')) {
+            const isMod = e.ctrlKey || e.metaKey;
+            if (isMod) {
+                const key = e.key.toLowerCase();
+                // Allow Bold, Italic, Underline
+                if (key === 'b' || key === 'i' || key === 'u') {
+                    // Let execCommand handle it natively, just update toolbar state
+                    setTimeout(updateToolbarState, 10);
+                    return;
+                }
+                // Allow copy/paste/cut/undo/redo/select-all
+                if (key === 'c' || key === 'v' || key === 'x' || key === 'z' || key === 'a') {
+                    return;
+                }
+                // Block all other Ctrl+key formatting shortcuts (e.g., Ctrl+E for center)
+                e.preventDefault();
+                return;
+            }
             return;
         }
 
@@ -112,6 +251,17 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
     };
     mountNode.addEventListener('keydown', handleKeyDown);
 
+    // Intercept paste to strip formatting (allow only plain text + existing B/I/U)
+    const handlePaste = (e: ClipboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.isContentEditable || target.closest?.('[contenteditable="true"]')) {
+        e.preventDefault();
+        const text = e.clipboardData?.getData('text/plain') || '';
+        doc.execCommand('insertText', false, text);
+      }
+    };
+    mountNode.addEventListener('paste', handlePaste);
+
     // Listen for clicks on the body to handle selection
     mountNode.addEventListener('click', handleClick);
     mountNode.addEventListener('touchstart', handleClick, { passive: true });
@@ -119,8 +269,15 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
     return () => {
       mountNode.removeEventListener('blur', handleBlur, true);
       mountNode.removeEventListener('keydown', handleKeyDown);
+      mountNode.removeEventListener('paste', handlePaste);
       mountNode.removeEventListener('click', handleClick);
       mountNode.removeEventListener('touchstart', handleClick);
+      doc.removeEventListener('selectionchange', handleSelectionChange);
+      doc.removeEventListener('mousedown', handleMouseDown);
+      if (selectionTimer) clearTimeout(selectionTimer);
+      if (toolbar && toolbar.parentNode) {
+        toolbar.parentNode.removeChild(toolbar);
+      }
     };
   }, [mountNode, onContentChange, onClick, onImageClick, onNavLinkClick]);
 
@@ -191,6 +348,63 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                 display: block;
                 width: 100%;
                 min-height: 0;
+              }
+              /* Inline text formatting toolbar */
+              .text-format-toolbar {
+                position: absolute;
+                z-index: 9999;
+                display: none;
+                align-items: center;
+                gap: 2px;
+                padding: 3px;
+                background: var(--background, #fff);
+                border: 1px solid var(--border, #e4e4e7);
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.08);
+                pointer-events: auto;
+                font-family: var(--font-sans, system-ui, sans-serif);
+                transition: opacity 0.15s ease;
+              }
+              .text-format-toolbar.visible {
+                display: flex;
+              }
+              .text-format-toolbar button {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 28px;
+                height: 28px;
+                border: none;
+                border-radius: 5px;
+                background: transparent;
+                color: var(--muted-foreground, #71717a);
+                cursor: pointer;
+                padding: 0;
+                transition: all 0.15s ease;
+              }
+              .text-format-toolbar button:hover {
+                background: var(--muted, #f4f4f5);
+                color: var(--foreground, #18181b);
+              }
+              .text-format-toolbar button.active {
+                background: var(--primary, #2563eb);
+                color: var(--primary-foreground, #fff);
+              }
+              .text-format-toolbar button svg {
+                width: 14px;
+                height: 14px;
+              }
+              .text-format-toolbar .separator {
+                width: 1px;
+                height: 16px;
+                background: var(--border, #e4e4e7);
+                margin: 0 2px;
+              }
+              /* Subtle focus ring for contenteditable elements */
+              [contenteditable="true"]:focus {
+                outline: 2px solid color-mix(in srgb, var(--primary, #2563eb) 30%, transparent);
+                outline-offset: 2px;
+                border-radius: 4px;
               }
             `;
             doc.head.appendChild(customStyle);
