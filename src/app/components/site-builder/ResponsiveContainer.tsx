@@ -123,44 +123,85 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
       });
     };
 
+    // Track the currently focused contenteditable element
+    let activeEditableElement: HTMLElement | null = null;
+
+    // Helper to find the contenteditable parent of a node
+    const findEditableParent = (node: Node | null): HTMLElement | null => {
+      if (!node) return null;
+      if (node.nodeType === 3) {
+        // Text node - check parent
+        const parent = node.parentElement;
+        if (!parent) return null;
+        return parent.closest('[contenteditable="true"]') as HTMLElement ||
+          (parent.getAttribute('contenteditable') === 'true' ? parent : null);
+      }
+      const el = node as HTMLElement;
+      return el.closest?.('[contenteditable="true"]') as HTMLElement || null;
+    };
+
     // Position and show/hide the toolbar
     const positionToolbar = () => {
       if (!toolbar) return;
       const selection = doc.getSelection();
-      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+
+      // Determine if we're inside a contenteditable
+      let editableParent: HTMLElement | null = null;
+      if (selection && selection.rangeCount > 0) {
+        editableParent = findEditableParent(selection.anchorNode);
+      }
+
+      // Update the active editable element tracking
+      if (editableParent) {
+        activeEditableElement = editableParent;
+      }
+
+      // If we have no active editable element, hide toolbar
+      if (!activeEditableElement) {
         toolbar.classList.remove('visible');
         return;
       }
 
-      // Only show for contenteditable elements
-      const anchorNode = selection.anchorNode;
-      const editableParent = anchorNode?.nodeType === 3 
-        ? (anchorNode.parentElement?.closest('[contenteditable="true"]') || (anchorNode.parentElement?.getAttribute('contenteditable') === 'true' ? anchorNode.parentElement : null))
-        : (anchorNode as HTMLElement)?.closest?.('[contenteditable="true"]');
-
-      if (!editableParent) {
-        toolbar.classList.remove('visible');
-        return;
-      }
-
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      if (rect.width === 0) {
-        toolbar.classList.remove('visible');
-        return;
-      }
-
-      // Position above the selection
+      // Determine positioning anchor: use selection rect if text is selected,
+      // otherwise use the editable element's bounding rect
       const toolbarHeight = 34;
       const gap = 8;
-      let top = rect.top - toolbarHeight - gap;
-      let left = rect.left + (rect.width / 2) - 52; // Center the toolbar (~104px wide / 2)
+      let top: number;
+      let left: number;
+
+      const hasSelection = selection && selection.rangeCount > 0 && !selection.isCollapsed && editableParent;
+
+      if (hasSelection) {
+        // Position above the text selection
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) {
+          // Fallback to element positioning if range rect is zero
+          const elRect = activeEditableElement.getBoundingClientRect();
+          top = elRect.top - toolbarHeight - gap;
+          left = elRect.left + (elRect.width / 2) - 52;
+        } else {
+          top = rect.top - toolbarHeight - gap;
+          left = rect.left + (rect.width / 2) - 52;
+        }
+      } else {
+        // Cursor active but no selection - anchor above the editable element
+        const elRect = activeEditableElement.getBoundingClientRect();
+        top = elRect.top - toolbarHeight - gap;
+        left = elRect.left + (elRect.width / 2) - 52;
+      }
 
       // Keep within viewport
       if (top < 4) {
-        top = rect.bottom + gap;
+        const fallbackRect = hasSelection 
+          ? selection.getRangeAt(0).getBoundingClientRect()
+          : activeEditableElement.getBoundingClientRect();
+        top = fallbackRect.bottom + gap;
       }
       if (left < 4) left = 4;
+      // Prevent toolbar from going off the right edge
+      const viewportWidth = doc.documentElement?.clientWidth || 800;
+      if (left + 104 > viewportWidth) left = viewportWidth - 108;
 
       toolbar.style.top = `${top}px`;
       toolbar.style.left = `${left}px`;
@@ -178,12 +219,52 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
 
     doc.addEventListener('selectionchange', handleSelectionChange);
 
+    // Handle focus into contenteditable elements to show toolbar immediately
+    const handleFocusIn = (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (target.getAttribute('contenteditable') === 'true' || target.closest?.('[contenteditable="true"]')) {
+        const editable = target.getAttribute('contenteditable') === 'true' 
+          ? target 
+          : target.closest('[contenteditable="true"]') as HTMLElement;
+        if (editable) {
+          activeEditableElement = editable;
+          // Small delay to let the cursor settle before positioning
+          setTimeout(positionToolbar, 30);
+        }
+      }
+    };
+    doc.addEventListener('focusin', handleFocusIn);
+
+    // Handle focus leaving contenteditable to hide toolbar
+    const handleFocusOut = (e: Event) => {
+      const relatedTarget = (e as FocusEvent).relatedTarget as HTMLElement | null;
+      // Don't hide if focus moved to the toolbar itself
+      if (relatedTarget?.closest?.('[data-format-toolbar]')) return;
+      // Don't hide if focus moved to another contenteditable
+      if (relatedTarget?.getAttribute('contenteditable') === 'true' || 
+          relatedTarget?.closest?.('[contenteditable="true"]')) return;
+      
+      // Delay hiding to allow toolbar button clicks to register
+      setTimeout(() => {
+        // Re-check: if focus is now on toolbar or another editable, keep visible
+        const currentActive = doc.activeElement;
+        if (currentActive?.closest?.('[data-format-toolbar]')) return;
+        if (currentActive?.getAttribute('contenteditable') === 'true' || 
+            currentActive?.closest?.('[contenteditable="true"]')) return;
+        
+        activeEditableElement = null;
+        if (toolbar) toolbar.classList.remove('visible');
+      }, 150);
+    };
+    doc.addEventListener('focusout', handleFocusOut);
+
     // Hide toolbar when clicking outside contenteditable
     const handleMouseDown = (e: Event) => {
       const target = e.target as HTMLElement;
       // Don't hide if clicking the toolbar itself
       if (target.closest?.('[data-format-toolbar]')) return;
       if (!target.isContentEditable && !target.closest?.('[contenteditable="true"]')) {
+        activeEditableElement = null;
         if (toolbar) toolbar.classList.remove('visible');
       }
     };
@@ -273,7 +354,10 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
       mountNode.removeEventListener('click', handleClick);
       mountNode.removeEventListener('touchstart', handleClick);
       doc.removeEventListener('selectionchange', handleSelectionChange);
+      doc.removeEventListener('focusin', handleFocusIn);
+      doc.removeEventListener('focusout', handleFocusOut);
       doc.removeEventListener('mousedown', handleMouseDown);
+      activeEditableElement = null;
       if (selectionTimer) clearTimeout(selectionTimer);
       if (toolbar && toolbar.parentNode) {
         toolbar.parentNode.removeChild(toolbar);
@@ -405,6 +489,8 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                 outline: 2px solid color-mix(in srgb, var(--primary, #2563eb) 30%, transparent);
                 outline-offset: 2px;
                 border-radius: 4px;
+                background: color-mix(in srgb, var(--primary, #2563eb) 3%, transparent);
+                transition: outline-color 0.15s ease, background 0.15s ease;
               }
             `;
             doc.head.appendChild(customStyle);
