@@ -70,6 +70,9 @@ const SortableLayer = ({
   const ref = useRef<HTMLDivElement>(null);
   const dragRef = useRef<HTMLDivElement>(null);
   const definition = BLOCK_REGISTRY.find(d => d.id === block.typeId);
+  
+  // Navigation blocks are locked to position 0 and cannot be dragged
+  const isNavigation = block.typeId === 'navbar-master';
 
   const [{ handlerId, isOverCurrent }, drop] = useDrop({
     accept: 'layer',
@@ -85,6 +88,9 @@ const SortableLayer = ({
       // Use ID to find actual indices to avoid stale index issues
       const dragId = item.id;
       if (dragId === block.id) return; // Don't replace with self
+      
+      // Prevent dropping onto the nav block's position (index 0 when nav is there)
+      if (isNavigation && index === 0) return;
       
       const hoverBoundingRect = ref.current.getBoundingClientRect();
       const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
@@ -111,6 +117,7 @@ const SortableLayer = ({
     item: () => {
       return { id: block.id, index };
     },
+    canDrag: !isNavigation, // Navigation blocks cannot be dragged
     collect: (monitor) => {
       // Only mark as dragging if this specific block's ID matches the dragged item
       const item = monitor.getItem();
@@ -142,10 +149,16 @@ const SortableLayer = ({
         isDragging ? "opacity-0" : "opacity-100"
       )}
     >
-      {/* Drag Handle */}
-      <div ref={dragRef} className="cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-foreground p-1 -ml-1">
-         <GripVertical className="w-3.5 h-3.5" />
-      </div>
+      {/* Drag Handle - disabled for navigation blocks */}
+      {isNavigation ? (
+        <div className="text-muted-foreground/30 p-1 -ml-1 cursor-default" title="Navigation is locked to the top">
+           <Lock className="w-3.5 h-3.5" />
+        </div>
+      ) : (
+        <div ref={dragRef} className="cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-foreground p-1 -ml-1">
+           <GripVertical className="w-3.5 h-3.5" />
+        </div>
+      )}
 
       <div className="w-4 h-4 flex items-center justify-center opacity-70">
         {definition && definition.icon ? <div className="w-3 h-3 text-current scale-75">{/* Icons from registry */}</div> : <Layers className="w-3 h-3" />}

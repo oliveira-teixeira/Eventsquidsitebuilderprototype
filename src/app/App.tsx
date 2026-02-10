@@ -405,9 +405,58 @@ function AppContent() {
     });
   }, []);
 
+  // --- Navigation Block Helpers ---
+  const isNavBlock = useCallback((typeId: string) => {
+    return typeId === 'navbar-master';
+  }, []);
+
+  const hasNavBlock = useCallback((blocks: Block[]) => {
+    return blocks.some(b => isNavBlock(b.typeId));
+  }, [isNavBlock]);
+
   // --- Drag and Drop Logic ---
   const handleDropBlock = useCallback((typeId: string, insertIndex?: number) => {
     if (!typeId) return;
+
+    // Navigation block special handling
+    if (isNavBlock(typeId)) {
+      // If a nav block already exists, replace it instead of adding a duplicate
+      if (hasNavBlock(canvasBlocks)) {
+        const existingNavIndex = canvasBlocks.findIndex(b => isNavBlock(b.typeId));
+        const existingNav = canvasBlocks[existingNavIndex];
+        // Replace existing nav block with a new one (preserving position 0)
+        const newBlock = {
+          id: `${typeId}-${Math.random().toString(36).substr(2, 9)}`,
+          typeId,
+          variant: existingNav.variant || 'default',
+          settings: existingNav.settings || {}
+        };
+        const newBlocks = [...canvasBlocks];
+        newBlocks[existingNavIndex] = newBlock;
+        // Ensure it's at index 0
+        if (existingNavIndex !== 0) {
+          newBlocks.splice(existingNavIndex, 1);
+          newBlocks.unshift(newBlock);
+        }
+        pushToHistory(newBlocks);
+        setSelectedBlockId(newBlock.id);
+        toast.info("Navigation block replaced. Only one navigation is allowed per page.", { duration: 3000 });
+        return;
+      }
+
+      // New nav block: always insert at index 0
+      const newBlock = {
+        id: `${typeId}-${Math.random().toString(36).substr(2, 9)}`,
+        typeId,
+        variant: 'default',
+        settings: {}
+      };
+      const newBlocks = [newBlock, ...canvasBlocks];
+      pushToHistory(newBlocks);
+      setSelectedBlockId(newBlock.id);
+      toast.success("Navigation added to the top of the page.", { duration: 2000 });
+      return;
+    }
 
     const newBlock = {
       id: `${typeId}-${Math.random().toString(36).substr(2, 9)}`,
@@ -417,14 +466,19 @@ function AppContent() {
     };
 
     const newBlocks = [...canvasBlocks];
+    // If a nav block exists at index 0, ensure new blocks are inserted after it
+    const navAtTop = newBlocks.length > 0 && isNavBlock(newBlocks[0].typeId);
+    const minInsertIndex = navAtTop ? 1 : 0;
+
     if (typeof insertIndex === 'number') {
-      newBlocks.splice(insertIndex, 0, newBlock);
+      const safeIndex = Math.max(insertIndex, minInsertIndex);
+      newBlocks.splice(safeIndex, 0, newBlock);
     } else {
       newBlocks.push(newBlock);
     }
     pushToHistory(newBlocks);
     setSelectedBlockId(newBlock.id);
-  }, [canvasBlocks, pushToHistory]);
+  }, [canvasBlocks, pushToHistory, isNavBlock, hasNavBlock]);
 
   // --- Block Operations ---
   const deleteBlock = useCallback((id: string) => {
@@ -435,10 +489,22 @@ function AppContent() {
   const moveBlock = useCallback((dragIndex: number, hoverIndex: number) => {
     const newBlocks = [...canvasBlocks];
     const dragBlock = newBlocks[dragIndex];
+
+    // Navigation block is completely locked to position 0 - block all reorder attempts
+    if (isNavBlock(dragBlock.typeId)) {
+      return; // Silently reject - nav block drag is disabled at the UI level
+    }
+
+    // Prevent moving other blocks above nav block at index 0
+    const navAtTop = newBlocks.length > 0 && isNavBlock(newBlocks[0].typeId);
+    if (navAtTop && hoverIndex === 0) {
+      return; // Silently reject - can't go above nav
+    }
+
     newBlocks.splice(dragIndex, 1);
     newBlocks.splice(hoverIndex, 0, dragBlock);
     pushToHistory(newBlocks);
-  }, [canvasBlocks, pushToHistory]);
+  }, [canvasBlocks, pushToHistory, isNavBlock]);
 
   const addDefaultBlock = useCallback((index: number) => {
     // Adds a default hero block at index
@@ -534,14 +600,29 @@ function AppContent() {
           return;
       }
 
-      const newBlocks = [...canvasBlocks];
+      const block = canvasBlocks[index];
       const targetIndex = dir === 'up' ? index - 1 : index + 1;
+
+      // Navigation block must stay at index 0 - block all movement
+      if (isNavBlock(block.typeId)) {
+          toast.info("Navigation must stay at the top of the page.", { duration: 2000 });
+          return;
+      }
+
+      // Prevent other blocks from moving above nav block at index 0
+      const navAtTop = canvasBlocks.length > 0 && isNavBlock(canvasBlocks[0].typeId);
+      if (navAtTop && targetIndex === 0) {
+          toast.info("Cannot move above the navigation block.", { duration: 2000 });
+          return;
+      }
+
+      const newBlocks = [...canvasBlocks];
       
       // Swap using destructuring
       [newBlocks[index], newBlocks[targetIndex]] = [newBlocks[targetIndex], newBlocks[index]];
       
       pushToHistory(newBlocks);
-  }, [canvasBlocks, pushToHistory]);
+  }, [canvasBlocks, pushToHistory, isNavBlock]);
 
   // --- Arrow Key Navigation Between Blocks ---
   useEffect(() => {
@@ -573,7 +654,13 @@ function AppContent() {
 
       // Plain arrow = navigate selection, Ctrl/Cmd+arrow = reorder block
       if (e.ctrlKey || e.metaKey) {
-        handleMoveBlockDirectional(selectedBlockId, dir);
+        // Skip reorder for nav blocks - they are locked to top
+        const selectedBlock = canvasBlocks.find(b => b.id === selectedBlockId);
+        if (selectedBlock && isNavBlock(selectedBlock.typeId)) {
+          toast.info("Navigation must stay at the top of the page.", { duration: 2000 });
+        } else {
+          handleMoveBlockDirectional(selectedBlockId, dir);
+        }
       } else {
         const nextIndex = dir === 'up' ? currentIndex - 1 : currentIndex + 1;
         if (nextIndex >= 0 && nextIndex < visibleBlocks.length) {
@@ -619,7 +706,7 @@ function AppContent() {
         window.removeEventListener('keydown', handleKeyDown);
         window.removeEventListener('message', handleMessage);
     };
-  }, [canvasBlocks, selectedBlockId, isPreviewMode, handleMoveBlockDirectional]);
+  }, [canvasBlocks, selectedBlockId, isPreviewMode, handleMoveBlockDirectional, isNavBlock]);
 
   // --- Render Views ---
   const renderMainContent = () => {

@@ -525,6 +525,9 @@ const CanvasBlockWrapper = ({
     const [imageModalOpen, setImageModalOpen] = useState(false);
     const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
     
+    // Navigation block detection - locked to top, no drag/reorder
+    const isNavigation = block.typeId === 'navbar-master';
+    
     // Calculate these once for consistency - ensure they're always boolean
     const isLastBlock = Boolean(totalBlocks > 0 && index === totalBlocks - 1);
     const isFirstBlock = Boolean(index === 0);
@@ -533,9 +536,11 @@ const CanvasBlockWrapper = ({
     const dragHandleRef = useRef<HTMLDivElement>(null);
 
     // Drag and drop for reordering blocks within canvas
+    // Navigation blocks cannot be dragged - they are locked to position 0
     const [{ isDragging }, drag, preview] = useDrag(() => ({
         type: 'CANVAS_BLOCK',
         item: { id: block.id, index },
+        canDrag: !isNavigation,
         collect: (monitor) => {
             // Only mark as dragging if this specific block's ID matches the dragged item
             const item = monitor.getItem();
@@ -543,7 +548,7 @@ const CanvasBlockWrapper = ({
                 isDragging: monitor.isDragging() && item?.id === block.id
             };
         }
-    }), [block.id, index]);
+    }), [block.id, index, isNavigation]);
 
     const [{ isOver: isOverBlock }, drop] = useDrop(() => ({
         accept: 'CANVAS_BLOCK',
@@ -552,6 +557,9 @@ const CanvasBlockWrapper = ({
             
             // Use ID to check if dragging over self to avoid stale index issues
             if (item.id === block.id) return;
+            
+            // Prevent any block from being dropped onto the nav block's position (index 0)
+            if (isNavigation && index === 0) return;
             
             const dragIndex = item.index;
             const hoverIndex = index;
@@ -729,6 +737,7 @@ const CanvasBlockWrapper = ({
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{definition.category}</span>
                     </div>
 
+                    {!isNavigation && (
                     <div 
                       ref={dragHandleRef}
                       className="cursor-grab active:cursor-grabbing p-1.5 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground transition-colors mr-1"
@@ -737,20 +746,26 @@ const CanvasBlockWrapper = ({
                     >
                       <GripVertical className="w-3.5 h-3.5" />
                     </div>
+                    )}
+                    {isNavigation && (
+                      <div className="flex items-center gap-1 px-2 text-[10px] text-muted-foreground/70 select-none" title="Navigation is locked to the top">
+                        <Lock className="w-3 h-3" />
+                      </div>
+                    )}
                     
                     <button 
                       onClick={(e) => { e.stopPropagation(); onMoveBlock(block.id, 'up'); }} 
-                      disabled={isFirstBlock} 
+                      disabled={isFirstBlock || isNavigation} 
                       className="p-1.5 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      title="Move Up"
+                      title={isNavigation ? "Navigation is locked to the top" : "Move Up"}
                     >
                       <ChevronUp className="w-3.5 h-3.5" />
                     </button>
                     <button 
                       onClick={(e) => { e.stopPropagation(); onMoveBlock(block.id, 'down'); }} 
-                      disabled={isLastBlock}
+                      disabled={isLastBlock || isNavigation}
                       className="p-1.5 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      title="Move Down"
+                      title={isNavigation ? "Navigation is locked to the top" : "Move Down"}
                     >
                       <ChevronDown className="w-3.5 h-3.5" />
                     </button>
@@ -816,20 +831,29 @@ const CanvasBlockWrapper = ({
                             <div className="h-6 w-px bg-border" />
 
                             <div className="flex items-center gap-1">
-                                <button 
-                                onClick={(e) => { e.stopPropagation(); onMoveBlock(block.id, 'up'); }} 
-                                disabled={isFirstBlock} 
-                                className="p-2 hover:bg-secondary rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                >
-                                <ChevronUp className="w-4 h-4" />
-                                </button>
-                                <button 
-                                onClick={(e) => { e.stopPropagation(); onMoveBlock(block.id, 'down'); }} 
-                                disabled={isLastBlock}
-                                className="p-2 hover:bg-secondary rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                >
-                                <ChevronDown className="w-4 h-4" />
-                                </button>
+                                {isNavigation ? (
+                                  <div className="flex items-center gap-1 px-2 text-[10px] text-muted-foreground/70 select-none">
+                                    <Lock className="w-3 h-3" />
+                                    <span>Locked</span>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <button 
+                                    onClick={(e) => { e.stopPropagation(); onMoveBlock(block.id, 'up'); }} 
+                                    disabled={isFirstBlock} 
+                                    className="p-2 hover:bg-secondary rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                    <ChevronUp className="w-4 h-4" />
+                                    </button>
+                                    <button 
+                                    onClick={(e) => { e.stopPropagation(); onMoveBlock(block.id, 'down'); }} 
+                                    disabled={isLastBlock}
+                                    className="p-2 hover:bg-secondary rounded-xl text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                    <ChevronDown className="w-4 h-4" />
+                                    </button>
+                                  </>
+                                )}
                             </div>
 
                             <div className="h-6 w-px bg-border" />
