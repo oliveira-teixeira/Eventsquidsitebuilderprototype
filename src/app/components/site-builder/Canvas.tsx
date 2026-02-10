@@ -10,7 +10,8 @@ import {
   Eye,
   Lock,
   EyeOff,
-  Layout
+  Layout,
+  Pin
 } from "lucide-react";
 import { cn } from "../ui/utils";
 import { BLOCK_REGISTRY } from "./block-registry";
@@ -737,38 +738,39 @@ const CanvasBlockWrapper = ({
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{definition.category}</span>
                     </div>
 
-                    {!isNavigation && (
-                    <div 
-                      ref={dragHandleRef}
-                      className="cursor-grab active:cursor-grabbing p-1.5 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground transition-colors mr-1"
-                      title="Drag to reorder"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <GripVertical className="w-3.5 h-3.5" />
-                    </div>
-                    )}
-                    {isNavigation && (
-                      <div className="flex items-center gap-1 px-2 text-[10px] text-muted-foreground/70 select-none" title="Navigation is locked to the top">
-                        <Lock className="w-3 h-3" />
+                    {isNavigation ? (
+                      <div className="flex items-center gap-1 px-2 text-[10px] text-muted-foreground/60 select-none" title="Navigation is pinned to the top of the page">
+                        <Pin className="w-3 h-3 shrink-0" />
+                        <span>Pinned to top</span>
                       </div>
+                    ) : (
+                      <>
+                        <div 
+                          ref={dragHandleRef}
+                          className="cursor-grab active:cursor-grabbing p-1.5 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground transition-colors mr-1"
+                          title="Drag to reorder"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <GripVertical className="w-3.5 h-3.5" />
+                        </div>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); onMoveBlock(block.id, 'up'); }} 
+                          disabled={isFirstBlock} 
+                          className="p-1.5 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          title="Move Up"
+                        >
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); onMoveBlock(block.id, 'down'); }} 
+                          disabled={isLastBlock}
+                          className="p-1.5 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          title="Move Down"
+                        >
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </button>
+                      </>
                     )}
-                    
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); onMoveBlock(block.id, 'up'); }} 
-                      disabled={isFirstBlock || isNavigation} 
-                      className="p-1.5 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      title={isNavigation ? "Navigation is locked to the top" : "Move Up"}
-                    >
-                      <ChevronUp className="w-3.5 h-3.5" />
-                    </button>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); onMoveBlock(block.id, 'down'); }} 
-                      disabled={isLastBlock || isNavigation}
-                      className="p-1.5 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      title={isNavigation ? "Navigation is locked to the top" : "Move Down"}
-                    >
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    </button>
 
                     <div className="w-px h-3 bg-border mx-1" />
 
@@ -832,9 +834,9 @@ const CanvasBlockWrapper = ({
 
                             <div className="flex items-center gap-1">
                                 {isNavigation ? (
-                                  <div className="flex items-center gap-1 px-2 text-[10px] text-muted-foreground/70 select-none">
-                                    <Lock className="w-3 h-3" />
-                                    <span>Locked</span>
+                                  <div className="flex items-center gap-1 px-2 text-[10px] text-muted-foreground/60 select-none" title="Navigation is pinned to the top of the page">
+                                    <Pin className="w-3 h-3 shrink-0" />
+                                    <span>Pinned to top</span>
                                   </div>
                                 ) : (
                                   <>

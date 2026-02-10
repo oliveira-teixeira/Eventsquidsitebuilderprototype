@@ -31,6 +31,7 @@ import {
   Unlink,
   Info,
   Users,
+  Pin,
 } from "lucide-react";
 import { cn } from "../ui/utils";
 import { Switch } from "../ui/switch";
@@ -622,6 +623,12 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
       <div className="pb-2 border-b border-border">
         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Editing</h3>
         <p className="font-medium text-sm truncate">{blockName}</p>
+        {selectedBlockType === 'navbar-master' && (
+          <p className="flex items-center gap-1.5 mt-1.5 text-[10px] text-muted-foreground">
+            <Pin className="w-3 h-3 shrink-0" />
+            Navigation is pinned to the top of the page.
+          </p>
+        )}
       </div>
 
       {/* Text Formatting Hint */}

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useLayoutEffect, useState } from "react";
-import { Layers, Palette, Eye, EyeOff, Lock, Unlock, ChevronRight, Settings2, GripVertical, Trash2, X, FileText, Plus } from "lucide-react";
+import { Layers, Palette, Eye, EyeOff, Lock, Unlock, ChevronRight, Settings2, GripVertical, Trash2, X, FileText, Plus, Pin } from "lucide-react";
 import { BLOCK_REGISTRY, BlockSettings } from "./block-registry";
 import { ThemeBuilder } from "./ThemeBuilder";
 import { PropertiesPanel } from "./PropertiesPanel";
@@ -151,8 +151,8 @@ const SortableLayer = ({
     >
       {/* Drag Handle - disabled for navigation blocks */}
       {isNavigation ? (
-        <div className="text-muted-foreground/30 p-1 -ml-1 cursor-default" title="Navigation is locked to the top">
-           <Lock className="w-3.5 h-3.5" />
+        <div className="text-muted-foreground/40 p-1 -ml-1 cursor-default" title="Navigation is pinned to the top of the page">
+           <Pin className="w-3.5 h-3.5" />
         </div>
       ) : (
         <div ref={dragRef} className="cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-foreground p-1 -ml-1">
