@@ -996,7 +996,6 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
     icon: Schematics.Agenda,
     configurableIcons: [],
     configurableCounts: [
-        { id: 'count', label: 'Sessions per Day', min: 1, max: 15, defaultValue: 6 },
         { id: 'days', label: 'Number of Days', min: 1, max: 7, defaultValue: 3 }
     ],
     toggleableElements: [
@@ -1008,16 +1007,8 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
         const numDays = safeGetCount(settings, 'days', 3);
         const showSessionType = safeGetVisibility(settings, 'showSessionType', true);
         
-        // Get per-day session counts, fallback to global count for backwards compatibility
-        const getSessionsForDay = (dayIndex) => {
-            const dayCountKey = `day${dayIndex}Count`;
-            const dayCount = safeGetCount(settings, dayCountKey, 0);
-            if (dayCount > 0) {
-                return dayCount;
-            }
-            const globalCount = safeGetCount(settings, 'count', 6);
-            return globalCount;
-        };
+        // Fixed number of sessions per day (all sessions shown, container scrolls)
+        const SESSIONS_PER_DAY = 8;
         
         const dayNames = ['Friday', 'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
         const dayAbbr = ['Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
@@ -1145,12 +1136,11 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
             `;
         };
         
-        // Render sessions for a single day
+        // Render sessions for a single day — all sessions shown, scrollable container
         const renderDayContent = (dayIndex) => {
-            const sessionsForThisDay = getSessionsForDay(dayIndex);
-            const sessions = Array.from({length: sessionsForThisDay}, (_, i) => renderSession(dayIndex, i)).join('');
+            const sessions = Array.from({length: SESSIONS_PER_DAY}, (_, i) => renderSession(dayIndex, i)).join('');
             return `
-                <div class="sessions-list" style="border-top:1px solid var(--border);">
+                <div class="sessions-list" style="border-top:1px solid var(--border); max-height:480px; overflow-y:auto;">
                     ${sessions}
                 </div>
             `;
@@ -1285,7 +1275,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
     description: "Grid layout for sessions.",
     icon: Schematics.AgendaGrid,
     configurableCounts: [
-        { id: 'count', label: 'Number of Items', min: 1, max: 12, defaultValue: 6 }
+        { id: 'days', label: 'Number of Days', min: 1, max: 7, defaultValue: 3 }
     ],
     configurableSelects: [
         {
@@ -1305,8 +1295,9 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
         { id: 'showSubtitle', label: 'Show Subtitle', defaultValue: true }
     ],
     html: (id, variant, settings) => {
-        const count = safeGetCount(settings, 'count', 6);
+        const numDays = safeGetCount(settings, 'days', 3);
         const columns = parseInt(safeGetSelect(settings, 'columns', '3'));
+        const GRID_SESSIONS_PER_DAY = 8;
         
         let gridClass = 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
         if (columns === 1) {
@@ -1318,47 +1309,97 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
         } else if (columns === 4) {
             gridClass = 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
         }
+
+        const dayNames = ['Friday', 'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
+        const dayAbbr = ['Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
+        const dates = ['Dec 15', 'Dec 16', 'Dec 17', 'Dec 18', 'Dec 19', 'Dec 20', 'Dec 21'];
+        const types = ['Workshop', 'Keynote', 'Panel', 'Networking', 'Talk', 'Fireside Chat'];
+        const locations = ['Main Hall', 'Auditorium A', 'Room 204', 'Room 305', 'Auditorium B', 'Workshop Lab'];
+        const speakers = ['AJ','SK','DR','MK','LP','TC'];
+
+        const renderGridCard = (dayIndex, sessionIndex) => {
+            const i = sessionIndex + 1;
+            const hour = 8 + sessionIndex;
+            const startTime = hour < 12 ? \`\${String(hour).padStart(2, '0')}:00 AM\` : \`\${String(hour === 12 ? 12 : hour - 12).padStart(2, '0')}:00 PM\`;
+            const dayLabel = \`\${dayNames[dayIndex % dayNames.length]}, \${dates[dayIndex % dates.length]}\`;
+            const typeIdx = (dayIndex + sessionIndex) % types.length;
+            const locIdx = (dayIndex * 3 + sessionIndex) % locations.length;
+            return \`
+                <div class="group p-6 rounded-xl border border-border bg-card text-card-foreground hover:border-primary/50 hover:shadow-md transition-all cursor-pointer shadow-sm \${getTextAlignClass(settings)}"
+                     data-session-click="true"
+                     data-session-title="Session \${i}: Innovation Workshop"
+                     data-session-time="\${startTime}"
+                     data-session-day="\${dayLabel}"
+                     data-session-location="\${locations[locIdx]}"
+                     data-session-type="\${types[typeIdx]}"
+                     data-session-desc="Join us for an in-depth session about the topic and learn from industry experts. This session covers the latest developments, practical strategies, and hands-on techniques you can apply immediately."
+                     data-session-speakers="\${speakers[sessionIndex % speakers.length]},\${speakers[(sessionIndex+1) % speakers.length]}"
+                     role="button" tabindex="0"
+                >
+                   <div class="flex justify-between items-start mb-4">
+                      <span class="inline-block px-2 py-1 rounded bg-secondary text-xs font-mono">\${startTime}</span>
+                      <div class="text-muted-foreground group-hover:text-primary transition-colors">\${ICONS.CHEVRON_RIGHT}</div>
+                   </div>
+                   <h3 class="font-bold text-lg mb-2 group-hover:text-primary transition-colors font-sans">Session \${i}: Innovation Workshop</h3>
+                   <p class="text-sm text-muted-foreground mb-4 line-clamp-2 font-sans">Join us for an in-depth session about the topic and learn from industry experts.</p>
+                   <div class="h-px bg-border w-full my-3"></div>
+                   <div class="flex justify-between items-center text-xs text-muted-foreground font-sans">
+                      <span class="flex items-center gap-1">\${ICONS.USER} Speaker Name</span>
+                      <span class="flex items-center gap-1">\${ICONS.MAP_PIN} \${locations[locIdx]}</span>
+                   </div>
+                </div>
+            \`;
+        };
+
+        const tabNavigation = Array.from({length: numDays}, (_, i) => {
+            const dayShort = dayAbbr[i % dayAbbr.length];
+            const date = dates[i % dates.length];
+            return \`
+                <button 
+                    type="button"
+                    class="tab-btn"
+                    style="flex:1; text-align:center; padding:10px 16px; cursor:pointer; transition:all 0.15s; font-family:var(--font-sans); border:none; background:none; border-bottom:2px solid \${i === 0 ? 'var(--foreground)' : 'transparent'}; color:\${i === 0 ? 'var(--foreground)' : 'var(--muted-foreground)'};"
+                    data-tab-index="\${i}"
+                    data-day-index="\${i}"
+                >
+                    <span style="font-weight:600; font-size:14px;">\${dayShort}</span>
+                    <span style="font-size:12px; margin-left:6px; opacity:0.7;">\${date}</span>
+                </button>
+            \`;
+        }).join('');
+
+        const tabPanels = Array.from({length: numDays}, (_, dayIdx) => {
+            const cards = Array.from({length: GRID_SESSIONS_PER_DAY}, (_, sIdx) => renderGridCard(dayIdx, sIdx)).join('');
+            return \`
+                <div class="tab-panel" data-day="\${dayIdx}" style="display: \${dayIdx === 0 ? 'block' : 'none'};">
+                    <div style="max-height:520px; overflow-y:auto; padding:4px 0;">
+                        <div class="grid \${gridClass} gap-6">
+                            \${cards}
+                        </div>
+                    </div>
+                </div>
+            \`;
+        }).join('');
         
-        return `
-      <builder-section id="${id}" class="relative block w-full transition-colors duration-300 ${getVariantClasses(variant)} ${getPaddingClass(settings, 'py-20')}">
+        return \`
+      <builder-section id="\${id}" class="relative block w-full transition-colors duration-300 \${getVariantClasses(variant)} \${getPaddingClass(settings, 'py-20')}" data-active-day="0">
          <div class="w-full max-w-[var(--max-width)] mx-auto px-[var(--global-padding)]">
-            ${renderSectionHeader(settings, "Sessions", "Explore the tracks.")}
-            <div class="grid ${gridClass} gap-6">
-               ${Array.from({length: count}, (_, i) => i + 1).map(i => {
-                   const types = ['Workshop', 'Keynote', 'Panel', 'Networking', 'Talk', 'Fireside Chat'];
-                   const locations = ['Main Hall', 'Auditorium A', 'Room 204', 'Room 305', 'Auditorium B', 'Workshop Lab'];
-                   const speakers = ['AJ','SK','DR','MK','LP','TC'];
-                   return `
-                  <div class="group p-6 rounded-xl border border-border bg-card text-card-foreground hover:border-primary/50 hover:shadow-md transition-all cursor-pointer shadow-sm ${getTextAlignClass(settings)}"
-                       data-session-click="true"
-                       data-session-title="Future of Tech Session ${i}"
-                       data-session-time="0${8+i}:00 AM"
-                       data-session-day="Friday, Dec 15"
-                       data-session-location="${locations[i % locations.length]}"
-                       data-session-type="${types[i % types.length]}"
-                       data-session-desc="Join us for an in-depth session about the topic and learn from industry experts. This session covers the latest developments, practical strategies, and hands-on techniques you can apply immediately."
-                       data-session-speakers="${speakers[i % speakers.length]},${speakers[(i+1) % speakers.length]}"
-                       role="button" tabindex="0"
-                  >
-                     <div class="flex justify-between items-start mb-4">
-                        <span class="inline-block px-2 py-1 rounded bg-secondary text-xs font-mono">0${8+i}:00 AM</span>
-                        <div class="text-muted-foreground group-hover:text-primary transition-colors">${ICONS.CHEVRON_RIGHT}</div>
-                     </div>
-                     <h3 class="font-bold text-lg mb-2 group-hover:text-primary transition-colors font-sans">Future of Tech Session ${i}</h3>
-                     <p class="text-sm text-muted-foreground mb-4 line-clamp-2 font-sans">Join us for an in-depth session about the topic and learn from industry experts.</p>
-                     <div class="h-px bg-border w-full my-3"></div>
-                     <div class="flex justify-between items-center text-xs text-muted-foreground font-sans">
-                        <span class="flex items-center gap-1">${ICONS.USER} Speaker Name</span>
-                        <span class="flex items-center gap-1">${ICONS.MAP_PIN} ${locations[i % locations.length]}</span>
-                     </div>
-                  </div>
-               `}).join('')}
+            \${renderSectionHeader(settings, "Sessions", "Explore the tracks.")}
+            
+            <!-- Horizontal Day Navigation -->
+            <div style="display:flex; gap:0; margin-bottom:16px; border-bottom:1px solid var(--border);">
+                \${tabNavigation}
+            </div>
+            
+            <!-- Session Grids by Day -->
+            <div class="tab-content">
+                \${tabPanels}
             </div>
          </div>
-         ${getSessionModalHtml()}
-         ${getDividerHtml(settings)}
+         \${getSessionModalHtml()}
+         \${getDividerHtml(settings)}
       </builder-section>
-    `
+    \`
     }
   },
   {

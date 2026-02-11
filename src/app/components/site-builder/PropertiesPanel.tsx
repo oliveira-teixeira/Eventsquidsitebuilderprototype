@@ -901,9 +901,8 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                                     
                                     {/* Session Type Badge controls - per-session inputs shown when toggle is on */}
                                     {element.id === 'showSessionType' && isVisible && (() => {
-                                        const counts = selectedSettings.counts || {};
-                                        const dayCountKey = `day${activeAgendaDay}Count`;
-                                        const sessionsForDay = counts[dayCountKey] || counts['count'] || 6;
+                                        const SESSIONS_PER_DAY = 8;
+                                        const sessionsForDay = SESSIONS_PER_DAY;
                                         const defaultTypes = ['Workshop', 'Keynote', 'Panel', 'Networking', 'Talk', 'Fireside Chat'];
                                         
                                         return (
@@ -955,8 +954,8 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
         {/* Speakers per session — only for agenda-clean block */}
         {selectedBlockType === 'agenda-clean' && (() => {
             const counts = selectedSettings.counts || {};
-            const dayCountKey = `day${activeAgendaDay}Count`;
-            const sessionsForDay = counts[dayCountKey] || counts['count'] || 6;
+            const SESSIONS_PER_DAY = 8;
+            const sessionsForDay = SESSIONS_PER_DAY;
 
             // Default speaker names pool for fallback
             const defaultSpeakerNames = ['Anna Martin', 'Sarah Kim', 'Dan Rodriguez', 'Michael Kranitz', 'Lisa Park', 'Tom Chen', 'Nina Volkov', 'Robb Hartzog', 'Elena Wu', 'James Bell', 'Quinn Foster', 'Zara Ahmed', 'Uma Mehta', 'Grace Okafor'];
@@ -1095,22 +1094,14 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                     </label>
                     <div className="space-y-4 bg-muted/30 p-3 rounded-md border border-border">
                         {configurableCounts.map((count) => {
-                            // Handle per-day session counts for agenda blocks
-                            const isPerDayCount = count.id === 'count' && count.label === 'Sessions per Day';
-                            const dayCountKey = isPerDayCount ? `day${activeAgendaDay}Count` : count.id;
                             const counts = selectedSettings.counts || {};
-                            const value = counts[dayCountKey] !== undefined ? counts[dayCountKey] : (counts[count.id] !== undefined ? counts[count.id] : count.defaultValue);
+                            const value = counts[count.id] !== undefined ? counts[count.id] : count.defaultValue;
                             
                             return (
                                 <div key={count.id} className="space-y-2">
                                     <div className="flex justify-between items-center">
                                         <label className="text-xs font-medium text-foreground">
                                             {count.label}
-                                            {isPerDayCount && (
-                                                <span className="ml-2 text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded">
-                                                    Day {activeAgendaDay + 1}
-                                                </span>
-                                            )}
                                         </label>
                                         <span className="text-xs font-mono text-muted-foreground">{value}</span>
                                     </div>
@@ -1123,7 +1114,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                                         onChange={(e) => {
                                             const newCounts = {
                                                 ...selectedSettings.counts,
-                                                [dayCountKey]: parseInt(e.target.value)
+                                                [count.id]: parseInt(e.target.value)
                                             };
                                             onChangeSettings({ ...selectedSettings, counts: newCounts });
                                         }}
