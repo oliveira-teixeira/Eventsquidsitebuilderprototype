@@ -901,9 +901,9 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                                     
                                     {/* Session Type Badge controls - per-session inputs shown when toggle is on */}
                                     {element.id === 'showSessionType' && isVisible && (() => {
-                                        const counts = selectedSettings.counts || {};
-                                        const dayCountKey = `day${activeAgendaDay}Count`;
-                                        const sessionsForDay = counts[dayCountKey] || counts['count'] || 6;
+                                        // Sessions per day are now defined by the block's static data arrays (typically 7-9 sessions)
+                                        const sessionsPerDayLengths = [9, 9, 9, 9, 9, 8, 7];
+                                        const sessionsForDay = sessionsPerDayLengths[activeAgendaDay % sessionsPerDayLengths.length];
                                         const defaultTypes = ['Workshop', 'Keynote', 'Panel', 'Networking', 'Talk', 'Fireside Chat'];
                                         
                                         return (
@@ -955,8 +955,9 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
         {/* Speakers per session — only for agenda-clean block */}
         {selectedBlockType === 'agenda-clean' && (() => {
             const counts = selectedSettings.counts || {};
-            const dayCountKey = `day${activeAgendaDay}Count`;
-            const sessionsForDay = counts[dayCountKey] || counts['count'] || 6;
+            // Sessions per day are defined by the block's static data arrays
+            const sessionsPerDayLengths = [9, 9, 9, 9, 9, 8, 7];
+            const sessionsForDay = sessionsPerDayLengths[activeAgendaDay % sessionsPerDayLengths.length];
 
             // Default speaker names pool for fallback
             const defaultSpeakerNames = ['Anna Martin', 'Sarah Kim', 'Dan Rodriguez', 'Michael Kranitz', 'Lisa Park', 'Tom Chen', 'Nina Volkov', 'Robb Hartzog', 'Elena Wu', 'James Bell', 'Quinn Foster', 'Zara Ahmed', 'Uma Mehta', 'Grace Okafor'];
@@ -1095,22 +1096,14 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                     </label>
                     <div className="space-y-4 bg-muted/30 p-3 rounded-md border border-border">
                         {configurableCounts.map((count) => {
-                            // Handle per-day session counts for agenda blocks
-                            const isPerDayCount = count.id === 'count' && count.label === 'Sessions per Day';
-                            const dayCountKey = isPerDayCount ? `day${activeAgendaDay}Count` : count.id;
                             const counts = selectedSettings.counts || {};
-                            const value = counts[dayCountKey] !== undefined ? counts[dayCountKey] : (counts[count.id] !== undefined ? counts[count.id] : count.defaultValue);
+                            const value = counts[count.id] !== undefined ? counts[count.id] : count.defaultValue;
                             
                             return (
                                 <div key={count.id} className="space-y-2">
                                     <div className="flex justify-between items-center">
                                         <label className="text-xs font-medium text-foreground">
                                             {count.label}
-                                            {isPerDayCount && (
-                                                <span className="ml-2 text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded">
-                                                    Day {activeAgendaDay + 1}
-                                                </span>
-                                            )}
                                         </label>
                                         <span className="text-xs font-mono text-muted-foreground">{value}</span>
                                     </div>
@@ -1123,7 +1116,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                                         onChange={(e) => {
                                             const newCounts = {
                                                 ...selectedSettings.counts,
-                                                [dayCountKey]: parseInt(e.target.value)
+                                                [count.id]: parseInt(e.target.value)
                                             };
                                             onChangeSettings({ ...selectedSettings, counts: newCounts });
                                         }}

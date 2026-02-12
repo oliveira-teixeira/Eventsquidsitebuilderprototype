@@ -996,8 +996,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
     icon: Schematics.Agenda,
     configurableIcons: [],
     configurableCounts: [
-        { id: 'count', label: 'Sessions per Day', min: 1, max: 15, defaultValue: 6 },
-        { id: 'days', label: 'Number of Days', min: 1, max: 7, defaultValue: 3 }
+        { id: 'days', label: 'Days Displayed', min: 1, max: 7, defaultValue: 3 }
     ],
     toggleableElements: [
         { id: 'showTitle', label: 'Show Title', defaultValue: true },
@@ -1008,16 +1007,24 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
         const numDays = safeGetCount(settings, 'days', 3);
         const showSessionType = safeGetVisibility(settings, 'showSessionType', true);
         
-        // Get per-day session counts, fallback to global count for backwards compatibility
-        const getSessionsForDay = (dayIndex) => {
-            const dayCountKey = `day${dayIndex}Count`;
-            const dayCount = safeGetCount(settings, dayCountKey, 0);
-            if (dayCount > 0) {
-                return dayCount;
-            }
-            const globalCount = safeGetCount(settings, 'count', 6);
-            return globalCount;
-        };
+        // Always render a full realistic schedule per day (no artificial session limit)
+        const sessionsPerDay = [
+            // Day 0
+            ['Registration & Breakfast', 'Opening Keynote', 'React Server Components Workshop', 'Design Systems Panel', 'Networking Lunch', 'AI in Production', 'Performance Deep-Dive', 'Lightning Talks', 'Closing Remarks'],
+            // Day 1
+            ['Morning Yoga & Coffee', 'State of Web Standards', 'Advanced TypeScript Patterns', 'Accessibility Masterclass', 'Networking Lunch', 'DevOps & CI/CD', 'Open Source Roundtable', 'Fireside Chat: Future of AI', 'Evening Social'],
+            // Day 2
+            ['Breakfast & Networking', 'Edge Computing Keynote', 'Building Design Tokens', 'API Design Best Practices', 'Networking Lunch', 'Mobile-First Strategies', 'Security in Modern Apps', 'Hackathon Showcase', 'Closing Ceremony'],
+            // Day 3
+            ['Welcome & Recap', 'Data Engineering at Scale', 'GraphQL vs REST', 'UX Research Methods', 'Working Lunch', 'Micro-Frontends', 'Testing Strategies', 'Community Lightning Talks', 'Awards & Wrap-up'],
+            // Day 4
+            ['Sunrise Networking', 'Platform Engineering', 'CSS Architecture', 'Inclusive Design Workshop', 'Networking Lunch', 'Serverless Patterns', 'Team Topologies', 'Ask Me Anything', 'Farewell Dinner'],
+            // Day 5
+            ['Early Coffee Chat', 'WebAssembly Deep Dive', 'Component Libraries', 'Content Strategy', 'Networking Lunch', 'Observability & Monitoring', 'Career Growth Panel', 'Demo Day'],
+            // Day 6
+            ['Final Day Kickoff', 'Emerging Tech Keynote', 'Workshop: Building CLIs', 'Networking Lunch', 'Retrospective & Planning', 'Community Showcase', 'Closing Keynote']
+        ];
+        const getSessionsForDay = (dayIndex: number) => sessionsPerDay[dayIndex % sessionsPerDay.length].length;
         
         const dayNames = ['Friday', 'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
         const dayAbbr = ['Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
@@ -1047,7 +1054,9 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
             const endTime = endHour < 12 ? `${String(endHour).padStart(2, '0')}:00 AM` : `${String(endHour === 12 ? 12 : endHour - 12).padStart(2, '0')}:00 PM`;
             const sessionKey = `session-d${dayIndex}-s${sessionIndex}`;
             const descKey = `desc-d${dayIndex}-s${sessionIndex}`;
-            const sessionTitle = safeGetText(settings, sessionKey, `Session ${sessionIndex + 1}: Innovation Workshop`);
+            const daySessions = sessionsPerDay[dayIndex % sessionsPerDay.length];
+            const defaultTitle = daySessions[sessionIndex % daySessions.length] || `Session ${sessionIndex + 1}`;
+            const sessionTitle = safeGetText(settings, sessionKey, defaultTitle);
             const sessionDesc = safeGetText(settings, descKey, `Join us for an engaging discussion on the latest trends and innovations.`);
             const dayLabel = `${dayNames[dayIndex % dayNames.length]}, ${dates[dayIndex % dates.length]}`;
             const locations = ['Main Hall', 'Auditorium A', 'Room 204', 'Room 305', 'Auditorium B', 'Workshop Lab'];
@@ -1146,7 +1155,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
         };
         
         // Render sessions for a single day
-        const renderDayContent = (dayIndex) => {
+        const renderDayContent = (dayIndex: number) => {
             const sessionsForThisDay = getSessionsForDay(dayIndex);
             const sessions = Array.from({length: sessionsForThisDay}, (_, i) => renderSession(dayIndex, i)).join('');
             return `
@@ -1156,23 +1165,27 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
             `;
         };
         
-        // Horizontal day tabs with JS-based switching
+        // Horizontal day tabs — larger, more prominent, with strong active state
         const dayFull = ['Friday', 'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
         const tabNavigation = Array.from({length: numDays}, (_, i) => {
             const dayLabel = dayFull[i % dayFull.length];
             const dayShort = dayAbbr[i % dayAbbr.length];
             const date = dates[i % dates.length];
+            const isActive = i === 0;
+            const activeStyle = isActive
+                ? 'background:var(--primary); color:var(--primary-foreground); border-bottom:4px solid var(--primary); font-weight:800; box-shadow:0 2px 8px color-mix(in srgb, var(--primary) 30%, transparent);'
+                : 'background:none; color:var(--muted-foreground); border-bottom:4px solid transparent;';
             return `
                 <button 
                     type="button"
                     class="tab-btn"
-                    style="flex:1; text-align:center; padding:14px 20px; cursor:pointer; transition:all 0.2s; font-family:var(--font-sans); border:none; background:${i === 0 ? 'color-mix(in srgb, var(--primary) 8%, transparent)' : 'none'}; border-bottom:3px solid ${i === 0 ? 'var(--primary)' : 'transparent'}; color:${i === 0 ? 'var(--foreground)' : 'var(--muted-foreground)'}; margin-bottom:-1px;"
+                    style="flex:1; text-align:center; padding:16px 24px; cursor:pointer; transition:all 0.2s; font-family:var(--font-sans); border:none; border-radius:var(--radius, 8px) var(--radius, 8px) 0 0; margin-bottom:-1px; ${activeStyle}"
                     data-tab-index="${i}"
                     data-day-index="${i}"
                 >
-                    <span style="font-weight:700; font-size:16px; display:block;" class="tab-day-full">${dayLabel}</span>
-                    <span style="font-weight:700; font-size:16px; display:none;" class="tab-day-short">${dayShort}</span>
-                    <span style="font-size:12px; display:block; margin-top:2px; opacity:0.6;">${date}</span>
+                    <span style="font-weight:inherit; font-size:17px; display:block;" class="tab-day-full">${dayLabel}</span>
+                    <span style="font-weight:inherit; font-size:17px; display:none;" class="tab-day-short">${dayShort}</span>
+                    <span style="font-size:12px; display:block; margin-top:3px; opacity:${isActive ? '0.85' : '0.5'};">${date}</span>
                 </button>
             `;
         }).join('');
@@ -1204,19 +1217,19 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                 </div>
                 
                 <!-- Horizontal Day Navigation -->
-                <nav aria-label="Event days" style="display:flex; gap:8px; margin-bottom:0; border-bottom:2px solid var(--border);">
+                <nav aria-label="Event days" style="display:flex; gap:4px; margin-bottom:0; border-bottom:2px solid var(--border); background:var(--muted); border-radius:var(--radius, 8px) var(--radius, 8px) 0 0; padding:4px 4px 0;">
                     ${tabNavigation}
                 </nav>
                 <style>
                     @media (max-width: 640px) {
                         .tab-day-full { display: none !important; }
                         .tab-day-short { display: block !important; }
-                        .tab-btn { padding: 12px 8px !important; }
+                        .tab-btn { padding: 14px 8px !important; }
                     }
                 </style>
                 
-                <!-- Session Lists by Day -->
-                <div class="tab-content">
+                <!-- Session Lists by Day — scrollable after max-height -->
+                <div class="tab-content" style="max-height:600px; overflow-y:auto; border:1px solid var(--border); border-top:none; border-radius:0 0 var(--radius, 8px) var(--radius, 8px);">
                     ${tabPanels}
                 </div>
             </div>
@@ -1292,10 +1305,10 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
     id: "agenda-grid",
     name: "Agenda: Grid",
     category: "Agenda",
-    description: "Grid layout for sessions.",
+    description: "Grid layout for sessions with day tabs.",
     icon: Schematics.AgendaGrid,
     configurableCounts: [
-        { id: 'count', label: 'Number of Items', min: 1, max: 12, defaultValue: 6 }
+        { id: 'days', label: 'Days Displayed', min: 1, max: 7, defaultValue: 3 }
     ],
     configurableSelects: [
         {
@@ -1315,7 +1328,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
         { id: 'showSubtitle', label: 'Show Subtitle', defaultValue: true }
     ],
     html: (id, variant, settings) => {
-        const count = safeGetCount(settings, 'count', 6);
+        const numDays = safeGetCount(settings, 'days', 3);
         const columns = parseInt(safeGetSelect(settings, 'columns', '3'));
         
         let gridClass = 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
@@ -1328,41 +1341,109 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
         } else if (columns === 4) {
             gridClass = 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
         }
+
+        // Realistic session data per day — all sessions always rendered
+        const gridSessionsPerDay = [
+            ['Registration & Breakfast', 'Opening Keynote', 'React Server Components', 'Design Systems Panel', 'Networking Lunch', 'AI in Production', 'Performance Workshop', 'Lightning Talks', 'Closing Remarks'],
+            ['Morning Coffee', 'Web Standards Keynote', 'TypeScript Patterns', 'Accessibility Masterclass', 'Networking Lunch', 'DevOps Deep-Dive', 'Open Source Roundtable', 'Fireside Chat', 'Evening Social'],
+            ['Breakfast', 'Edge Computing Keynote', 'Design Tokens Workshop', 'API Design', 'Networking Lunch', 'Mobile Strategies', 'Security Panel', 'Hackathon Showcase', 'Closing Ceremony'],
+            ['Welcome & Recap', 'Data Engineering', 'GraphQL Workshop', 'UX Research Methods', 'Working Lunch', 'Micro-Frontends', 'Testing Strategies', 'Community Talks', 'Awards Ceremony'],
+            ['Sunrise Networking', 'Platform Engineering', 'CSS Architecture', 'Inclusive Design', 'Networking Lunch', 'Serverless Patterns', 'Team Topologies', 'AMA Session', 'Farewell Dinner'],
+            ['Early Coffee', 'WebAssembly Talk', 'Component Libraries', 'Content Strategy', 'Networking Lunch', 'Observability', 'Career Growth Panel', 'Demo Day'],
+            ['Final Day Kickoff', 'Emerging Tech', 'CLI Workshop', 'Networking Lunch', 'Retrospective', 'Community Showcase', 'Closing Keynote']
+        ];
+        const types = ['Workshop', 'Keynote', 'Panel', 'Networking', 'Talk', 'Fireside Chat'];
+        const locations = ['Main Hall', 'Auditorium A', 'Room 204', 'Room 305', 'Auditorium B', 'Workshop Lab'];
+        const speakers = ['Anna Martin','Sarah Kim','Dan Rodriguez','Michael Kranitz','Lisa Park','Tom Chen','Nina Volkov','James Bell'];
+
+        const dayNames = ['Friday', 'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
+        const dayAbbr = ['Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
+        const dates = ['Dec 15', 'Dec 16', 'Dec 17', 'Dec 18', 'Dec 19', 'Dec 20', 'Dec 21'];
+
+        const renderGridDay = (dayIndex: number) => {
+            const daySessions = gridSessionsPerDay[dayIndex % gridSessionsPerDay.length];
+            return daySessions.map((title, i) => {
+                const hour = 8 + i;
+                const timeStr = hour < 12 ? `${String(hour).padStart(2, '0')}:00 AM` : `${String(hour === 12 ? 12 : hour - 12).padStart(2, '0')}:00 PM`;
+                const type = types[(dayIndex + i) % types.length];
+                const location = locations[(dayIndex * 3 + i) % locations.length];
+                const speaker = speakers[(dayIndex * 2 + i) % speakers.length];
+                return `
+                    <div class="session-item group p-6 rounded-xl border border-border bg-card text-card-foreground hover:border-primary/50 hover:shadow-md transition-all cursor-pointer shadow-sm ${getTextAlignClass(settings)}"
+                         data-session-click="true"
+                         data-session-title="${title}"
+                         data-session-time="${timeStr}"
+                         data-session-day="${dayNames[dayIndex % dayNames.length]}, ${dates[dayIndex % dates.length]}"
+                         data-session-location="${location}"
+                         data-session-type="${type}"
+                         data-session-desc="Join us for an in-depth session covering the latest developments, practical strategies, and hands-on techniques you can apply immediately."
+                         data-session-speakers="${speaker},${speakers[(dayIndex * 2 + i + 1) % speakers.length]}"
+                         role="button" tabindex="0"
+                    >
+                       <div class="flex justify-between items-start mb-4">
+                          <span class="inline-block px-2 py-1 rounded bg-secondary text-xs font-mono">${timeStr}</span>
+                          <div class="text-muted-foreground group-hover:text-primary transition-colors">${ICONS.CHEVRON_RIGHT}</div>
+                       </div>
+                       <h3 class="font-bold text-lg mb-2 group-hover:text-primary transition-colors font-sans">${title}</h3>
+                       <p class="text-sm text-muted-foreground mb-4 line-clamp-2 font-sans">An engaging session led by ${speaker} at ${location}.</p>
+                       <div class="h-px bg-border w-full my-3"></div>
+                       <div class="flex justify-between items-center text-xs text-muted-foreground font-sans">
+                          <span class="flex items-center gap-1">${ICONS.USER} ${speaker}</span>
+                          <span class="flex items-center gap-1">${ICONS.MAP_PIN} ${location}</span>
+                       </div>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        // Day tab navigation — identical styling to list view
+        const tabNavigation = Array.from({length: numDays}, (_, i) => {
+            const dayLabel = dayNames[i % dayNames.length];
+            const dayShort = dayAbbr[i % dayAbbr.length];
+            const date = dates[i % dates.length];
+            const isActive = i === 0;
+            const activeStyle = isActive
+                ? 'background:var(--primary); color:var(--primary-foreground); border-bottom:4px solid var(--primary); font-weight:800; box-shadow:0 2px 8px color-mix(in srgb, var(--primary) 30%, transparent);'
+                : 'background:none; color:var(--muted-foreground); border-bottom:4px solid transparent;';
+            return `
+                <button type="button" class="tab-btn"
+                    style="flex:1; text-align:center; padding:16px 24px; cursor:pointer; transition:all 0.2s; font-family:var(--font-sans); border:none; border-radius:var(--radius, 8px) var(--radius, 8px) 0 0; margin-bottom:-1px; ${activeStyle}"
+                    data-tab-index="${i}" data-day-index="${i}">
+                    <span style="font-weight:inherit; font-size:17px; display:block;" class="tab-day-full">${dayLabel}</span>
+                    <span style="font-weight:inherit; font-size:17px; display:none;" class="tab-day-short">${dayShort}</span>
+                    <span style="font-size:12px; display:block; margin-top:3px; opacity:${isActive ? '0.85' : '0.5'};">${date}</span>
+                </button>
+            `;
+        }).join('');
+
+        const tabPanels = Array.from({length: numDays}, (_, i) => `
+            <div class="tab-panel" data-day="${i}" style="display:${i === 0 ? 'block' : 'none'}; padding:24px 16px;">
+                <div class="grid ${gridClass} gap-6">
+                    ${renderGridDay(i)}
+                </div>
+            </div>
+        `).join('');
         
         return `
-      <builder-section id="${id}" class="relative block w-full transition-colors duration-300 ${getVariantClasses(variant)} ${getPaddingClass(settings, 'py-20')}">
+      <builder-section id="${id}" class="relative block w-full transition-colors duration-300 ${getVariantClasses(variant)} ${getPaddingClass(settings, 'py-20')}" data-active-day="0">
          <div class="w-full max-w-[var(--max-width)] mx-auto px-[var(--global-padding)]">
             ${renderSectionHeader(settings, "Sessions", "Explore the tracks.")}
-            <div class="grid ${gridClass} gap-6">
-               ${Array.from({length: count}, (_, i) => i + 1).map(i => {
-                   const types = ['Workshop', 'Keynote', 'Panel', 'Networking', 'Talk', 'Fireside Chat'];
-                   const locations = ['Main Hall', 'Auditorium A', 'Room 204', 'Room 305', 'Auditorium B', 'Workshop Lab'];
-                   const speakers = ['AJ','SK','DR','MK','LP','TC'];
-                   return `
-                  <div class="group p-6 rounded-xl border border-border bg-card text-card-foreground hover:border-primary/50 hover:shadow-md transition-all cursor-pointer shadow-sm ${getTextAlignClass(settings)}"
-                       data-session-click="true"
-                       data-session-title="Future of Tech Session ${i}"
-                       data-session-time="0${8+i}:00 AM"
-                       data-session-day="Friday, Dec 15"
-                       data-session-location="${locations[i % locations.length]}"
-                       data-session-type="${types[i % types.length]}"
-                       data-session-desc="Join us for an in-depth session about the topic and learn from industry experts. This session covers the latest developments, practical strategies, and hands-on techniques you can apply immediately."
-                       data-session-speakers="${speakers[i % speakers.length]},${speakers[(i+1) % speakers.length]}"
-                       role="button" tabindex="0"
-                  >
-                     <div class="flex justify-between items-start mb-4">
-                        <span class="inline-block px-2 py-1 rounded bg-secondary text-xs font-mono">0${8+i}:00 AM</span>
-                        <div class="text-muted-foreground group-hover:text-primary transition-colors">${ICONS.CHEVRON_RIGHT}</div>
-                     </div>
-                     <h3 class="font-bold text-lg mb-2 group-hover:text-primary transition-colors font-sans">Future of Tech Session ${i}</h3>
-                     <p class="text-sm text-muted-foreground mb-4 line-clamp-2 font-sans">Join us for an in-depth session about the topic and learn from industry experts.</p>
-                     <div class="h-px bg-border w-full my-3"></div>
-                     <div class="flex justify-between items-center text-xs text-muted-foreground font-sans">
-                        <span class="flex items-center gap-1">${ICONS.USER} Speaker Name</span>
-                        <span class="flex items-center gap-1">${ICONS.MAP_PIN} ${locations[i % locations.length]}</span>
-                     </div>
-                  </div>
-               `}).join('')}
+            
+            <!-- Day Navigation -->
+            <nav aria-label="Event days" style="display:flex; gap:4px; margin-bottom:0; border-bottom:2px solid var(--border); background:var(--muted); border-radius:var(--radius, 8px) var(--radius, 8px) 0 0; padding:4px 4px 0;">
+                ${tabNavigation}
+            </nav>
+            <style>
+                @media (max-width: 640px) {
+                    .tab-day-full { display: none !important; }
+                    .tab-day-short { display: block !important; }
+                    .tab-btn { padding: 14px 8px !important; }
+                }
+            </style>
+            
+            <!-- Grid content — scrollable after max-height -->
+            <div class="tab-content" style="max-height:650px; overflow-y:auto; border:1px solid var(--border); border-top:none; border-radius:0 0 var(--radius, 8px) var(--radius, 8px);">
+                ${tabPanels}
             </div>
          </div>
          ${getSessionModalHtml()}

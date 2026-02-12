@@ -988,24 +988,22 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                                 // Update data-active-day attribute
                                 agendaSection.setAttribute('data-active-day', tabIndex);
                                 
-                                // Update tab styles (supports both inline-style and class-based tabs)
+                                // Update tab styles — strong active state with primary bg
                                 const allTabs = agendaSection.querySelectorAll('.tab-btn');
                                 allTabs.forEach((tab, idx) => {
                                     const tabEl = tab as HTMLElement;
                                     if (idx === dayIndex) {
-                                        // Inline style approach (Schedule List) - primary color, thicker border, bg tint
+                                        tabEl.style.background = 'var(--primary)';
+                                        tabEl.style.color = 'var(--primary-foreground)';
                                         tabEl.style.borderBottomColor = 'var(--primary)';
-                                        tabEl.style.color = 'var(--foreground)';
-                                        tabEl.style.background = 'color-mix(in srgb, var(--primary) 8%, transparent)';
-                                        // Class approach (legacy)
-                                        tab.classList.add('border-primary', 'text-foreground');
-                                        tab.classList.remove('border-transparent', 'text-muted-foreground');
+                                        tabEl.style.fontWeight = '800';
+                                        tabEl.style.boxShadow = '0 2px 8px color-mix(in srgb, var(--primary) 30%, transparent)';
                                     } else {
-                                        tabEl.style.borderBottomColor = 'transparent';
-                                        tabEl.style.color = 'var(--muted-foreground)';
                                         tabEl.style.background = 'none';
-                                        tab.classList.remove('border-primary', 'text-foreground');
-                                        tab.classList.add('border-transparent', 'text-muted-foreground');
+                                        tabEl.style.color = 'var(--muted-foreground)';
+                                        tabEl.style.borderBottomColor = 'transparent';
+                                        tabEl.style.fontWeight = '600';
+                                        tabEl.style.boxShadow = 'none';
                                     }
                                 });
                                 
@@ -1432,21 +1430,21 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
               
               agendaSection.setAttribute('data-active-day', tabIndex);
               
-              // Update tab styles - primary color, thicker border, bg tint
+              // Update tab styles — strong active state with primary bg
               const allTabs = agendaSection.querySelectorAll('.tab-btn');
               allTabs.forEach((tab, idx) => {
                 if (idx === dayIndex) {
+                  tab.style.background = 'var(--primary)';
+                  tab.style.color = 'var(--primary-foreground)';
                   tab.style.borderBottomColor = 'var(--primary)';
-                  tab.style.color = 'var(--foreground)';
-                  tab.style.background = 'color-mix(in srgb, var(--primary) 8%, transparent)';
-                  tab.classList.add('border-primary', 'text-foreground');
-                  tab.classList.remove('border-transparent', 'text-muted-foreground');
+                  tab.style.fontWeight = '800';
+                  tab.style.boxShadow = '0 2px 8px color-mix(in srgb, var(--primary) 30%, transparent)';
                 } else {
-                  tab.style.borderBottomColor = 'transparent';
-                  tab.style.color = 'var(--muted-foreground)';
                   tab.style.background = 'none';
-                  tab.classList.remove('border-primary', 'text-foreground');
-                  tab.classList.add('border-transparent', 'text-muted-foreground');
+                  tab.style.color = 'var(--muted-foreground)';
+                  tab.style.borderBottomColor = 'transparent';
+                  tab.style.fontWeight = '600';
+                  tab.style.boxShadow = 'none';
                 }
               });
               
