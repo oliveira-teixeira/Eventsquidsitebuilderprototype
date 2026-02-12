@@ -1217,7 +1217,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                 </div>
                 
                 <!-- Horizontal Day Navigation -->
-                <nav aria-label="Event days" style="display:flex; gap:4px; margin-bottom:0; border-bottom:2px solid var(--border); background:var(--muted); border-radius:var(--radius, 8px) var(--radius, 8px) 0 0; padding:4px 4px 0;">
+                <nav aria-label="Event days" style="display:flex; gap:4px; margin-bottom:0; background:var(--muted); border-radius:var(--radius, 8px) var(--radius, 8px) 0 0; padding:4px 4px 0;">
                     ${tabNavigation}
                 </nav>
                 <style>
@@ -1229,7 +1229,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                 </style>
                 
                 <!-- Session Lists by Day — scrollable after max-height -->
-                <div class="tab-content" style="max-height:600px; overflow-y:auto; border:1px solid var(--border); border-top:none; border-radius:0 0 var(--radius, 8px) var(--radius, 8px);">
+                <div class="tab-content" style="max-height:600px; overflow-y:auto;">
                     ${tabPanels}
                 </div>
             </div>
@@ -1430,7 +1430,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
             ${renderSectionHeader(settings, "Sessions", "Explore the tracks.")}
             
             <!-- Day Navigation -->
-            <nav aria-label="Event days" style="display:flex; gap:4px; margin-bottom:0; border-bottom:2px solid var(--border); background:var(--muted); border-radius:var(--radius, 8px) var(--radius, 8px) 0 0; padding:4px 4px 0;">
+            <nav aria-label="Event days" style="display:flex; gap:4px; margin-bottom:0; background:var(--muted); border-radius:var(--radius, 8px) var(--radius, 8px) 0 0; padding:4px 4px 0;">
                 ${tabNavigation}
             </nav>
             <style>
@@ -1442,7 +1442,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
             </style>
             
             <!-- Grid content — scrollable after max-height -->
-            <div class="tab-content" style="max-height:650px; overflow-y:auto; border:1px solid var(--border); border-top:none; border-radius:0 0 var(--radius, 8px) var(--radius, 8px);">
+            <div class="tab-content" style="max-height:650px; overflow-y:auto;">
                 ${tabPanels}
             </div>
          </div>
