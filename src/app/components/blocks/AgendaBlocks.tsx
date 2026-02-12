@@ -174,7 +174,9 @@ const AvatarCluster = ({ people }: { people: { name: string; img?: string }[] })
 export const AgendaVariant1 = () => {
   const [activeDay, setActiveDay] = useState(0);
   const [selectedSession, setSelectedSession] = useState<AgendaItem | null>(null);
-  const days = ["Fri", "Sat", "Sun"];
+  const days = ["Friday", "Saturday", "Sunday"];
+  const daysMobile = ["Fri", "Sat", "Sun"];
+  const dates = ["March 14", "March 15", "March 16"];
 
   return (
     <div className="w-full py-12 bg-background">
@@ -183,7 +185,7 @@ export const AgendaVariant1 = () => {
           <p className="text-muted-foreground text-sm mb-6">Browse sessions by day.</p>
 
           {/* Search */}
-          <div className="mb-4 relative max-w-md">
+          <div className="mb-5 relative max-w-md">
               <input
                 type="text"
                 placeholder="Search sessions..."
@@ -192,22 +194,29 @@ export const AgendaVariant1 = () => {
           </div>
 
           {/* Day Tabs */}
-          <div className="flex gap-0 mb-6 border-b border-border">
+          <nav className="flex gap-2 mb-8 border-b-2 border-border" aria-label="Event days">
               {days.map((day, i) => (
                 <button
                   key={day}
                   onClick={() => setActiveDay(i)}
+                  aria-selected={activeDay === i}
                   className={cn(
-                    "flex-1 text-center px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
+                    "relative flex-1 text-center px-5 py-3.5 md:py-4 font-semibold transition-all duration-200 -mb-[2px]",
+                    "text-base md:text-lg",
                     activeDay === i
-                      ? "border-foreground text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                      ? "border-b-[3px] border-primary text-foreground bg-primary/5"
+                      : "border-b-[3px] border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40"
                   )}
                 >
-                  {day}
+                  <span className="hidden sm:inline">{day}</span>
+                  <span className="sm:hidden">{daysMobile[i]}</span>
+                  <span className={cn(
+                    "block text-xs font-normal mt-0.5 transition-colors",
+                    activeDay === i ? "text-muted-foreground" : "text-muted-foreground/60"
+                  )}>{dates[i]}</span>
                 </button>
               ))}
-          </div>
+          </nav>
 
           {/* Session Rows */}
           <div>
@@ -298,27 +307,41 @@ export const AgendaVariant3 = () => {
   const [activeDay, setActiveDay] = useState(0);
   const [selectedSession, setSelectedSession] = useState<AgendaItem | null>(null);
   const days = ["Day 1", "Day 2", "Day 3"];
+  const dayLabels = ["Friday", "Saturday", "Sunday"];
 
   return (
     <div className="w-full py-12 bg-background">
       <div className="mx-auto w-full" style={{ maxWidth: 'var(--max-width)', paddingLeft: 'var(--global-padding)', paddingRight: 'var(--global-padding)' }}>
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
               <div>
                   <h2 className="text-2xl font-bold text-foreground">Sessions</h2>
                   <p className="text-sm text-muted-foreground">Explore the tracks and sessions.</p>
               </div>
-              <div className="flex gap-1">
+              <nav className="flex gap-2" aria-label="Event days">
                   {days.map((day, i) => (
                     <Button
                       key={day}
-                      variant={activeDay === i ? "default" : "ghost"}
-                      size="sm"
+                      variant={activeDay === i ? "default" : "outline"}
+                      size="lg"
                       onClick={() => setActiveDay(i)}
+                      aria-selected={activeDay === i}
+                      className={cn(
+                        "text-base font-semibold px-6 py-3 h-auto transition-all",
+                        activeDay === i
+                          ? "shadow-md ring-2 ring-primary/20"
+                          : "hover:bg-muted/60"
+                      )}
                     >
-                      {day}
+                      <span className="flex flex-col items-center leading-tight">
+                        <span>{day}</span>
+                        <span className={cn(
+                          "text-xs font-normal",
+                          activeDay === i ? "text-primary-foreground/70" : "text-muted-foreground"
+                        )}>{dayLabels[i]}</span>
+                      </span>
                     </Button>
                   ))}
-              </div>
+              </nav>
           </div>
 
           <div>

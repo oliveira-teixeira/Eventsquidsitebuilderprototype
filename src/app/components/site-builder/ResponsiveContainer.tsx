@@ -993,16 +993,18 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                                 allTabs.forEach((tab, idx) => {
                                     const tabEl = tab as HTMLElement;
                                     if (idx === dayIndex) {
-                                        // Inline style approach (Schedule List)
-                                        tabEl.style.borderBottomColor = 'var(--foreground)';
+                                        // Inline style approach (Schedule List) - primary color, thicker border, bg tint
+                                        tabEl.style.borderBottomColor = 'var(--primary)';
                                         tabEl.style.color = 'var(--foreground)';
+                                        tabEl.style.background = 'color-mix(in srgb, var(--primary) 8%, transparent)';
                                         // Class approach (legacy)
-                                        tab.classList.add('border-foreground', 'text-foreground');
+                                        tab.classList.add('border-primary', 'text-foreground');
                                         tab.classList.remove('border-transparent', 'text-muted-foreground');
                                     } else {
                                         tabEl.style.borderBottomColor = 'transparent';
                                         tabEl.style.color = 'var(--muted-foreground)';
-                                        tab.classList.remove('border-foreground', 'text-foreground');
+                                        tabEl.style.background = 'none';
+                                        tab.classList.remove('border-primary', 'text-foreground');
                                         tab.classList.add('border-transparent', 'text-muted-foreground');
                                     }
                                 });
@@ -1430,14 +1432,20 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
               
               agendaSection.setAttribute('data-active-day', tabIndex);
               
-              // Update tab styles
+              // Update tab styles - primary color, thicker border, bg tint
               const allTabs = agendaSection.querySelectorAll('.tab-btn');
               allTabs.forEach((tab, idx) => {
                 if (idx === dayIndex) {
-                  tab.classList.add('border-foreground', 'text-foreground');
+                  tab.style.borderBottomColor = 'var(--primary)';
+                  tab.style.color = 'var(--foreground)';
+                  tab.style.background = 'color-mix(in srgb, var(--primary) 8%, transparent)';
+                  tab.classList.add('border-primary', 'text-foreground');
                   tab.classList.remove('border-transparent', 'text-muted-foreground');
                 } else {
-                  tab.classList.remove('border-foreground', 'text-foreground');
+                  tab.style.borderBottomColor = 'transparent';
+                  tab.style.color = 'var(--muted-foreground)';
+                  tab.style.background = 'none';
+                  tab.classList.remove('border-primary', 'text-foreground');
                   tab.classList.add('border-transparent', 'text-muted-foreground');
                 }
               });

@@ -1157,19 +1157,22 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
         };
         
         // Horizontal day tabs with JS-based switching
+        const dayFull = ['Friday', 'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
         const tabNavigation = Array.from({length: numDays}, (_, i) => {
+            const dayLabel = dayFull[i % dayFull.length];
             const dayShort = dayAbbr[i % dayAbbr.length];
             const date = dates[i % dates.length];
             return `
                 <button 
                     type="button"
                     class="tab-btn"
-                    style="flex:1; text-align:center; padding:10px 16px; cursor:pointer; transition:all 0.15s; font-family:var(--font-sans); border:none; background:none; border-bottom:2px solid ${i === 0 ? 'var(--foreground)' : 'transparent'}; color:${i === 0 ? 'var(--foreground)' : 'var(--muted-foreground)'};"
+                    style="flex:1; text-align:center; padding:14px 20px; cursor:pointer; transition:all 0.2s; font-family:var(--font-sans); border:none; background:${i === 0 ? 'color-mix(in srgb, var(--primary) 8%, transparent)' : 'none'}; border-bottom:3px solid ${i === 0 ? 'var(--primary)' : 'transparent'}; color:${i === 0 ? 'var(--foreground)' : 'var(--muted-foreground)'}; margin-bottom:-1px;"
                     data-tab-index="${i}"
                     data-day-index="${i}"
                 >
-                    <span style="font-weight:600; font-size:14px;">${dayShort}</span>
-                    <span style="font-size:12px; margin-left:6px; opacity:0.7;">${date}</span>
+                    <span style="font-weight:700; font-size:16px; display:block;" class="tab-day-full">${dayLabel}</span>
+                    <span style="font-weight:700; font-size:16px; display:none;" class="tab-day-short">${dayShort}</span>
+                    <span style="font-size:12px; display:block; margin-top:2px; opacity:0.6;">${date}</span>
                 </button>
             `;
         }).join('');
@@ -1201,9 +1204,16 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                 </div>
                 
                 <!-- Horizontal Day Navigation -->
-                <div style="display:flex; gap:0; margin-bottom:0; border-bottom:1px solid var(--border);">
+                <nav aria-label="Event days" style="display:flex; gap:8px; margin-bottom:0; border-bottom:2px solid var(--border);">
                     ${tabNavigation}
-                </div>
+                </nav>
+                <style>
+                    @media (max-width: 640px) {
+                        .tab-day-full { display: none !important; }
+                        .tab-day-short { display: block !important; }
+                        .tab-btn { padding: 12px 8px !important; }
+                    }
+                </style>
                 
                 <!-- Session Lists by Day -->
                 <div class="tab-content">
