@@ -1201,9 +1201,9 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
             <div class="w-full max-w-[var(--max-width)] mx-auto px-[var(--global-padding)]">
                 ${renderSectionHeader(settings, "Event Schedule", "Browse sessions by day.")}
                 
-                <!-- Search Bar -->
-                <div style="margin-bottom:16px;">
-                    <div style="position:relative; max-width:320px;">
+                <!-- Search & Filters Bar -->
+                <div style="margin-bottom:16px; display:flex; flex-wrap:wrap; align-items:center; gap:10px;">
+                    <div style="position:relative; min-width:200px; flex:1; max-width:320px;">
                         <input 
                             type="text" 
                             placeholder="Search sessions..."
@@ -1213,6 +1213,36 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
                         <svg style="position:absolute; right:10px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--muted-foreground); pointer-events:none;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
+                    </div>
+                    <!-- Filters Toggle Button -->
+                    <button type="button" data-filters-toggle="true" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border:1px solid var(--border); border-radius:var(--radius, 6px); background:var(--background); color:var(--foreground); font-family:var(--font-sans); font-size:13px; font-weight:500; cursor:pointer; transition:all 0.15s; white-space:nowrap;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                        Filters
+                        <span data-filter-count="true" style="display:none; min-width:18px; height:18px; border-radius:9px; background:var(--primary); color:var(--primary-foreground); font-size:10px; font-weight:700; line-height:18px; text-align:center; padding:0 5px;">0</span>
+                    </button>
+                    <!-- Clear Filters -->
+                    <button type="button" data-filters-clear="true" style="display:none; align-items:center; gap:4px; padding:8px 12px; border:none; border-radius:var(--radius, 6px); background:var(--muted); color:var(--muted-foreground); font-family:var(--font-sans); font-size:12px; font-weight:500; cursor:pointer; transition:all 0.15s; white-space:nowrap;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+                        Clear filters
+                    </button>
+                </div>
+                <!-- Filters Panel (hidden by default) -->
+                <div data-filters-panel="true" style="display:none; margin-bottom:16px; padding:14px 16px; border:1px solid var(--border); border-radius:var(--radius, 8px); background:color-mix(in srgb, var(--muted) 50%, transparent);">
+                    <!-- Session Type Filters -->
+                    <div style="margin-bottom:12px;">
+                        <span style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted-foreground); font-family:var(--font-sans); display:block; margin-bottom:8px;">Session Type</span>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px;" data-type-filters="true">
+                            ${['Workshop','Keynote','Panel','Networking','Talk','Fireside Chat'].map(t => `<button type="button" data-type-filter="${t}" style="display:inline-flex; align-items:center; padding:4px 10px; border-radius:var(--radius, 12px); border:1px solid var(--border); background:var(--background); color:var(--muted-foreground); font-size:12px; font-weight:500; font-family:var(--font-sans); cursor:pointer; transition:all 0.15s; white-space:nowrap;">${t}</button>`).join('')}
+                        </div>
+                    </div>
+                    <!-- Time Range Filters -->
+                    <div>
+                        <span style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted-foreground); font-family:var(--font-sans); display:block; margin-bottom:8px;">Time of Day</span>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px;" data-time-filters="true">
+                            <button type="button" data-time-filter="morning" style="display:inline-flex; align-items:center; padding:4px 10px; border-radius:var(--radius, 12px); border:1px solid var(--border); background:var(--background); color:var(--muted-foreground); font-size:12px; font-weight:500; font-family:var(--font-sans); cursor:pointer; transition:all 0.15s; white-space:nowrap;">Morning</button>
+                            <button type="button" data-time-filter="afternoon" style="display:inline-flex; align-items:center; padding:4px 10px; border-radius:var(--radius, 12px); border:1px solid var(--border); background:var(--background); color:var(--muted-foreground); font-size:12px; font-weight:500; font-family:var(--font-sans); cursor:pointer; transition:all 0.15s; white-space:nowrap;">Afternoon</button>
+                            <button type="button" data-time-filter="evening" style="display:inline-flex; align-items:center; padding:4px 10px; border-radius:var(--radius, 12px); border:1px solid var(--border); background:var(--background); color:var(--muted-foreground); font-size:12px; font-weight:500; font-family:var(--font-sans); cursor:pointer; transition:all 0.15s; white-space:nowrap;">Evening</button>
+                        </div>
                     </div>
                 </div>
                 
@@ -1429,6 +1459,51 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
          <div class="w-full max-w-[var(--max-width)] mx-auto px-[var(--global-padding)]">
             ${renderSectionHeader(settings, "Sessions", "Explore the tracks.")}
             
+            <!-- Search & Filters Bar -->
+            <div style="margin-bottom:16px; display:flex; flex-wrap:wrap; align-items:center; gap:10px;">
+                <div style="position:relative; min-width:200px; flex:1; max-width:320px;">
+                    <input 
+                        type="text" 
+                        placeholder="Search sessions..."
+                        style="width:100%; padding:8px 36px 8px 12px; background:var(--background); border:1px solid var(--border); border-radius:var(--radius, 6px); color:var(--foreground); font-family:var(--font-sans); font-size:13px; outline:none; transition:all 0.15s;"
+                        data-search-input="true"
+                    />
+                    <svg style="position:absolute; right:10px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--muted-foreground); pointer-events:none;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+                <!-- Filters Toggle Button -->
+                <button type="button" data-filters-toggle="true" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border:1px solid var(--border); border-radius:var(--radius, 6px); background:var(--background); color:var(--foreground); font-family:var(--font-sans); font-size:13px; font-weight:500; cursor:pointer; transition:all 0.15s; white-space:nowrap;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                    Filters
+                    <span data-filter-count="true" style="display:none; min-width:18px; height:18px; border-radius:9px; background:var(--primary); color:var(--primary-foreground); font-size:10px; font-weight:700; line-height:18px; text-align:center; padding:0 5px;">0</span>
+                </button>
+                <!-- Clear Filters -->
+                <button type="button" data-filters-clear="true" style="display:none; align-items:center; gap:4px; padding:8px 12px; border:none; border-radius:var(--radius, 6px); background:var(--muted); color:var(--muted-foreground); font-family:var(--font-sans); font-size:12px; font-weight:500; cursor:pointer; transition:all 0.15s; white-space:nowrap;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+                    Clear filters
+                </button>
+            </div>
+            <!-- Filters Panel (hidden by default) -->
+            <div data-filters-panel="true" style="display:none; margin-bottom:16px; padding:14px 16px; border:1px solid var(--border); border-radius:var(--radius, 8px); background:color-mix(in srgb, var(--muted) 50%, transparent);">
+                <!-- Session Type Filters -->
+                <div style="margin-bottom:12px;">
+                    <span style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted-foreground); font-family:var(--font-sans); display:block; margin-bottom:8px;">Session Type</span>
+                    <div style="display:flex; flex-wrap:wrap; gap:6px;" data-type-filters="true">
+                        ${['Workshop','Keynote','Panel','Networking','Talk','Fireside Chat'].map(t => `<button type="button" data-type-filter="${t}" style="display:inline-flex; align-items:center; padding:4px 10px; border-radius:var(--radius, 12px); border:1px solid var(--border); background:var(--background); color:var(--muted-foreground); font-size:12px; font-weight:500; font-family:var(--font-sans); cursor:pointer; transition:all 0.15s; white-space:nowrap;">${t}</button>`).join('')}
+                    </div>
+                </div>
+                <!-- Time Range Filters -->
+                <div>
+                    <span style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted-foreground); font-family:var(--font-sans); display:block; margin-bottom:8px;">Time of Day</span>
+                    <div style="display:flex; flex-wrap:wrap; gap:6px;" data-time-filters="true">
+                        <button type="button" data-time-filter="morning" style="display:inline-flex; align-items:center; padding:4px 10px; border-radius:var(--radius, 12px); border:1px solid var(--border); background:var(--background); color:var(--muted-foreground); font-size:12px; font-weight:500; font-family:var(--font-sans); cursor:pointer; transition:all 0.15s; white-space:nowrap;">Morning</button>
+                        <button type="button" data-time-filter="afternoon" style="display:inline-flex; align-items:center; padding:4px 10px; border-radius:var(--radius, 12px); border:1px solid var(--border); background:var(--background); color:var(--muted-foreground); font-size:12px; font-weight:500; font-family:var(--font-sans); cursor:pointer; transition:all 0.15s; white-space:nowrap;">Afternoon</button>
+                        <button type="button" data-time-filter="evening" style="display:inline-flex; align-items:center; padding:4px 10px; border-radius:var(--radius, 12px); border:1px solid var(--border); background:var(--background); color:var(--muted-foreground); font-size:12px; font-weight:500; font-family:var(--font-sans); cursor:pointer; transition:all 0.15s; white-space:nowrap;">Evening</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Day Navigation -->
             <nav aria-label="Event days" style="display:flex; gap:4px; margin-bottom:0; background:var(--muted); border-radius:var(--radius, 8px) var(--radius, 8px) 0 0; padding:4px 4px 0;">
                 ${tabNavigation}

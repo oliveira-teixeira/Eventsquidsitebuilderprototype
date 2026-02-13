@@ -7,7 +7,7 @@ import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
 import { ScrollArea } from "../ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
-import { Clock, MapPin, User, ChevronRight, Plus, Minus, ArrowUpRight, Circle, Check, CalendarPlus, X } from "lucide-react";
+import { Clock, MapPin, User, ChevronRight, Plus, Minus, ArrowUpRight, Circle, Check, CalendarPlus, X, Search, Filter } from "lucide-react";
 import { cn } from "../ui/utils";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 
@@ -170,13 +170,66 @@ const AvatarCluster = ({ people }: { people: { name: string; img?: string }[] })
   );
 };
 
+// Helper: get time category from time string
+const getTimeCategoryFromString = (time: string): string => {
+  const match = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!match) return 'morning';
+  let hour = parseInt(match[1], 10);
+  const ampm = match[3].toUpperCase();
+  if (ampm === 'PM' && hour !== 12) hour += 12;
+  if (ampm === 'AM' && hour === 12) hour = 0;
+  if (hour < 12) return 'morning';
+  if (hour < 17) return 'afternoon';
+  return 'evening';
+};
+
+const SESSION_TYPES = ['Workshop', 'Keynote', 'Panel', 'Networking', 'General'] as const;
+const TIME_RANGES = ['morning', 'afternoon', 'evening'] as const;
+const TIME_RANGE_LABELS: Record<string, string> = { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening' };
+
 // Variant 1: Compact Scannable List
 export const AgendaVariant1 = () => {
   const [activeDay, setActiveDay] = useState(0);
   const [selectedSession, setSelectedSession] = useState<AgendaItem | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTypeFilters, setActiveTypeFilters] = useState<Set<string>>(new Set());
+  const [activeTimeFilters, setActiveTimeFilters] = useState<Set<string>>(new Set());
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const days = ["Friday", "Saturday", "Sunday"];
   const daysMobile = ["Fri", "Sat", "Sun"];
   const dates = ["March 14", "March 15", "March 16"];
+
+  const totalFilters = activeTypeFilters.size + activeTimeFilters.size;
+
+  const toggleTypeFilter = (type: string) => {
+    setActiveTypeFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type); else next.add(type);
+      return next;
+    });
+  };
+
+  const toggleTimeFilter = (time: string) => {
+    setActiveTimeFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(time)) next.delete(time); else next.add(time);
+      return next;
+    });
+  };
+
+  const clearAllFilters = () => {
+    setSearchTerm("");
+    setActiveTypeFilters(new Set());
+    setActiveTimeFilters(new Set());
+  };
+
+  const filteredItems = SAMPLE_AGENDA.filter(item => {
+    const matchesSearch = !searchTerm || item.title.toLowerCase().includes(searchTerm.toLowerCase()) || item.speaker.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = activeTypeFilters.size === 0 || activeTypeFilters.has(item.type);
+    const timeCat = getTimeCategoryFromString(item.time);
+    const matchesTime = activeTimeFilters.size === 0 || activeTimeFilters.has(timeCat);
+    return matchesSearch && matchesType && matchesTime;
+  });
 
   return (
     <div className="w-full py-12 bg-background">
@@ -184,14 +237,58 @@ export const AgendaVariant1 = () => {
           <h2 className="text-2xl font-bold mb-2 text-foreground">Event Schedule</h2>
           <p className="text-muted-foreground text-sm mb-6">Browse sessions by day.</p>
 
-          {/* Search */}
-          <div className="mb-5 relative max-w-md">
-              <input
-                type="text"
-                placeholder="Search sessions..."
-                className="w-full px-4 py-2 pr-10 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-all"
-              />
+          {/* Search + Filters Bar */}
+          <div className="flex flex-wrap items-center gap-2.5 mb-4">
+              <div className="relative flex-1 min-w-[200px] max-w-xs">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search sessions..."
+                  className="w-full px-3 py-2 pr-9 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-all"
+                />
+                <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setFiltersOpen(!filtersOpen)} className="gap-1.5">
+                <Filter className="h-3.5 w-3.5" />
+                Filters
+                {totalFilters > 0 && (
+                  <Badge className="h-4 min-w-4 px-1 text-[10px] leading-none">{totalFilters}</Badge>
+                )}
+              </Button>
+              {totalFilters > 0 && (
+                <Button variant="ghost" size="sm" onClick={clearAllFilters} className="gap-1 text-muted-foreground text-xs">
+                  <X className="h-3 w-3" />
+                  Clear filters
+                </Button>
+              )}
           </div>
+
+          {/* Filters Panel */}
+          {filtersOpen && (
+            <div className="mb-4 p-3.5 border border-border rounded-lg bg-muted/30">
+              <div className="mb-3">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 block">Session Type</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {SESSION_TYPES.map(type => (
+                    <button key={type} onClick={() => toggleTypeFilter(type)} className={cn("inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium transition-all", activeTypeFilters.has(type) ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:border-foreground/20")}>
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 block">Time of Day</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {TIME_RANGES.map(time => (
+                    <button key={time} onClick={() => toggleTimeFilter(time)} className={cn("inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium transition-all", activeTimeFilters.has(time) ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:border-foreground/20")}>
+                      {TIME_RANGE_LABELS[time]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Day Tabs */}
           <nav className="flex gap-2 mb-8 border-b-2 border-border" aria-label="Event days">
@@ -220,7 +317,7 @@ export const AgendaVariant1 = () => {
 
           {/* Session Rows */}
           <div>
-              {SAMPLE_AGENDA.map((item, i) => (
+              {filteredItems.length > 0 ? filteredItems.map((item, i) => (
                 <div
                   key={i}
                   role="button"
@@ -245,7 +342,11 @@ export const AgendaVariant1 = () => {
                     {/* Avatar Cluster */}
                     <AvatarCluster people={item.people} />
                 </div>
-              ))}
+              )) : (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  No sessions found for this day.
+                </div>
+              )}
           </div>
       </div>
 
@@ -306,13 +407,35 @@ export const AgendaVariant2 = () => {
 export const AgendaVariant3 = () => {
   const [activeDay, setActiveDay] = useState(0);
   const [selectedSession, setSelectedSession] = useState<AgendaItem | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTypeFilters, setActiveTypeFilters] = useState<Set<string>>(new Set());
+  const [activeTimeFilters, setActiveTimeFilters] = useState<Set<string>>(new Set());
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const days = ["Day 1", "Day 2", "Day 3"];
   const dayLabels = ["Friday", "Saturday", "Sunday"];
+
+  const totalFilters = activeTypeFilters.size + activeTimeFilters.size;
+
+  const toggleTypeFilter = (type: string) => {
+    setActiveTypeFilters(prev => { const next = new Set(prev); if (next.has(type)) next.delete(type); else next.add(type); return next; });
+  };
+  const toggleTimeFilter = (time: string) => {
+    setActiveTimeFilters(prev => { const next = new Set(prev); if (next.has(time)) next.delete(time); else next.add(time); return next; });
+  };
+  const clearAllFilters = () => { setSearchTerm(""); setActiveTypeFilters(new Set()); setActiveTimeFilters(new Set()); };
+
+  const filteredItems = SAMPLE_AGENDA.filter(item => {
+    const matchesSearch = !searchTerm || item.title.toLowerCase().includes(searchTerm.toLowerCase()) || item.speaker.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = activeTypeFilters.size === 0 || activeTypeFilters.has(item.type);
+    const timeCat = getTimeCategoryFromString(item.time);
+    const matchesTime = activeTimeFilters.size === 0 || activeTimeFilters.has(timeCat);
+    return matchesSearch && matchesType && matchesTime;
+  });
 
   return (
     <div className="w-full py-12 bg-background">
       <div className="mx-auto w-full" style={{ maxWidth: 'var(--max-width)', paddingLeft: 'var(--global-padding)', paddingRight: 'var(--global-padding)' }}>
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
               <div>
                   <h2 className="text-2xl font-bold text-foreground">Sessions</h2>
                   <p className="text-sm text-muted-foreground">Explore the tracks and sessions.</p>
@@ -344,8 +467,61 @@ export const AgendaVariant3 = () => {
               </nav>
           </div>
 
+          {/* Search + Filters Bar */}
+          <div className="flex flex-wrap items-center gap-2.5 mb-4">
+              <div className="relative flex-1 min-w-[200px] max-w-xs">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search sessions..."
+                  className="w-full px-3 py-2 pr-9 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-all"
+                />
+                <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setFiltersOpen(!filtersOpen)} className="gap-1.5">
+                <Filter className="h-3.5 w-3.5" />
+                Filters
+                {totalFilters > 0 && (
+                  <Badge className="h-4 min-w-4 px-1 text-[10px] leading-none">{totalFilters}</Badge>
+                )}
+              </Button>
+              {totalFilters > 0 && (
+                <Button variant="ghost" size="sm" onClick={clearAllFilters} className="gap-1 text-muted-foreground text-xs">
+                  <X className="h-3 w-3" />
+                  Clear filters
+                </Button>
+              )}
+          </div>
+
+          {/* Filters Panel */}
+          {filtersOpen && (
+            <div className="mb-4 p-3.5 border border-border rounded-lg bg-muted/30">
+              <div className="mb-3">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 block">Session Type</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {SESSION_TYPES.map(type => (
+                    <button key={type} onClick={() => toggleTypeFilter(type)} className={cn("inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium transition-all", activeTypeFilters.has(type) ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:border-foreground/20")}>
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 block">Time of Day</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {TIME_RANGES.map(time => (
+                    <button key={time} onClick={() => toggleTimeFilter(time)} className={cn("inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium transition-all", activeTimeFilters.has(time) ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:border-foreground/20")}>
+                      {TIME_RANGE_LABELS[time]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div>
-              {SAMPLE_AGENDA.map((item, i) => (
+              {filteredItems.length > 0 ? filteredItems.map((item, i) => (
                 <div
                   key={i}
                   role="button"
@@ -372,7 +548,11 @@ export const AgendaVariant3 = () => {
 
                     <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
-              ))}
+              )) : (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  No sessions found for this day.
+                </div>
+              )}
           </div>
       </div>
 

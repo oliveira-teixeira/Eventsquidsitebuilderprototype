@@ -1029,49 +1029,191 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                     
                     agendaSection.addEventListener('click', handleTabClick);
                     
-                    // Add search functionality
-                    const searchInput = agendaSection.querySelector('input[data-search-input]');
-                    if (searchInput) {
-                        const handleSearch = () => {
-                            const searchTerm = (searchInput as HTMLInputElement).value.toLowerCase();
-                            const allSessions = agendaSection.querySelectorAll('.session-item');
+                    // --- Filtering state ---
+                    const activeTypeFilters = new Set<string>();
+                    const activeTimeFilters = new Set<string>();
+
+                    const getTimeCategory = (timeText: string): string => {
+                        const match = timeText.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+                        if (!match) return 'morning';
+                        let hour = parseInt(match[1], 10);
+                        const ampm = match[3].toUpperCase();
+                        if (ampm === 'PM' && hour !== 12) hour += 12;
+                        if (ampm === 'AM' && hour === 12) hour = 0;
+                        if (hour < 12) return 'morning';
+                        if (hour < 17) return 'afternoon';
+                        return 'evening';
+                    };
+
+                    const updateFilterBadgeCount = () => {
+                        const total = activeTypeFilters.size + activeTimeFilters.size;
+                        const countEl = agendaSection.querySelector('[data-filter-count]') as HTMLElement;
+                        const clearBtn = agendaSection.querySelector('[data-filters-clear]') as HTMLElement;
+                        if (countEl) {
+                            countEl.textContent = String(total);
+                            countEl.style.display = total > 0 ? 'inline-block' : 'none';
+                        }
+                        if (clearBtn) {
+                            clearBtn.style.display = total > 0 ? 'inline-flex' : 'none';
+                        }
+                    };
+
+                    const applyAllFilters = () => {
+                        const searchInput = agendaSection.querySelector('input[data-search-input]') as HTMLInputElement;
+                        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+                        const activeDay = agendaSection.getAttribute('data-active-day') || '0';
+
+                        const allPanels = agendaSection.querySelectorAll('.tab-panel');
+                        allPanels.forEach((panel) => {
+                            const panelDay = panel.getAttribute('data-day');
+                            const isActivePanel = panelDay === activeDay;
+                            const sessions = panel.querySelectorAll('.session-item');
                             
-                            allSessions.forEach((session) => {
-                                const titleEl = session.querySelector('h4');
+                            sessions.forEach((session) => {
+                                if (!isActivePanel) {
+                                    (session as HTMLElement).style.display = '';
+                                    return;
+                                }
+                                const titleEl = session.querySelector('h4') || session.querySelector('h3');
                                 const descEl = session.querySelector('p');
-                                const titleText = titleEl ? titleEl.textContent : null;
-                                const descText = descEl ? descEl.textContent : null;
-                                const title = titleText ? titleText.toLowerCase() : '';
-                                const desc = descText ? descText.toLowerCase() : '';
-                                const matchesSearch = title.includes(searchTerm) || desc.includes(searchTerm);
+                                const title = titleEl ? (titleEl.textContent || '').toLowerCase() : '';
+                                const desc = descEl ? (descEl.textContent || '').toLowerCase() : '';
+                                const sessionTitle = (session.getAttribute('data-session-title') || '').toLowerCase();
+                                const matchesSearch = !searchTerm || title.includes(searchTerm) || desc.includes(searchTerm) || sessionTitle.includes(searchTerm);
                                 
-                                (session as HTMLElement).style.display = matchesSearch ? 'flex' : 'none';
+                                const sessionType = (session.getAttribute('data-session-type') || '').trim();
+                                const matchesType = activeTypeFilters.size === 0 || activeTypeFilters.has(sessionType);
+                                
+                                const sessionTime = session.getAttribute('data-session-time') || '';
+                                const timeCat = getTimeCategory(sessionTime);
+                                const matchesTime = activeTimeFilters.size === 0 || activeTimeFilters.has(timeCat);
+
+                                const isGrid = !!panel.querySelector('.grid');
+                                (session as HTMLElement).style.display = (matchesSearch && matchesType && matchesTime) ? (isGrid ? '' : 'flex') : 'none';
                             });
-                            
-                            // Show empty state if needed
-                            const allPanels = agendaSection.querySelectorAll('.tab-panel');
-                            allPanels.forEach((panel) => {
-                                const visibleSessions = Array.from(panel.querySelectorAll('.session-item')).filter(
-                                    (s) => (s as HTMLElement).style.display !== 'none'
-                                );
-                                let emptyState = panel.querySelector('.empty-state');
-                                
-                                if (visibleSessions.length === 0 && !emptyState && searchTerm) {
-                                    const sessionsList = panel.querySelector('.sessions-list');
-                                    if (sessionsList) {
-                                        const emptyDiv = document.createElement('div');
-                                        emptyDiv.className = 'empty-state text-center py-8 text-muted-foreground font-sans';
-                                        emptyDiv.innerHTML = `<p>No sessions found matching "${searchTerm}"</p>`;
-                                        sessionsList.insertAdjacentElement('afterend', emptyDiv);
+
+                            // Empty state management
+                            let emptyState = panel.querySelector('.empty-state');
+                            if (isActivePanel) {
+                                const visibleSessions = Array.from(sessions).filter(s => (s as HTMLElement).style.display !== 'none');
+                                const hasActiveFilters = searchTerm || activeTypeFilters.size > 0 || activeTimeFilters.size > 0;
+                                if (visibleSessions.length === 0 && hasActiveFilters) {
+                                    if (!emptyState) {
+                                        const container = panel.querySelector('.sessions-list') || panel.querySelector('.grid');
+                                        if (container) {
+                                            const emptyDiv = document.createElement('div');
+                                            emptyDiv.className = 'empty-state';
+                                            emptyDiv.setAttribute('style', 'text-align:center; padding:32px 16px; color:var(--muted-foreground); font-family:var(--font-sans);');
+                                            emptyDiv.innerHTML = '<p style="font-size:14px;">No sessions found for this day.</p>';
+                                            container.parentElement!.insertBefore(emptyDiv, container.nextSibling);
+                                        }
                                     }
-                                } else if (visibleSessions.length > 0 && emptyState) {
+                                } else if (emptyState) {
                                     emptyState.remove();
                                 }
-                            });
-                        };
-                        
-                        searchInput.addEventListener('input', handleSearch);
+                            } else if (emptyState) {
+                                emptyState.remove();
+                            }
+                        });
+                    };
+
+                    // Search input
+                    const searchInput = agendaSection.querySelector('input[data-search-input]');
+                    if (searchInput) {
+                        searchInput.addEventListener('input', applyAllFilters);
                     }
+
+                    // Filters toggle
+                    const filtersToggle = agendaSection.querySelector('[data-filters-toggle]');
+                    const filtersPanel = agendaSection.querySelector('[data-filters-panel]');
+                    if (filtersToggle && filtersPanel) {
+                        filtersToggle.addEventListener('click', (e: Event) => {
+                            e.stopPropagation();
+                            const isOpen = (filtersPanel as HTMLElement).style.display !== 'none';
+                            (filtersPanel as HTMLElement).style.display = isOpen ? 'none' : 'block';
+                        });
+                    }
+
+                    // Type filter badges
+                    const typeFilterBtns = agendaSection.querySelectorAll('[data-type-filter]');
+                    typeFilterBtns.forEach(btn => {
+                        btn.addEventListener('click', (e: Event) => {
+                            e.stopPropagation();
+                            const type = btn.getAttribute('data-type-filter') || '';
+                            const el = btn as HTMLElement;
+                            if (activeTypeFilters.has(type)) {
+                                activeTypeFilters.delete(type);
+                                el.style.background = 'var(--background)';
+                                el.style.color = 'var(--muted-foreground)';
+                                el.style.borderColor = 'var(--border)';
+                            } else {
+                                activeTypeFilters.add(type);
+                                el.style.background = 'var(--primary)';
+                                el.style.color = 'var(--primary-foreground)';
+                                el.style.borderColor = 'var(--primary)';
+                            }
+                            updateFilterBadgeCount();
+                            applyAllFilters();
+                        });
+                    });
+
+                    // Time filter badges
+                    const timeFilterBtns = agendaSection.querySelectorAll('[data-time-filter]');
+                    timeFilterBtns.forEach(btn => {
+                        btn.addEventListener('click', (e: Event) => {
+                            e.stopPropagation();
+                            const time = btn.getAttribute('data-time-filter') || '';
+                            const el = btn as HTMLElement;
+                            if (activeTimeFilters.has(time)) {
+                                activeTimeFilters.delete(time);
+                                el.style.background = 'var(--background)';
+                                el.style.color = 'var(--muted-foreground)';
+                                el.style.borderColor = 'var(--border)';
+                            } else {
+                                activeTimeFilters.add(time);
+                                el.style.background = 'var(--primary)';
+                                el.style.color = 'var(--primary-foreground)';
+                                el.style.borderColor = 'var(--primary)';
+                            }
+                            updateFilterBadgeCount();
+                            applyAllFilters();
+                        });
+                    });
+
+                    // Clear filters
+                    const clearBtn = agendaSection.querySelector('[data-filters-clear]');
+                    if (clearBtn) {
+                        clearBtn.addEventListener('click', (e: Event) => {
+                            e.stopPropagation();
+                            activeTypeFilters.clear();
+                            activeTimeFilters.clear();
+                            typeFilterBtns.forEach(btn => {
+                                const el = btn as HTMLElement;
+                                el.style.background = 'var(--background)';
+                                el.style.color = 'var(--muted-foreground)';
+                                el.style.borderColor = 'var(--border)';
+                            });
+                            timeFilterBtns.forEach(btn => {
+                                const el = btn as HTMLElement;
+                                el.style.background = 'var(--background)';
+                                el.style.color = 'var(--muted-foreground)';
+                                el.style.borderColor = 'var(--border)';
+                            });
+                            const si = agendaSection.querySelector('input[data-search-input]') as HTMLInputElement;
+                            if (si) si.value = '';
+                            updateFilterBadgeCount();
+                            applyAllFilters();
+                        });
+                    }
+
+                    // Re-apply filters when switching days
+                    const origTabHandler = handleTabClick;
+                    agendaSection.removeEventListener('click', origTabHandler);
+                    const newTabHandler = (e: Event) => {
+                        origTabHandler(e);
+                        setTimeout(applyAllFilters, 10);
+                    };
+                    agendaSection.addEventListener('click', newTabHandler);
                 }
             }
         } catch (e) {
@@ -1475,56 +1617,191 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
       
       agendaSection.addEventListener('click', handleTabClick);
       
-      // Search handler
+      // --- Filtering state ---
+      const fActiveTypeFilters = new Set();
+      const fActiveTimeFilters = new Set();
+
+      const fGetTimeCategory = (timeText) => {
+          const match = timeText.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+          if (!match) return 'morning';
+          let hour = parseInt(match[1], 10);
+          const ampm = match[3].toUpperCase();
+          if (ampm === 'PM' && hour !== 12) hour += 12;
+          if (ampm === 'AM' && hour === 12) hour = 0;
+          if (hour < 12) return 'morning';
+          if (hour < 17) return 'afternoon';
+          return 'evening';
+      };
+
+      const fUpdateFilterBadgeCount = () => {
+          const total = fActiveTypeFilters.size + fActiveTimeFilters.size;
+          const countEl = agendaSection.querySelector('[data-filter-count]');
+          const clearBtn = agendaSection.querySelector('[data-filters-clear]');
+          if (countEl) {
+              countEl.textContent = String(total);
+              countEl.style.display = total > 0 ? 'inline-block' : 'none';
+          }
+          if (clearBtn) {
+              clearBtn.style.display = total > 0 ? 'inline-flex' : 'none';
+          }
+      };
+
+      const fApplyAllFilters = () => {
+          try {
+              const searchInput = agendaSection.querySelector('input[data-search-input]');
+              const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+              const activeDay = agendaSection.getAttribute('data-active-day') || '0';
+
+              const allPanels = agendaSection.querySelectorAll('.tab-panel');
+              allPanels.forEach((panel) => {
+                  const panelDay = panel.getAttribute('data-day');
+                  const isActivePanel = panelDay === activeDay;
+                  const sessions = panel.querySelectorAll('.session-item');
+                  
+                  sessions.forEach((session) => {
+                      if (!isActivePanel) { session.style.display = ''; return; }
+                      const titleEl = session.querySelector('h4') || session.querySelector('h3');
+                      const descEl = session.querySelector('p');
+                      const title = titleEl ? (titleEl.textContent || '').toLowerCase() : '';
+                      const desc = descEl ? (descEl.textContent || '').toLowerCase() : '';
+                      const sessionTitle = (session.getAttribute('data-session-title') || '').toLowerCase();
+                      const matchesSearch = !searchTerm || title.includes(searchTerm) || desc.includes(searchTerm) || sessionTitle.includes(searchTerm);
+                      
+                      const sessionType = (session.getAttribute('data-session-type') || '').trim();
+                      const matchesType = fActiveTypeFilters.size === 0 || fActiveTypeFilters.has(sessionType);
+                      
+                      const sessionTime = session.getAttribute('data-session-time') || '';
+                      const timeCat = fGetTimeCategory(sessionTime);
+                      const matchesTime = fActiveTimeFilters.size === 0 || fActiveTimeFilters.has(timeCat);
+
+                      const isGrid = !!panel.querySelector('.grid');
+                      session.style.display = (matchesSearch && matchesType && matchesTime) ? (isGrid ? '' : 'flex') : 'none';
+                  });
+
+                  let emptyState = panel.querySelector('.empty-state');
+                  if (isActivePanel) {
+                      const visibleSessions = Array.from(sessions).filter(s => s.style.display !== 'none');
+                      const hasActiveFilters = searchTerm || fActiveTypeFilters.size > 0 || fActiveTimeFilters.size > 0;
+                      if (visibleSessions.length === 0 && hasActiveFilters) {
+                          if (!emptyState) {
+                              const container = panel.querySelector('.sessions-list') || panel.querySelector('.grid');
+                              if (container) {
+                                  const emptyDiv = document.createElement('div');
+                                  emptyDiv.className = 'empty-state';
+                                  emptyDiv.setAttribute('style', 'text-align:center; padding:32px 16px; color:var(--muted-foreground); font-family:var(--font-sans);');
+                                  emptyDiv.innerHTML = '<p style="font-size:14px;">No sessions found for this day.</p>';
+                                  container.parentElement.insertBefore(emptyDiv, container.nextSibling);
+                              }
+                          }
+                      } else if (emptyState) {
+                          emptyState.remove();
+                      }
+                  } else if (emptyState) {
+                      emptyState.remove();
+                  }
+              });
+          } catch (err) {
+              console.warn('Filter handler error:', err);
+          }
+      };
+
+      // Search input
       const searchInput = agendaSection.querySelector('input[data-search-input]');
       if (searchInput) {
-        const handleSearch = () => {
-          try {
-            const searchTerm = searchInput.value.toLowerCase();
-            const allSessions = agendaSection.querySelectorAll('.session-item');
-            
-            allSessions.forEach((session) => {
-              const titleEl = session.querySelector('h4');
-              const descEl = session.querySelector('p');
-              const titleText = titleEl ? titleEl.textContent : null;
-              const descText = descEl ? descEl.textContent : null;
-              const title = titleText ? titleText.toLowerCase() : '';
-              const desc = descText ? descText.toLowerCase() : '';
-              const matchesSearch = title.includes(searchTerm) || desc.includes(searchTerm);
-              
-              session.style.display = matchesSearch ? 'flex' : 'none';
-            });
-            
-            // Show empty state if needed
-            const allPanels = agendaSection.querySelectorAll('.tab-panel');
-            allPanels.forEach((panel) => {
-              const sessionsList = Array.from(panel.querySelectorAll('.session-item'));
-              const visibleSessions = sessionsList.filter((s) => s.style.display !== 'none');
-              let emptyState = panel.querySelector('.empty-state');
-              
-              if (visibleSessions.length === 0 && !emptyState && searchTerm) {
-                const sessionsListEl = panel.querySelector('.sessions-list');
-                if (sessionsListEl) {
-                  const emptyDiv = document.createElement('div');
-                  emptyDiv.className = 'empty-state text-center py-8 text-muted-foreground font-sans';
-                  emptyDiv.innerHTML = '<p>No sessions found matching "' + searchTerm + '"</p>';
-                  sessionsListEl.insertAdjacentElement('afterend', emptyDiv);
-                }
-              } else if (visibleSessions.length > 0 && emptyState) {
-                emptyState.remove();
-              }
-            });
-          } catch (err) {
-            console.warn('Search handler error:', err);
-          }
-        };
-        
-        searchInput.addEventListener('input', handleSearch);
+          searchInput.addEventListener('input', fApplyAllFilters);
       }
+
+      // Filters toggle
+      const fFiltersToggle = agendaSection.querySelector('[data-filters-toggle]');
+      const fFiltersPanel = agendaSection.querySelector('[data-filters-panel]');
+      if (fFiltersToggle && fFiltersPanel) {
+          fFiltersToggle.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const isOpen = fFiltersPanel.style.display !== 'none';
+              fFiltersPanel.style.display = isOpen ? 'none' : 'block';
+          });
+      }
+
+      // Type filter badges
+      const fTypeFilterBtns = agendaSection.querySelectorAll('[data-type-filter]');
+      fTypeFilterBtns.forEach(btn => {
+          btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const type = btn.getAttribute('data-type-filter') || '';
+              if (fActiveTypeFilters.has(type)) {
+                  fActiveTypeFilters.delete(type);
+                  btn.style.background = 'var(--background)';
+                  btn.style.color = 'var(--muted-foreground)';
+                  btn.style.borderColor = 'var(--border)';
+              } else {
+                  fActiveTypeFilters.add(type);
+                  btn.style.background = 'var(--primary)';
+                  btn.style.color = 'var(--primary-foreground)';
+                  btn.style.borderColor = 'var(--primary)';
+              }
+              fUpdateFilterBadgeCount();
+              fApplyAllFilters();
+          });
+      });
+
+      // Time filter badges
+      const fTimeFilterBtns = agendaSection.querySelectorAll('[data-time-filter]');
+      fTimeFilterBtns.forEach(btn => {
+          btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const time = btn.getAttribute('data-time-filter') || '';
+              if (fActiveTimeFilters.has(time)) {
+                  fActiveTimeFilters.delete(time);
+                  btn.style.background = 'var(--background)';
+                  btn.style.color = 'var(--muted-foreground)';
+                  btn.style.borderColor = 'var(--border)';
+              } else {
+                  fActiveTimeFilters.add(time);
+                  btn.style.background = 'var(--primary)';
+                  btn.style.color = 'var(--primary-foreground)';
+                  btn.style.borderColor = 'var(--primary)';
+              }
+              fUpdateFilterBadgeCount();
+              fApplyAllFilters();
+          });
+      });
+
+      // Clear filters
+      const fClearBtn = agendaSection.querySelector('[data-filters-clear]');
+      if (fClearBtn) {
+          fClearBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              fActiveTypeFilters.clear();
+              fActiveTimeFilters.clear();
+              fTypeFilterBtns.forEach(btn => {
+                  btn.style.background = 'var(--background)';
+                  btn.style.color = 'var(--muted-foreground)';
+                  btn.style.borderColor = 'var(--border)';
+              });
+              fTimeFilterBtns.forEach(btn => {
+                  btn.style.background = 'var(--background)';
+                  btn.style.color = 'var(--muted-foreground)';
+                  btn.style.borderColor = 'var(--border)';
+              });
+              const si = agendaSection.querySelector('input[data-search-input]');
+              if (si) si.value = '';
+              fUpdateFilterBadgeCount();
+              fApplyAllFilters();
+          });
+      }
+
+      // Re-apply filters when switching days
+      const fOrigTabHandler = handleTabClick;
+      agendaSection.removeEventListener('click', fOrigTabHandler);
+      const fNewTabHandler = (e) => {
+          fOrigTabHandler(e);
+          setTimeout(fApplyAllFilters, 10);
+      };
+      agendaSection.addEventListener('click', fNewTabHandler);
       
       return () => {
-          agendaSection.removeEventListener('click', handleTabClick);
-          if (searchInput) searchInput.removeEventListener('input', handleSearch);
+          agendaSection.removeEventListener('click', fNewTabHandler);
+          if (searchInput) searchInput.removeEventListener('input', fApplyAllFilters);
       };
     } catch (err) {
       console.warn('Error setting up Figma event listeners:', err);
