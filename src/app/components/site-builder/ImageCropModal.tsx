@@ -87,10 +87,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
           <div className="space-y-2">
             <label className="text-xs font-semibold text-muted-foreground">Preview</label>
             <div 
-              className="relative w-full h-64 bg-muted/20 border border-border rounded-lg overflow-hidden"
-              style={{
-                background: 'repeating-conic-gradient(var(--muted) 0% 25%, var(--background) 0% 50%) 50% / 20px 20px'
-              }}
+              className="relative w-full h-64 border border-border rounded-lg overflow-hidden bg-background"
             >
               <img
                 src={imageUrl}
@@ -99,7 +96,8 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
                 style={{
                   objectFit: fit,
                   objectPosition: getObjectPosition(position || 'center'),
-                  transform: `scale(${zoom / 100})`
+                  transform: zoom !== 100 ? `scale(${zoom / 100})` : undefined,
+                  transformOrigin: zoom !== 100 ? getObjectPosition(position || 'center') : undefined
                 }}
               />
             </div>

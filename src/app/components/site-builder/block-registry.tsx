@@ -14,7 +14,7 @@ import {
   CreditCard,
   Image as ImageIcon
 } from "lucide-react";
-import { getImageUrl, getImageStyleString, ImageSetting } from '@/app/utils/image-helpers';
+import { getImageUrl, getImageStyleString, getContainerStyleString, ImageSetting } from '@/app/utils/image-helpers';
 
 // --- Settings Interface ---
 export interface ButtonSetting {
@@ -894,6 +894,7 @@ configurableImages: [
 const imgHeroValue = safeGetImage(settings, 'hero', PLACEHOLDER_IMG);
     const imgHeroUrl = getImageUrl(imgHeroValue, PLACEHOLDER_IMG);
     const imgHeroStyle = getImageStyleString(imgHeroValue);
+    const imgHeroContainerStyle = getContainerStyleString(imgHeroValue);
     const imgHeroLink = getImageLinkUrl(imgHeroValue);
     
     const iconCalendar = safeGetIcon(settings, 'calendar', ICONS.CALENDAR);
@@ -929,7 +930,7 @@ const imgHeroValue = safeGetImage(settings, 'hero', PLACEHOLDER_IMG);
                 </div>
               </div>` : ''}
             </div>
-${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stretch min-h-[280px] md:min-h-[450px] lg:min-h-[500px]">
+${showImage ? `<div class="flex-1 relative order-1 md:order-2 self-stretch min-h-[280px] md:min-h-[450px] lg:min-h-[500px]" style="${imgHeroContainerStyle}">
     ${imgHeroLink ? `<a href="${imgHeroLink}" class="absolute inset-0 block">` : ''}
     <img src="${imgHeroUrl}" style="${imgHeroStyle}" class="absolute inset-0 w-full h-full cursor-pointer" alt="Hero" data-configurable-image="hero" />
     ${imgHeroLink ? `</a>` : ''}
@@ -961,7 +962,7 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
 
         return `
       <builder-section id="${id}" class="relative block w-full min-h-[400px] md:min-h-[550px] lg:min-h-[600px] h-auto flex items-end overflow-hidden ${getVariantClasses(variant)} ${getPaddingClass(settings, 'pb-8 md:pb-16 lg:pb-20')}">
-        <div class="absolute inset-0 z-0">
+        <div class="absolute inset-0 z-0 overflow-hidden">
            <img src="${imgBgUrl}" style="${imgBgStyle}" class="w-full h-full" data-configurable-image="bg" />
            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
         </div>
@@ -1949,12 +1950,13 @@ ${showImage ? `<div class="flex-1 bg-muted relative order-1 md:order-2 self-stre
         const mapValue = safeGetImage(settings, 'map', DEFAULT_IMAGES.location);
         const mapUrl = getImageUrl(mapValue, DEFAULT_IMAGES.location);
         const mapStyle = getImageStyleString(mapValue);
+        const mapContainerStyle = getContainerStyleString(mapValue);
         
         return `
       <builder-section id="${id}" class="relative block w-full bg-background ${getVariantClasses(variant)} ${getPaddingClass(settings, 'py-0')}">
          <div class="w-full max-w-[var(--max-width)] mx-auto px-[var(--global-padding)]">
          <div class="grid grid-cols-1 lg:grid-cols-2 min-h-[500px]">
-            <div class="bg-muted relative flex items-center justify-center overflow-hidden h-[200px] lg:h-auto w-full aspect-video lg:aspect-auto">
+            <div class="relative flex items-center justify-center h-[200px] lg:h-auto w-full aspect-video lg:aspect-auto" style="${mapContainerStyle}">
                 <img src="${mapUrl}" style="${mapStyle}" class="absolute inset-0 w-full h-full grayscale opacity-50" data-configurable-image="map" />
                 <div class="relative z-10 p-4 bg-background rounded-full shadow-xl animate-bounce text-primary">
                    ${ICONS.MAP_PIN}
