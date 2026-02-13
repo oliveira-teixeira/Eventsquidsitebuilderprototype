@@ -13,6 +13,7 @@ import { TouchBackend } from "react-dnd-touch-backend";
 import { BlockSettings } from "./components/site-builder/block-registry";
 import { ResponsiveContainer } from "./components/site-builder/ResponsiveContainer";
 import { generateFullPageHtml } from "./utils/generate-html";
+import { MessagingApp } from "./components/messaging/MessagingApp";
 
 // Error Boundary Component
 class ErrorBoundary extends Component<
@@ -128,6 +129,9 @@ interface Block {
 }
 
 function AppContent() {
+  // App View State - switch between site builder and messaging app
+  const [appView, setAppView] = useState<"builder" | "messaging">("messaging");
+
   // State Management
   const [activePageId, setActivePageId] = useState<string>("home");
   const [pages, setPages] = useState<{ id: string; name: string; slug: string; blocks: Block[] }[]>([
@@ -864,12 +868,21 @@ function AppContent() {
     );
   }
 
+  if (appView === "messaging") {
+    return (
+      <ThemeProvider>
+        <MessagingApp onBack={() => setAppView("builder")} />
+        <Toaster position="bottom-right" />
+      </ThemeProvider>
+    );
+  }
+
   return (
     <DndProvider backend={TouchBackend} options={{ enableMouseEvents: true }}>
       <ThemeProvider>
         <div className="flex flex-col h-screen w-full bg-background text-foreground overflow-hidden font-sans">
-          <TopNav 
-            activeTab={rightPanel} 
+          <TopNav
+            activeTab={rightPanel}
             setActiveTab={setRightPanel}
             breakpoint={breakpoint}
             setBreakpoint={setBreakpoint}
@@ -884,10 +897,11 @@ function AppContent() {
             blocks={canvasBlocks || []}
             isPreviewMode={isPreviewMode}
             setIsPreviewMode={setIsPreviewMode}
+            onOpenMessaging={() => setAppView("messaging")}
           />
-          
+
           {renderMainContent()}
-          
+
           <Toaster position="bottom-right" />
         </div>
       </ThemeProvider>
