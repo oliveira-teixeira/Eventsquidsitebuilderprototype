@@ -476,6 +476,14 @@ function AppContent() {
     } else {
       newBlocks.push(newBlock);
     }
+
+    // Post-insert invariant: if a nav block exists, it MUST be at index 0
+    const navIdx = newBlocks.findIndex(b => isNavBlock(b.typeId));
+    if (navIdx > 0) {
+      const [navBlock] = newBlocks.splice(navIdx, 1);
+      newBlocks.unshift(navBlock);
+    }
+
     pushToHistory(newBlocks);
     setSelectedBlockId(newBlock.id);
   }, [canvasBlocks, pushToHistory, isNavBlock, hasNavBlock]);
@@ -503,6 +511,14 @@ function AppContent() {
 
     newBlocks.splice(dragIndex, 1);
     newBlocks.splice(hoverIndex, 0, dragBlock);
+
+    // Post-reorder invariant: if a nav block exists, it MUST be at index 0
+    const navIndex = newBlocks.findIndex(b => isNavBlock(b.typeId));
+    if (navIndex > 0) {
+      const [navBlock] = newBlocks.splice(navIndex, 1);
+      newBlocks.unshift(navBlock);
+    }
+
     pushToHistory(newBlocks);
   }, [canvasBlocks, pushToHistory, isNavBlock]);
 
@@ -515,10 +531,21 @@ function AppContent() {
       settings: {}
     };
     const newBlocks = [...canvasBlocks];
-    newBlocks.splice(index, 0, newBlock);
+    // Ensure new block doesn't insert above nav
+    const navAtTop = newBlocks.length > 0 && isNavBlock(newBlocks[0].typeId);
+    const safeIndex = navAtTop ? Math.max(index, 1) : index;
+    newBlocks.splice(safeIndex, 0, newBlock);
+
+    // Post-insert invariant: if a nav block exists, it MUST be at index 0
+    const navIdx = newBlocks.findIndex(b => isNavBlock(b.typeId));
+    if (navIdx > 0) {
+      const [navBlock] = newBlocks.splice(navIdx, 1);
+      newBlocks.unshift(navBlock);
+    }
+
     pushToHistory(newBlocks);
     setSelectedBlockId(newBlock.id);
-  }, [canvasBlocks, pushToHistory]);
+  }, [canvasBlocks, pushToHistory, isNavBlock]);
 
   const toggleVisibility = useCallback((id: string) => {
     const newBlocks = canvasBlocks.map(b => 
@@ -621,6 +648,13 @@ function AppContent() {
       // Swap using destructuring
       [newBlocks[index], newBlocks[targetIndex]] = [newBlocks[targetIndex], newBlocks[index]];
       
+      // Post-reorder invariant: if a nav block exists, it MUST be at index 0
+      const navIdx = newBlocks.findIndex(b => isNavBlock(b.typeId));
+      if (navIdx > 0) {
+        const [navBlock] = newBlocks.splice(navIdx, 1);
+        newBlocks.unshift(navBlock);
+      }
+
       pushToHistory(newBlocks);
   }, [canvasBlocks, pushToHistory, isNavBlock]);
 
