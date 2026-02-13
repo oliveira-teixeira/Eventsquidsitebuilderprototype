@@ -532,7 +532,10 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
       } else if (currentImage) {
           updatedImage = { ...currentImage, [key]: value };
       } else {
-          return;
+          // No image setting yet - initialize from the block's configurableImages default
+          const imgDef = configurableImages && configurableImages.find(img => img.id === imageId);
+          const defaultUrl = imgDef ? imgDef.defaultUrl : '';
+          updatedImage = { url: defaultUrl, [key]: value };
       }
       
       const newImages = {
@@ -1328,7 +1331,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                                     <div className="space-y-2">
                                         <div className="flex items-center justify-between">
                                             <label className="text-[10px] font-semibold text-muted-foreground">
-                                                Zoom
+                                                Image Zoom
                                             </label>
                                             <span className="text-[10px] font-mono text-muted-foreground">{zoom}%</span>
                                         </div>
@@ -1340,6 +1343,55 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                                             step={5}
                                             className="w-full"
                                         />
+                                    </div>
+
+                                    {/* Container Controls */}
+                                    <div className="space-y-3 pt-2 border-t border-border/50">
+                                        <label className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1.5">
+                                            <Box className="w-3 h-3" />
+                                            Container
+                                        </label>
+
+                                        {/* Container Height */}
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-[10px] text-muted-foreground">
+                                                    Min Height
+                                                </label>
+                                                <span className="text-[10px] font-mono text-muted-foreground">
+                                                    {(imageSettings && imageSettings.containerHeight) || 'auto'}
+                                                    {(imageSettings && imageSettings.containerHeight) ? 'px' : ''}
+                                                </span>
+                                            </div>
+                                            <Slider
+                                                value={[(imageSettings && imageSettings.containerHeight) || 0]}
+                                                onValueChange={(values) => handleImageSettingChange(img.id, 'containerHeight', values[0])}
+                                                min={0}
+                                                max={800}
+                                                step={10}
+                                                className="w-full"
+                                            />
+                                        </div>
+
+                                        {/* Border Radius */}
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-[10px] text-muted-foreground">
+                                                    Border Radius
+                                                </label>
+                                                <span className="text-[10px] font-mono text-muted-foreground">
+                                                    {(imageSettings && imageSettings.containerBorderRadius) || 0}px
+                                                </span>
+                                            </div>
+                                            <Slider
+                                                value={[(imageSettings && imageSettings.containerBorderRadius) || 0]}
+                                                onValueChange={(values) => handleImageSettingChange(img.id, 'containerBorderRadius', values[0])}
+                                                min={0}
+                                                max={48}
+                                                step={2}
+                                                className="w-full"
+                                            />
+                                        </div>
                                     </div>
 
                                     {/* Image Link (if linkable) */}
