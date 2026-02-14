@@ -168,7 +168,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                     "p-2 rounded-md transition-all mr-2",
                     isSidebarOpen ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                 )}
-                title="Toggle Sidebar"
+                title="Toggle Component Rail"
             >
                 {isSidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
             </button>
