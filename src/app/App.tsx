@@ -794,10 +794,6 @@ function AppContent() {
             onClose={() => setShowSidebar(false)}
             onAddBlock={(typeId) => {
               handleDropBlock(typeId);
-              // Close sidebar on mobile/tablet where it overlays content
-              if (window.innerWidth < 1024) {
-                setShowSidebar(false);
-              }
             }}
           />
         )}
