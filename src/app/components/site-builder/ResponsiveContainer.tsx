@@ -971,93 +971,29 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                 // Setup event listeners for agenda day tabs
                 const agendaSection = mountNode.querySelector('builder-section[data-active-day]');
                 if (agendaSection) {
-                    // Initialize active day attribute
                     if (!agendaSection.hasAttribute('data-active-day')) {
                         agendaSection.setAttribute('data-active-day', '0');
                     }
                     
-                    // Add click event delegation for tab buttons
-                    const handleTabClick = (e: Event) => {
-                        const target = e.target as HTMLElement;
-                        const tabBtn = target.closest('.tab-btn');
-                        if (tabBtn) {
-                            const tabIndex = tabBtn.getAttribute('data-tab-index');
-                            if (tabIndex !== null) {
-                                const dayIndex = parseInt(tabIndex, 10);
-                                
-                                // Update data-active-day attribute
-                                agendaSection.setAttribute('data-active-day', tabIndex);
-                                
-                                // Update tab styles — strong active state with primary bg
-                                const allTabs = agendaSection.querySelectorAll('.tab-btn');
-                                allTabs.forEach((tab, idx) => {
-                                    const tabEl = tab as HTMLElement;
-                                    if (idx === dayIndex) {
-                                        tabEl.style.background = 'var(--primary)';
-                                        tabEl.style.color = 'var(--primary-foreground)';
-                                        tabEl.style.borderBottomColor = 'var(--primary)';
-                                        tabEl.style.fontWeight = '800';
-                                        tabEl.style.boxShadow = '0 2px 8px color-mix(in srgb, var(--primary) 30%, transparent)';
-                                    } else {
-                                        tabEl.style.background = 'none';
-                                        tabEl.style.color = 'var(--muted-foreground)';
-                                        tabEl.style.borderBottomColor = 'transparent';
-                                        tabEl.style.fontWeight = '600';
-                                        tabEl.style.boxShadow = 'none';
-                                    }
-                                });
-                                
-                                // Show/hide panels
-                                const allPanels = agendaSection.querySelectorAll('.tab-panel');
-                                allPanels.forEach((panel, idx) => {
-                                    (panel as HTMLElement).style.display = idx === dayIndex ? 'block' : 'none';
-                                });
-                                
-                                // Notify parent window about day change
-                                try {
-                                    window.parent.postMessage({
-                                        type: 'AGENDA_DAY_CHANGED',
-                                        blockId: agendaSection.id,
-                                        activeDay: dayIndex
-                                    }, '*');
-                                } catch (err) {
-                                    console.warn('Failed to post message:', err);
-                                }
-                            }
-                        }
-                    };
-                    
-                    agendaSection.addEventListener('click', handleTabClick);
-                    
-                    // --- Filtering state ---
-                    const activeTypeFilters = new Set<string>();
-                    const activeTimeFilters = new Set<string>();
+                    // --- State ---
+                    let activeTimeChip: string = 'all'; // 'all' or hour number as string
 
-                    const getTimeCategory = (timeText: string): string => {
-                        const match = timeText.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-                        if (!match) return 'morning';
-                        let hour = parseInt(match[1], 10);
-                        const ampm = match[3].toUpperCase();
-                        if (ampm === 'PM' && hour !== 12) hour += 12;
-                        if (ampm === 'AM' && hour === 12) hour = 0;
-                        if (hour < 12) return 'morning';
-                        if (hour < 17) return 'afternoon';
-                        return 'evening';
-                    };
-
-                    const updateFilterBadgeCount = () => {
-                        const total = activeTypeFilters.size + activeTimeFilters.size;
-                        const countEl = agendaSection.querySelector('[data-filter-count]') as HTMLElement;
-                        const clearBtn = agendaSection.querySelector('[data-filters-clear]') as HTMLElement;
-                        if (countEl) {
-                            countEl.textContent = String(total);
-                            countEl.style.display = total > 0 ? 'inline-block' : 'none';
-                        }
-                        if (clearBtn) {
-                            clearBtn.style.display = total > 0 ? 'inline-flex' : 'none';
+                    // Helper: style a time chip as active or inactive
+                    const styleTimeChip = (chip: HTMLElement, isActive: boolean) => {
+                        if (isActive) {
+                            chip.style.background = 'var(--primary)';
+                            chip.style.color = 'var(--primary-foreground)';
+                            chip.style.borderColor = 'var(--primary)';
+                            chip.style.fontWeight = '600';
+                        } else {
+                            chip.style.background = 'var(--background)';
+                            chip.style.color = 'var(--muted-foreground)';
+                            chip.style.borderColor = 'var(--border)';
+                            chip.style.fontWeight = '500';
                         }
                     };
 
+                    // Apply all filters (search + time chip) to sessions
                     const applyAllFilters = () => {
                         const searchInput = agendaSection.querySelector('input[data-search-input]') as HTMLInputElement;
                         const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
@@ -1081,22 +1017,18 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                                 const sessionTitle = (session.getAttribute('data-session-title') || '').toLowerCase();
                                 const matchesSearch = !searchTerm || title.includes(searchTerm) || desc.includes(searchTerm) || sessionTitle.includes(searchTerm);
                                 
-                                const sessionType = (session.getAttribute('data-session-type') || '').trim();
-                                const matchesType = activeTypeFilters.size === 0 || activeTypeFilters.has(sessionType);
-                                
-                                const sessionTime = session.getAttribute('data-session-time') || '';
-                                const timeCat = getTimeCategory(sessionTime);
-                                const matchesTime = activeTimeFilters.size === 0 || activeTimeFilters.has(timeCat);
+                                const sessionHour = session.getAttribute('data-session-hour') || '';
+                                const matchesTime = activeTimeChip === 'all' || sessionHour === activeTimeChip;
 
                                 const isGrid = !!panel.querySelector('.grid');
-                                (session as HTMLElement).style.display = (matchesSearch && matchesType && matchesTime) ? (isGrid ? '' : 'flex') : 'none';
+                                (session as HTMLElement).style.display = (matchesSearch && matchesTime) ? (isGrid ? '' : 'flex') : 'none';
                             });
 
-                            // Empty state management
+                            // Empty state
                             let emptyState = panel.querySelector('.empty-state');
                             if (isActivePanel) {
                                 const visibleSessions = Array.from(sessions).filter(s => (s as HTMLElement).style.display !== 'none');
-                                const hasActiveFilters = searchTerm || activeTypeFilters.size > 0 || activeTimeFilters.size > 0;
+                                const hasActiveFilters = searchTerm || activeTimeChip !== 'all';
                                 if (visibleSessions.length === 0 && hasActiveFilters) {
                                     if (!emptyState) {
                                         const container = panel.querySelector('.sessions-list') || panel.querySelector('.grid');
@@ -1104,7 +1036,7 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                                             const emptyDiv = document.createElement('div');
                                             emptyDiv.className = 'empty-state';
                                             emptyDiv.setAttribute('style', 'text-align:center; padding:32px 16px; color:var(--muted-foreground); font-family:var(--font-sans);');
-                                            emptyDiv.innerHTML = '<p style="font-size:14px;">No sessions found for this day.</p>';
+                                            emptyDiv.innerHTML = '<p style="font-size:14px;">No sessions match your filters.</p>';
                                             container.parentElement!.insertBefore(emptyDiv, container.nextSibling);
                                         }
                                     }
@@ -1117,103 +1049,103 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                         });
                     };
 
+                    // Switch time chips row when day changes
+                    const switchTimeChipsToDay = (dayIndex: number) => {
+                        const allChipRows = agendaSection.querySelectorAll('.time-chips-row');
+                        allChipRows.forEach((row) => {
+                            const rowDay = row.getAttribute('data-time-chips-day');
+                            (row as HTMLElement).style.display = rowDay === String(dayIndex) ? 'flex' : 'none';
+                        });
+                        // Reset active time chip to "all" for the new day
+                        activeTimeChip = 'all';
+                        const visibleRow = agendaSection.querySelector(`.time-chips-row[data-time-chips-day="${dayIndex}"]`);
+                        if (visibleRow) {
+                            const chips = visibleRow.querySelectorAll('[data-time-chip]');
+                            chips.forEach((chip) => {
+                                const val = chip.getAttribute('data-time-chip') || '';
+                                styleTimeChip(chip as HTMLElement, val === 'all');
+                            });
+                        }
+                    };
+
+                    // Tab click handler
+                    const handleTabClick = (e: Event) => {
+                        const target = e.target as HTMLElement;
+                        const tabBtn = target.closest('.tab-btn');
+                        if (tabBtn) {
+                            const tabIndex = tabBtn.getAttribute('data-tab-index');
+                            if (tabIndex !== null) {
+                                const dayIndex = parseInt(tabIndex, 10);
+                                agendaSection.setAttribute('data-active-day', tabIndex);
+                                
+                                const allTabs = agendaSection.querySelectorAll('.tab-btn');
+                                allTabs.forEach((tab, idx) => {
+                                    const tabEl = tab as HTMLElement;
+                                    if (idx === dayIndex) {
+                                        tabEl.style.background = 'var(--primary)';
+                                        tabEl.style.color = 'var(--primary-foreground)';
+                                        tabEl.style.fontWeight = '800';
+                                        tabEl.style.boxShadow = '0 2px 8px color-mix(in srgb, var(--primary) 30%, transparent)';
+                                    } else {
+                                        tabEl.style.background = 'color-mix(in srgb, var(--muted) 60%, transparent)';
+                                        tabEl.style.color = 'var(--muted-foreground)';
+                                        tabEl.style.fontWeight = '600';
+                                        tabEl.style.boxShadow = 'none';
+                                    }
+                                });
+                                
+                                const allPanels = agendaSection.querySelectorAll('.tab-panel');
+                                allPanels.forEach((panel, idx) => {
+                                    (panel as HTMLElement).style.display = idx === dayIndex ? 'block' : 'none';
+                                });
+
+                                // Switch time chips + reset filter
+                                switchTimeChipsToDay(dayIndex);
+                                setTimeout(applyAllFilters, 10);
+                                
+                                try {
+                                    window.parent.postMessage({
+                                        type: 'AGENDA_DAY_CHANGED',
+                                        blockId: agendaSection.id,
+                                        activeDay: dayIndex
+                                    }, '*');
+                                } catch (err) {
+                                    console.warn('Failed to post message:', err);
+                                }
+                            }
+                        }
+                    };
+                    
+                    agendaSection.addEventListener('click', handleTabClick);
+
+                    // Time chip click handler (delegation)
+                    const handleTimeChipClick = (e: Event) => {
+                        const target = e.target as HTMLElement;
+                        const chip = target.closest('[data-time-chip]');
+                        if (!chip) return;
+                        e.stopPropagation();
+                        const chipValue = chip.getAttribute('data-time-chip') || 'all';
+                        activeTimeChip = chipValue;
+
+                        // Update chip styles in the active day's chip row
+                        const activeDay = agendaSection.getAttribute('data-active-day') || '0';
+                        const visibleRow = agendaSection.querySelector(`.time-chips-row[data-time-chips-day="${activeDay}"]`);
+                        if (visibleRow) {
+                            const chips = visibleRow.querySelectorAll('[data-time-chip]');
+                            chips.forEach((c) => {
+                                const val = c.getAttribute('data-time-chip') || '';
+                                styleTimeChip(c as HTMLElement, val === chipValue);
+                            });
+                        }
+                        applyAllFilters();
+                    };
+                    agendaSection.addEventListener('click', handleTimeChipClick);
+
                     // Search input
                     const searchInput = agendaSection.querySelector('input[data-search-input]');
                     if (searchInput) {
                         searchInput.addEventListener('input', applyAllFilters);
                     }
-
-                    // Filters toggle
-                    const filtersToggle = agendaSection.querySelector('[data-filters-toggle]');
-                    const filtersPanel = agendaSection.querySelector('[data-filters-panel]');
-                    if (filtersToggle && filtersPanel) {
-                        filtersToggle.addEventListener('click', (e: Event) => {
-                            e.stopPropagation();
-                            const isOpen = (filtersPanel as HTMLElement).style.display !== 'none';
-                            (filtersPanel as HTMLElement).style.display = isOpen ? 'none' : 'block';
-                        });
-                    }
-
-                    // Type filter badges
-                    const typeFilterBtns = agendaSection.querySelectorAll('[data-type-filter]');
-                    typeFilterBtns.forEach(btn => {
-                        btn.addEventListener('click', (e: Event) => {
-                            e.stopPropagation();
-                            const type = btn.getAttribute('data-type-filter') || '';
-                            const el = btn as HTMLElement;
-                            if (activeTypeFilters.has(type)) {
-                                activeTypeFilters.delete(type);
-                                el.style.background = 'var(--background)';
-                                el.style.color = 'var(--muted-foreground)';
-                                el.style.borderColor = 'var(--border)';
-                            } else {
-                                activeTypeFilters.add(type);
-                                el.style.background = 'var(--primary)';
-                                el.style.color = 'var(--primary-foreground)';
-                                el.style.borderColor = 'var(--primary)';
-                            }
-                            updateFilterBadgeCount();
-                            applyAllFilters();
-                        });
-                    });
-
-                    // Time filter badges
-                    const timeFilterBtns = agendaSection.querySelectorAll('[data-time-filter]');
-                    timeFilterBtns.forEach(btn => {
-                        btn.addEventListener('click', (e: Event) => {
-                            e.stopPropagation();
-                            const time = btn.getAttribute('data-time-filter') || '';
-                            const el = btn as HTMLElement;
-                            if (activeTimeFilters.has(time)) {
-                                activeTimeFilters.delete(time);
-                                el.style.background = 'var(--background)';
-                                el.style.color = 'var(--muted-foreground)';
-                                el.style.borderColor = 'var(--border)';
-                            } else {
-                                activeTimeFilters.add(time);
-                                el.style.background = 'var(--primary)';
-                                el.style.color = 'var(--primary-foreground)';
-                                el.style.borderColor = 'var(--primary)';
-                            }
-                            updateFilterBadgeCount();
-                            applyAllFilters();
-                        });
-                    });
-
-                    // Clear filters
-                    const clearBtn = agendaSection.querySelector('[data-filters-clear]');
-                    if (clearBtn) {
-                        clearBtn.addEventListener('click', (e: Event) => {
-                            e.stopPropagation();
-                            activeTypeFilters.clear();
-                            activeTimeFilters.clear();
-                            typeFilterBtns.forEach(btn => {
-                                const el = btn as HTMLElement;
-                                el.style.background = 'var(--background)';
-                                el.style.color = 'var(--muted-foreground)';
-                                el.style.borderColor = 'var(--border)';
-                            });
-                            timeFilterBtns.forEach(btn => {
-                                const el = btn as HTMLElement;
-                                el.style.background = 'var(--background)';
-                                el.style.color = 'var(--muted-foreground)';
-                                el.style.borderColor = 'var(--border)';
-                            });
-                            const si = agendaSection.querySelector('input[data-search-input]') as HTMLInputElement;
-                            if (si) si.value = '';
-                            updateFilterBadgeCount();
-                            applyAllFilters();
-                        });
-                    }
-
-                    // Re-apply filters when switching days
-                    const origTabHandler = handleTabClick;
-                    agendaSection.removeEventListener('click', origTabHandler);
-                    const newTabHandler = (e: Event) => {
-                        origTabHandler(e);
-                        setTimeout(applyAllFilters, 10);
-                    };
-                    agendaSection.addEventListener('click', newTabHandler);
                 }
             }
         } catch (e) {
@@ -1560,89 +1492,20 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
         agendaSection.setAttribute('data-active-day', '0');
       }
       
-      // Tab click handler
-      const handleTabClick = (e) => {
-        try {
-          const target = e.target;
-          const tabBtn = target.closest('.tab-btn');
-          if (tabBtn) {
-            const tabIndex = tabBtn.getAttribute('data-tab-index');
-            if (tabIndex !== null) {
-              const dayIndex = parseInt(tabIndex, 10);
-              
-              agendaSection.setAttribute('data-active-day', tabIndex);
-              
-              // Update tab styles — strong active state with primary bg
-              const allTabs = agendaSection.querySelectorAll('.tab-btn');
-              allTabs.forEach((tab, idx) => {
-                if (idx === dayIndex) {
-                  tab.style.background = 'var(--primary)';
-                  tab.style.color = 'var(--primary-foreground)';
-                  tab.style.borderBottomColor = 'var(--primary)';
-                  tab.style.fontWeight = '800';
-                  tab.style.boxShadow = '0 2px 8px color-mix(in srgb, var(--primary) 30%, transparent)';
-                } else {
-                  tab.style.background = 'none';
-                  tab.style.color = 'var(--muted-foreground)';
-                  tab.style.borderBottomColor = 'transparent';
-                  tab.style.fontWeight = '600';
-                  tab.style.boxShadow = 'none';
-                }
-              });
-              
-              // Show/hide panels
-              const allPanels = agendaSection.querySelectorAll('.tab-panel');
-              allPanels.forEach((panel, idx) => {
-                panel.style.display = idx === dayIndex ? 'block' : 'none';
-              });
-              
-              // Notify parent window about day change
-              if (window.parent) {
-                try {
-                  window.parent.postMessage({
-                    type: 'AGENDA_DAY_CHANGED',
-                    blockId: agendaSection.id,
-                    activeDay: dayIndex
-                  }, '*');
-                } catch (err) {
-                  // Ignore postMessage errors
-                }
-              }
-            }
-          }
-        } catch (err) {
-          console.warn('Tab click handler error:', err);
-        }
-      };
-      
-      agendaSection.addEventListener('click', handleTabClick);
-      
-      // --- Filtering state ---
-      const fActiveTypeFilters = new Set();
-      const fActiveTimeFilters = new Set();
+      // --- State ---
+      let fActiveTimeChip = 'all';
 
-      const fGetTimeCategory = (timeText) => {
-          const match = timeText.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-          if (!match) return 'morning';
-          let hour = parseInt(match[1], 10);
-          const ampm = match[3].toUpperCase();
-          if (ampm === 'PM' && hour !== 12) hour += 12;
-          if (ampm === 'AM' && hour === 12) hour = 0;
-          if (hour < 12) return 'morning';
-          if (hour < 17) return 'afternoon';
-          return 'evening';
-      };
-
-      const fUpdateFilterBadgeCount = () => {
-          const total = fActiveTypeFilters.size + fActiveTimeFilters.size;
-          const countEl = agendaSection.querySelector('[data-filter-count]');
-          const clearBtn = agendaSection.querySelector('[data-filters-clear]');
-          if (countEl) {
-              countEl.textContent = String(total);
-              countEl.style.display = total > 0 ? 'inline-block' : 'none';
-          }
-          if (clearBtn) {
-              clearBtn.style.display = total > 0 ? 'inline-flex' : 'none';
+      const fStyleTimeChip = (chip, isActive) => {
+          if (isActive) {
+              chip.style.background = 'var(--primary)';
+              chip.style.color = 'var(--primary-foreground)';
+              chip.style.borderColor = 'var(--primary)';
+              chip.style.fontWeight = '600';
+          } else {
+              chip.style.background = 'var(--background)';
+              chip.style.color = 'var(--muted-foreground)';
+              chip.style.borderColor = 'var(--border)';
+              chip.style.fontWeight = '500';
           }
       };
 
@@ -1667,21 +1530,17 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                       const sessionTitle = (session.getAttribute('data-session-title') || '').toLowerCase();
                       const matchesSearch = !searchTerm || title.includes(searchTerm) || desc.includes(searchTerm) || sessionTitle.includes(searchTerm);
                       
-                      const sessionType = (session.getAttribute('data-session-type') || '').trim();
-                      const matchesType = fActiveTypeFilters.size === 0 || fActiveTypeFilters.has(sessionType);
-                      
-                      const sessionTime = session.getAttribute('data-session-time') || '';
-                      const timeCat = fGetTimeCategory(sessionTime);
-                      const matchesTime = fActiveTimeFilters.size === 0 || fActiveTimeFilters.has(timeCat);
+                      const sessionHour = session.getAttribute('data-session-hour') || '';
+                      const matchesTime = fActiveTimeChip === 'all' || sessionHour === fActiveTimeChip;
 
                       const isGrid = !!panel.querySelector('.grid');
-                      session.style.display = (matchesSearch && matchesType && matchesTime) ? (isGrid ? '' : 'flex') : 'none';
+                      session.style.display = (matchesSearch && matchesTime) ? (isGrid ? '' : 'flex') : 'none';
                   });
 
                   let emptyState = panel.querySelector('.empty-state');
                   if (isActivePanel) {
                       const visibleSessions = Array.from(sessions).filter(s => s.style.display !== 'none');
-                      const hasActiveFilters = searchTerm || fActiveTypeFilters.size > 0 || fActiveTimeFilters.size > 0;
+                      const hasActiveFilters = searchTerm || fActiveTimeChip !== 'all';
                       if (visibleSessions.length === 0 && hasActiveFilters) {
                           if (!emptyState) {
                               const container = panel.querySelector('.sessions-list') || panel.querySelector('.grid');
@@ -1689,7 +1548,7 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                                   const emptyDiv = document.createElement('div');
                                   emptyDiv.className = 'empty-state';
                                   emptyDiv.setAttribute('style', 'text-align:center; padding:32px 16px; color:var(--muted-foreground); font-family:var(--font-sans);');
-                                  emptyDiv.innerHTML = '<p style="font-size:14px;">No sessions found for this day.</p>';
+                                  emptyDiv.innerHTML = '<p style="font-size:14px;">No sessions match your filters.</p>';
                                   container.parentElement.insertBefore(emptyDiv, container.nextSibling);
                               }
                           }
@@ -1705,102 +1564,107 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
           }
       };
 
+      // Switch time chips row when day changes
+      const fSwitchTimeChipsToDay = (dayIndex) => {
+          const allChipRows = agendaSection.querySelectorAll('.time-chips-row');
+          allChipRows.forEach((row) => {
+              const rowDay = row.getAttribute('data-time-chips-day');
+              row.style.display = rowDay === String(dayIndex) ? 'flex' : 'none';
+          });
+          fActiveTimeChip = 'all';
+          const visibleRow = agendaSection.querySelector('.time-chips-row[data-time-chips-day="' + dayIndex + '"]');
+          if (visibleRow) {
+              const chips = visibleRow.querySelectorAll('[data-time-chip]');
+              chips.forEach((chip) => {
+                  const val = chip.getAttribute('data-time-chip') || '';
+                  fStyleTimeChip(chip, val === 'all');
+              });
+          }
+      };
+
+      // Tab click handler
+      const handleTabClick = (e) => {
+        try {
+          const target = e.target;
+          const tabBtn = target.closest('.tab-btn');
+          if (tabBtn) {
+            const tabIndex = tabBtn.getAttribute('data-tab-index');
+            if (tabIndex !== null) {
+              const dayIndex = parseInt(tabIndex, 10);
+              agendaSection.setAttribute('data-active-day', tabIndex);
+              
+              const allTabs = agendaSection.querySelectorAll('.tab-btn');
+              allTabs.forEach((tab, idx) => {
+                if (idx === dayIndex) {
+                  tab.style.background = 'var(--primary)';
+                  tab.style.color = 'var(--primary-foreground)';
+                  tab.style.fontWeight = '800';
+                  tab.style.boxShadow = '0 2px 8px color-mix(in srgb, var(--primary) 30%, transparent)';
+                } else {
+                  tab.style.background = 'color-mix(in srgb, var(--muted) 60%, transparent)';
+                  tab.style.color = 'var(--muted-foreground)';
+                  tab.style.fontWeight = '600';
+                  tab.style.boxShadow = 'none';
+                }
+              });
+              
+              const allPanels = agendaSection.querySelectorAll('.tab-panel');
+              allPanels.forEach((panel, idx) => {
+                panel.style.display = idx === dayIndex ? 'block' : 'none';
+              });
+
+              fSwitchTimeChipsToDay(dayIndex);
+              setTimeout(fApplyAllFilters, 10);
+              
+              if (window.parent) {
+                try {
+                  window.parent.postMessage({
+                    type: 'AGENDA_DAY_CHANGED',
+                    blockId: agendaSection.id,
+                    activeDay: dayIndex
+                  }, '*');
+                } catch (err) {}
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('Tab click handler error:', err);
+        }
+      };
+      
+      agendaSection.addEventListener('click', handleTabClick);
+
+      // Time chip click handler (delegation)
+      const handleTimeChipClick = (e) => {
+          const target = e.target;
+          const chip = target.closest('[data-time-chip]');
+          if (!chip) return;
+          e.stopPropagation();
+          const chipValue = chip.getAttribute('data-time-chip') || 'all';
+          fActiveTimeChip = chipValue;
+
+          const activeDay = agendaSection.getAttribute('data-active-day') || '0';
+          const visibleRow = agendaSection.querySelector('.time-chips-row[data-time-chips-day="' + activeDay + '"]');
+          if (visibleRow) {
+              const chips = visibleRow.querySelectorAll('[data-time-chip]');
+              chips.forEach((c) => {
+                  const val = c.getAttribute('data-time-chip') || '';
+                  fStyleTimeChip(c, val === chipValue);
+              });
+          }
+          fApplyAllFilters();
+      };
+      agendaSection.addEventListener('click', handleTimeChipClick);
+
       // Search input
       const searchInput = agendaSection.querySelector('input[data-search-input]');
       if (searchInput) {
           searchInput.addEventListener('input', fApplyAllFilters);
       }
-
-      // Filters toggle
-      const fFiltersToggle = agendaSection.querySelector('[data-filters-toggle]');
-      const fFiltersPanel = agendaSection.querySelector('[data-filters-panel]');
-      if (fFiltersToggle && fFiltersPanel) {
-          fFiltersToggle.addEventListener('click', (e) => {
-              e.stopPropagation();
-              const isOpen = fFiltersPanel.style.display !== 'none';
-              fFiltersPanel.style.display = isOpen ? 'none' : 'block';
-          });
-      }
-
-      // Type filter badges
-      const fTypeFilterBtns = agendaSection.querySelectorAll('[data-type-filter]');
-      fTypeFilterBtns.forEach(btn => {
-          btn.addEventListener('click', (e) => {
-              e.stopPropagation();
-              const type = btn.getAttribute('data-type-filter') || '';
-              if (fActiveTypeFilters.has(type)) {
-                  fActiveTypeFilters.delete(type);
-                  btn.style.background = 'var(--background)';
-                  btn.style.color = 'var(--muted-foreground)';
-                  btn.style.borderColor = 'var(--border)';
-              } else {
-                  fActiveTypeFilters.add(type);
-                  btn.style.background = 'var(--primary)';
-                  btn.style.color = 'var(--primary-foreground)';
-                  btn.style.borderColor = 'var(--primary)';
-              }
-              fUpdateFilterBadgeCount();
-              fApplyAllFilters();
-          });
-      });
-
-      // Time filter badges
-      const fTimeFilterBtns = agendaSection.querySelectorAll('[data-time-filter]');
-      fTimeFilterBtns.forEach(btn => {
-          btn.addEventListener('click', (e) => {
-              e.stopPropagation();
-              const time = btn.getAttribute('data-time-filter') || '';
-              if (fActiveTimeFilters.has(time)) {
-                  fActiveTimeFilters.delete(time);
-                  btn.style.background = 'var(--background)';
-                  btn.style.color = 'var(--muted-foreground)';
-                  btn.style.borderColor = 'var(--border)';
-              } else {
-                  fActiveTimeFilters.add(time);
-                  btn.style.background = 'var(--primary)';
-                  btn.style.color = 'var(--primary-foreground)';
-                  btn.style.borderColor = 'var(--primary)';
-              }
-              fUpdateFilterBadgeCount();
-              fApplyAllFilters();
-          });
-      });
-
-      // Clear filters
-      const fClearBtn = agendaSection.querySelector('[data-filters-clear]');
-      if (fClearBtn) {
-          fClearBtn.addEventListener('click', (e) => {
-              e.stopPropagation();
-              fActiveTypeFilters.clear();
-              fActiveTimeFilters.clear();
-              fTypeFilterBtns.forEach(btn => {
-                  btn.style.background = 'var(--background)';
-                  btn.style.color = 'var(--muted-foreground)';
-                  btn.style.borderColor = 'var(--border)';
-              });
-              fTimeFilterBtns.forEach(btn => {
-                  btn.style.background = 'var(--background)';
-                  btn.style.color = 'var(--muted-foreground)';
-                  btn.style.borderColor = 'var(--border)';
-              });
-              const si = agendaSection.querySelector('input[data-search-input]');
-              if (si) si.value = '';
-              fUpdateFilterBadgeCount();
-              fApplyAllFilters();
-          });
-      }
-
-      // Re-apply filters when switching days
-      const fOrigTabHandler = handleTabClick;
-      agendaSection.removeEventListener('click', fOrigTabHandler);
-      const fNewTabHandler = (e) => {
-          fOrigTabHandler(e);
-          setTimeout(fApplyAllFilters, 10);
-      };
-      agendaSection.addEventListener('click', fNewTabHandler);
       
       return () => {
-          agendaSection.removeEventListener('click', fNewTabHandler);
+          agendaSection.removeEventListener('click', handleTabClick);
+          agendaSection.removeEventListener('click', handleTimeChipClick);
           if (searchInput) searchInput.removeEventListener('input', fApplyAllFilters);
       };
     } catch (err) {
