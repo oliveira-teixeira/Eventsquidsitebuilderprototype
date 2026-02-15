@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { TouchBackend } from 'react-dnd-touch-backend';
 import { 
@@ -38,6 +38,13 @@ import { cn } from "../ui/utils";
 import { Card } from "../ui/card";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
+import {
+  AgendaSlotModal,
+  type AgendaSlot,
+  type SpeakerOption,
+  type TrackOption,
+  type SponsorOption,
+} from "./AgendaSlotModal";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 
 // --- Types ---
@@ -350,6 +357,35 @@ const SponsorsBlock = () => (
 );
 
 
+// ---------------------------------------------------------------------------
+// Cross-relationship reference data for AgendaSlotModal
+// ---------------------------------------------------------------------------
+const AVAILABLE_SPEAKERS: SpeakerOption[] = [
+  { id: "sp-1", name: "Sarah Connor", role: "VP of Design", company: "Acme Corp", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" },
+  { id: "sp-2", name: "Dan Abramov", role: "React Core Team", company: "Meta", img: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop" },
+  { id: "sp-3", name: "Emma K", role: "Design Lead", company: "Figma", img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop" },
+  { id: "sp-4", name: "Matt Pocock", role: "TypeScript Educator", company: "Total TypeScript", img: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop" },
+  { id: "sp-5", name: "Andrej K", role: "AI Researcher", company: "OpenAI", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" },
+  { id: "sp-6", name: "Jake Archibald", role: "Developer Advocate", company: "Google" },
+  { id: "sp-7", name: "Guillermo Rauch", role: "CEO", company: "Vercel", img: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop" },
+  { id: "sp-8", name: "Kelsey Hightower", role: "Distinguished Engineer", company: "Google Cloud", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" },
+];
+const AVAILABLE_TRACKS: TrackOption[] = [
+  { id: "tr-1", name: "Keynotes", color: "#6366f1" },
+  { id: "tr-2", name: "Workshops", color: "#22c55e" },
+  { id: "tr-3", name: "Design", color: "#f59e0b" },
+  { id: "tr-4", name: "Engineering", color: "#3b82f6" },
+  { id: "tr-5", name: "AI & ML", color: "#ec4899" },
+  { id: "tr-6", name: "Networking", color: "#8b5cf6" },
+];
+const AVAILABLE_SPONSORS: SponsorOption[] = [
+  { id: "sn-1", name: "Acme Corp", tier: "Platinum", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop" },
+  { id: "sn-2", name: "Globex", tier: "Gold", logo: "https://images.unsplash.com/photo-1628760584600-6c31148991e9?w=200&h=100&fit=crop" },
+  { id: "sn-3", name: "Soylent", tier: "Gold", logo: "https://images.unsplash.com/photo-1746047420047-03fc7a9b9226?w=200&h=100&fit=crop" },
+  { id: "sn-4", name: "Initech", tier: "Silver" },
+  { id: "sn-5", name: "Umbrella", tier: "Silver", logo: "https://images.unsplash.com/photo-1612519348055-5948319a0714?w=200&h=100&fit=crop" },
+];
+
 export const SiteBuilderLayout = () => {
   // --- State ---
   const [activeRightTab, setActiveRightTab] = useState("page");
@@ -359,6 +395,73 @@ export const SiteBuilderLayout = () => {
     { id: "1", type: "hero", title: "Hero Section" },
     { id: "2", type: "agenda", title: "Agenda Highlights" },
   ]);
+
+  // --- Agenda Slot Modal State ---
+  const [agendaSlotModalOpen, setAgendaSlotModalOpen] = useState(false);
+  const [editingAgendaSlot, setEditingAgendaSlot] = useState<AgendaSlot | null>(null);
+
+  const parseTimeRange = useCallback((timeStr: string): { start: string; end: string } => {
+    // timeStr like "09:00 AM \u2013 10:00 AM"
+    const parts = timeStr.split(/\s*[\u2013\-]\s*/);
+    const to24 = (label: string) => {
+      const m = label.trim().match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+      if (!m) return "09:00";
+      let h = parseInt(m[1], 10);
+      const ampm = m[3].toUpperCase();
+      if (ampm === "PM" && h !== 12) h += 12;
+      if (ampm === "AM" && h === 12) h = 0;
+      return `${String(h).padStart(2, "0")}:${m[2]}`;
+    };
+    return {
+      start: parts[0] ? to24(parts[0]) : "09:00",
+      end: parts[1] ? to24(parts[1]) : "10:00",
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log('[v0] Setting up agenda-slot-edit message listener');
+    const handler = (e: MessageEvent) => {
+      const data = e.data;
+      if (data && data.type === 'agenda-slot-edit') {
+        console.log('[v0] Received agenda-slot-edit message:', data);
+      }
+      if (!data || data.type !== 'agenda-slot-edit') return;
+      if (data.action === 'add') {
+        setEditingAgendaSlot(null);
+        setAgendaSlotModalOpen(true);
+      } else if (data.action === 'edit') {
+        const times = parseTimeRange(data.time || '');
+        const slot: AgendaSlot = {
+          id: `edit-${Date.now()}`,
+          title: data.title || '',
+          description: data.desc || '',
+          startTime: times.start,
+          endTime: times.end,
+          location: data.location || '',
+          day: data.day || '',
+          dayIndex: parseInt(data.dayIndex || '0', 10),
+          type: data.type || 'Talk',
+          speakerIds: [],
+          trackIds: [],
+          sponsorIds: [],
+          documents: [],
+          addToSchedule: false,
+        };
+        setEditingAgendaSlot(slot);
+        setAgendaSlotModalOpen(true);
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [parseTimeRange]);
+
+  const handleSaveAgendaSlot = useCallback((slot: AgendaSlot) => {
+    // In a real implementation this would persist to CMS / state.
+    // For now we just close the modal -- the data is logged for integration.
+    console.log('[AgendaSlot] Saved:', slot);
+    setAgendaSlotModalOpen(false);
+    setEditingAgendaSlot(null);
+  }, []);
 
   // --- Actions ---
   const addBlock = (type: BlockType, title: string) => {
@@ -823,6 +926,15 @@ export const SiteBuilderLayout = () => {
         </aside>
       </div>
     </div>
+    <AgendaSlotModal
+      open={agendaSlotModalOpen}
+      onOpenChange={setAgendaSlotModalOpen}
+      slot={editingAgendaSlot}
+      onSave={handleSaveAgendaSlot}
+      speakers={AVAILABLE_SPEAKERS}
+      tracks={AVAILABLE_TRACKS}
+      sponsors={AVAILABLE_SPONSORS}
+    />
     </DndProvider>
   );
 };

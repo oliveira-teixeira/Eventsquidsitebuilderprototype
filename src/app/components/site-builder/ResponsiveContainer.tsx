@@ -936,14 +936,50 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                         }
                     });
 
+                    // Helper: dispatch to parent window so SiteBuilderLayout can catch it
+                    const dispatchAgendaSlotEvent = (detail: Record<string, string>) => {
+                        console.log('[v0] dispatchAgendaSlotEvent called with:', detail);
+                        try {
+                            window.parent.postMessage({ type: 'agenda-slot-edit', ...detail }, '*');
+                            console.log('[v0] postMessage sent to parent');
+                        } catch (err) {
+                            console.log('[v0] postMessage failed, falling back:', err);
+                            window.postMessage({ type: 'agenda-slot-edit', ...detail }, '*');
+                        }
+                    };
+
+                    const extractSessionData = (el: HTMLElement) => ({
+                        title: el.getAttribute('data-session-title') || '',
+                        time: el.getAttribute('data-session-time') || '',
+                        day: el.getAttribute('data-session-day') || '',
+                        location: el.getAttribute('data-session-location') || '',
+                        type: el.getAttribute('data-session-type') || '',
+                        desc: el.getAttribute('data-session-desc') || '',
+                        speakers: el.getAttribute('data-session-speakers') || '',
+                        dayIndex: el.getAttribute('data-day') || '0',
+                        sessionHour: el.getAttribute('data-session-hour') || '9',
+                    });
+
                     // Session item click delegation
+                    console.log('[v0] Setting up agenda click listener on sectionContainer:', sectionContainer.tagName, sectionContainer.id);
                     sectionContainer.addEventListener('click', (e: Event) => {
                         const target = e.target as HTMLElement;
+                        console.log('[v0] Agenda section click, target:', target.tagName, target.getAttribute('data-add-agenda-slot'), target.closest('[data-add-agenda-slot]'));
                         // Don't open modal if user is editing text
                         if (target.isContentEditable || target.closest('[contenteditable="true"]')) return;
+
+                        // "Add Agenda Slot" button
+                        const addBtn = target.closest('[data-add-agenda-slot]') as HTMLElement;
+                        if (addBtn) {
+                            console.log('[v0] Add Agenda Slot button clicked!');
+                            e.stopPropagation();
+                            dispatchAgendaSlotEvent({ action: 'add' });
+                            return;
+                        }
+
                         const sessionEl = target.closest('[data-session-click]') as HTMLElement;
                         if (sessionEl) {
-                            openModal(sessionEl);
+                            dispatchAgendaSlotEvent({ action: 'edit', ...extractSessionData(sessionEl) });
                         }
                     });
 
@@ -951,10 +987,18 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                     sectionContainer.addEventListener('keydown', (e: KeyboardEvent) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                             const target = e.target as HTMLElement;
+
+                            const addBtn = target.closest('[data-add-agenda-slot]') as HTMLElement;
+                            if (addBtn) {
+                                e.preventDefault();
+                                dispatchAgendaSlotEvent({ action: 'add' });
+                                return;
+                            }
+
                             const sessionEl = target.closest('[data-session-click]') as HTMLElement;
                             if (sessionEl) {
                                 e.preventDefault();
-                                openModal(sessionEl);
+                                dispatchAgendaSlotEvent({ action: 'edit', ...extractSessionData(sessionEl) });
                             }
                         }
                     });
@@ -1459,18 +1503,40 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
           document.addEventListener('keydown', (e) => {
               if (e.key === 'Escape' && overlay.style.display !== 'none') closeModal();
           });
+          const extractData = (el: HTMLElement) => ({
+              title: el.getAttribute('data-session-title') || '',
+              time: el.getAttribute('data-session-time') || '',
+              day: el.getAttribute('data-session-day') || '',
+              location: el.getAttribute('data-session-location') || '',
+              type: el.getAttribute('data-session-type') || '',
+              desc: el.getAttribute('data-session-desc') || '',
+              speakers: el.getAttribute('data-session-speakers') || '',
+              dayIndex: el.getAttribute('data-day') || '0',
+              sessionHour: el.getAttribute('data-session-hour') || '9',
+          });
+          const dispatchEvt = (detail: Record<string, string>) => {
+              try {
+                  window.parent.postMessage({ type: 'agenda-slot-edit', ...detail }, '*');
+              } catch {
+                  window.postMessage({ type: 'agenda-slot-edit', ...detail }, '*');
+              }
+          };
           containerEl.addEventListener('click', (e) => {
               const target = e.target as HTMLElement;
               if (target.isContentEditable || target.closest('[contenteditable="true"]')) return;
+              const addBtn = target.closest('[data-add-agenda-slot]') as HTMLElement;
+              if (addBtn) { e.stopPropagation(); dispatchEvt({ action: 'add' }); return; }
               const sessionEl = target.closest('[data-session-click]') as HTMLElement;
-              if (sessionEl) openModal(sessionEl);
+              if (sessionEl) dispatchEvt({ action: 'edit', ...extractData(sessionEl) });
           });
           containerEl.addEventListener('keydown', (e: Event) => {
               const ke = e as KeyboardEvent;
               if (ke.key === 'Enter' || ke.key === ' ') {
                   const target = ke.target as HTMLElement;
+                  const addBtn = target.closest('[data-add-agenda-slot]') as HTMLElement;
+                  if (addBtn) { ke.preventDefault(); dispatchEvt({ action: 'add' }); return; }
                   const sessionEl = target.closest('[data-session-click]') as HTMLElement;
-                  if (sessionEl) { ke.preventDefault(); openModal(sessionEl); }
+                  if (sessionEl) { ke.preventDefault(); dispatchEvt({ action: 'edit', ...extractData(sessionEl) }); }
               }
           });
       };
