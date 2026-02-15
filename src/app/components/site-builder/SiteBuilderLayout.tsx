@@ -419,8 +419,12 @@ export const SiteBuilderLayout = () => {
   }, []);
 
   useEffect(() => {
+    console.log('[v0] Setting up agenda-slot-edit message listener');
     const handler = (e: MessageEvent) => {
       const data = e.data;
+      if (data && data.type === 'agenda-slot-edit') {
+        console.log('[v0] Received agenda-slot-edit message:', data);
+      }
       if (!data || data.type !== 'agenda-slot-edit') return;
       if (data.action === 'add') {
         setEditingAgendaSlot(null);

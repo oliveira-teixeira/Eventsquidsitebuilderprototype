@@ -938,9 +938,12 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
 
                     // Helper: dispatch to parent window so SiteBuilderLayout can catch it
                     const dispatchAgendaSlotEvent = (detail: Record<string, string>) => {
+                        console.log('[v0] dispatchAgendaSlotEvent called with:', detail);
                         try {
                             window.parent.postMessage({ type: 'agenda-slot-edit', ...detail }, '*');
-                        } catch {
+                            console.log('[v0] postMessage sent to parent');
+                        } catch (err) {
+                            console.log('[v0] postMessage failed, falling back:', err);
                             window.postMessage({ type: 'agenda-slot-edit', ...detail }, '*');
                         }
                     };
@@ -958,14 +961,17 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                     });
 
                     // Session item click delegation
+                    console.log('[v0] Setting up agenda click listener on sectionContainer:', sectionContainer.tagName, sectionContainer.id);
                     sectionContainer.addEventListener('click', (e: Event) => {
                         const target = e.target as HTMLElement;
+                        console.log('[v0] Agenda section click, target:', target.tagName, target.getAttribute('data-add-agenda-slot'), target.closest('[data-add-agenda-slot]'));
                         // Don't open modal if user is editing text
                         if (target.isContentEditable || target.closest('[contenteditable="true"]')) return;
 
                         // "Add Agenda Slot" button
                         const addBtn = target.closest('[data-add-agenda-slot]') as HTMLElement;
                         if (addBtn) {
+                            console.log('[v0] Add Agenda Slot button clicked!');
                             e.stopPropagation();
                             dispatchAgendaSlotEvent({ action: 'add' });
                             return;
