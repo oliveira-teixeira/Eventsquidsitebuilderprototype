@@ -936,9 +936,13 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                         }
                     });
 
-                    // Helper: dispatch custom event for React AgendaSlotModal
+                    // Helper: dispatch to parent window so SiteBuilderLayout can catch it
                     const dispatchAgendaSlotEvent = (detail: Record<string, string>) => {
-                        window.dispatchEvent(new CustomEvent('agenda-slot-edit', { detail }));
+                        try {
+                            window.parent.postMessage({ type: 'agenda-slot-edit', ...detail }, '*');
+                        } catch {
+                            window.postMessage({ type: 'agenda-slot-edit', ...detail }, '*');
+                        }
                     };
 
                     const extractSessionData = (el: HTMLElement) => ({
@@ -1505,7 +1509,11 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
               sessionHour: el.getAttribute('data-session-hour') || '9',
           });
           const dispatchEvt = (detail: Record<string, string>) => {
-              window.dispatchEvent(new CustomEvent('agenda-slot-edit', { detail }));
+              try {
+                  window.parent.postMessage({ type: 'agenda-slot-edit', ...detail }, '*');
+              } catch {
+                  window.postMessage({ type: 'agenda-slot-edit', ...detail }, '*');
+              }
           };
           containerEl.addEventListener('click', (e) => {
               const target = e.target as HTMLElement;

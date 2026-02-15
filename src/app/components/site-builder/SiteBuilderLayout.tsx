@@ -419,23 +419,24 @@ export const SiteBuilderLayout = () => {
   }, []);
 
   useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail || {};
-      if (detail.action === 'add') {
+    const handler = (e: MessageEvent) => {
+      const data = e.data;
+      if (!data || data.type !== 'agenda-slot-edit') return;
+      if (data.action === 'add') {
         setEditingAgendaSlot(null);
         setAgendaSlotModalOpen(true);
-      } else if (detail.action === 'edit') {
-        const times = parseTimeRange(detail.time || '');
+      } else if (data.action === 'edit') {
+        const times = parseTimeRange(data.time || '');
         const slot: AgendaSlot = {
           id: `edit-${Date.now()}`,
-          title: detail.title || '',
-          description: detail.desc || '',
+          title: data.title || '',
+          description: data.desc || '',
           startTime: times.start,
           endTime: times.end,
-          location: detail.location || '',
-          day: detail.day || '',
-          dayIndex: parseInt(detail.dayIndex || '0', 10),
-          type: detail.type || 'Talk',
+          location: data.location || '',
+          day: data.day || '',
+          dayIndex: parseInt(data.dayIndex || '0', 10),
+          type: data.type || 'Talk',
           speakerIds: [],
           trackIds: [],
           sponsorIds: [],
@@ -446,8 +447,8 @@ export const SiteBuilderLayout = () => {
         setAgendaSlotModalOpen(true);
       }
     };
-    window.addEventListener('agenda-slot-edit', handler);
-    return () => window.removeEventListener('agenda-slot-edit', handler);
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
   }, [parseTimeRange]);
 
   const handleSaveAgendaSlot = useCallback((slot: AgendaSlot) => {
