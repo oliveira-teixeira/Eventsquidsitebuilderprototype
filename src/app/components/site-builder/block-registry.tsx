@@ -1203,7 +1203,17 @@ ${showImage ? `<div class="flex-1 relative order-1 md:order-2 self-stretch min-h
         return `
         <builder-section id="${id}" class="relative block w-full transition-colors duration-300 ${getVariantClasses(variant)} ${getPaddingClass(settings, 'py-16')}" data-active-day="0">
             <div class="w-full max-w-[var(--max-width)] mx-auto px-[var(--global-padding)]">
-                ${renderSectionHeader(settings, "Event Schedule", "Browse sessions by day and time.")}
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:12px;">
+                    <div style="flex:1;">
+                        ${renderSectionHeader(settings, "Event Schedule", "Browse sessions by day and time.")}
+                    </div>
+                    <button type="button" data-add-agenda-slot="true"
+                        style="display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:var(--radius, 6px); border:1px solid var(--border); background:var(--background); color:var(--foreground); font-family:var(--font-sans); font-size:12px; font-weight:500; cursor:pointer; transition:all 0.15s; white-space:nowrap; flex-shrink:0; margin-top:4px;"
+                        onmouseover="this.style.background='var(--muted)'"
+                        onmouseout="this.style.background='var(--background)'">
+                        ${ICONS.PLUS} Add Agenda Slot
+                    </button>
+                </div>
                 
                 <!-- Sticky header: Day tabs + Time chips + Search -->
                 <div class="agenda-sticky-header" style="position:sticky; top:0; z-index:10; background:var(--background); padding-bottom:12px; border-bottom:1px solid var(--border);">
@@ -1457,7 +1467,17 @@ ${showImage ? `<div class="flex-1 relative order-1 md:order-2 self-stretch min-h
         return `
       <builder-section id="${id}" class="relative block w-full transition-colors duration-300 ${getVariantClasses(variant)} ${getPaddingClass(settings, 'py-20')}" data-active-day="0">
          <div class="w-full max-w-[var(--max-width)] mx-auto px-[var(--global-padding)]">
-            ${renderSectionHeader(settings, "Sessions", "Explore the tracks and sessions.")}
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:12px;">
+                <div style="flex:1;">
+                    ${renderSectionHeader(settings, "Sessions", "Explore the tracks and sessions.")}
+                </div>
+                <button type="button" data-add-agenda-slot="true"
+                    style="display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:var(--radius, 6px); border:1px solid var(--border); background:var(--background); color:var(--foreground); font-family:var(--font-sans); font-size:12px; font-weight:500; cursor:pointer; transition:all 0.15s; white-space:nowrap; flex-shrink:0; margin-top:4px;"
+                    onmouseover="this.style.background='var(--muted)'"
+                    onmouseout="this.style.background='var(--background)'">
+                    ${ICONS.PLUS} Add Agenda Slot
+                </button>
+            </div>
             
             <!-- Sticky header: Day tabs + Time chips + Search -->
             <div class="agenda-sticky-header" style="position:sticky; top:0; z-index:10; background:var(--background); padding-bottom:12px; border-bottom:1px solid var(--border);">
