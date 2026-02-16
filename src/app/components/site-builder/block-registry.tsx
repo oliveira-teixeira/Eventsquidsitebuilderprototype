@@ -592,11 +592,17 @@ const getSessionModalHtml = () => `
 
         <div style="height:1px; background:var(--border); margin:16px 0;"></div>
 
-        <!-- Action Button -->
-        <button class="session-modal-action" style="width:100%; padding:12px 24px; border-radius:var(--radius, 8px); background:var(--primary); color:var(--primary-foreground); font-size:14px; font-weight:500; font-family:var(--font-sans); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:opacity 0.15s;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M10 14h4"/></svg>
-          Add to Schedule
-        </button>
+        <!-- Actions -->
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button class="session-modal-action" style="width:100%; padding:12px 24px; border-radius:var(--radius, 8px); background:var(--primary); color:var(--primary-foreground); font-size:14px; font-weight:500; font-family:var(--font-sans); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:opacity 0.15s;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M10 14h4"/></svg>
+            Add to My Schedule
+          </button>
+          <button class="session-modal-edit" style="width:100%; padding:8px 16px; border-radius:var(--radius, 6px); background:transparent; color:var(--foreground); font-size:13px; font-weight:500; font-family:var(--font-sans); border:1px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:background 0.15s;" onmouseover="this.style.background='var(--muted)'" onmouseout="this.style.background='transparent'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
+            Edit Slot
+          </button>
+        </div>
       </div>
     </div>
   </div>
