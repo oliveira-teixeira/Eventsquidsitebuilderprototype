@@ -866,11 +866,16 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                     const overlay = sectionContainer.querySelector('.session-modal-overlay') as HTMLElement;
                     if (!overlay) return;
 
+                    // Track which session element opened the modal (for "Edit Slot")
+                    let activeSessionEl: HTMLElement | null = null;
+
                     const closeModal = () => {
                         overlay.style.display = 'none';
+                        activeSessionEl = null;
                     };
 
                     const openModal = (el: HTMLElement) => {
+                        activeSessionEl = el;
                         const title = el.getAttribute('data-session-title') || '';
                         const time = el.getAttribute('data-session-time') || '';
                         const day = el.getAttribute('data-session-day') || '';
@@ -920,13 +925,26 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                         overlay.style.display = 'block';
                     };
 
-                    // Close on overlay click
+                    // Close on overlay click or close button
                     overlay.addEventListener('click', (e: Event) => {
                         const target = e.target as HTMLElement;
                         if (target === overlay || target.closest('.session-modal-close')) {
                             closeModal();
                         }
                     });
+
+                    // "Edit Slot" button inside the detail modal
+                    const editBtn = overlay.querySelector('.session-modal-edit');
+                    if (editBtn) {
+                        editBtn.addEventListener('click', (e: Event) => {
+                            e.stopPropagation();
+                            if (activeSessionEl) {
+                                const data = extractSessionData(activeSessionEl);
+                                closeModal();
+                                dispatchAgendaSlotEvent({ action: 'edit', ...data });
+                            }
+                        });
+                    }
 
                     // Close on Escape
                     const doc = overlay.ownerDocument;
@@ -938,12 +956,9 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
 
                     // Helper: dispatch to parent window so SiteBuilderLayout can catch it
                     const dispatchAgendaSlotEvent = (detail: Record<string, string>) => {
-                        console.log('[v0] dispatchAgendaSlotEvent called with:', detail);
                         try {
                             window.parent.postMessage({ type: 'agenda-slot-edit', ...detail }, '*');
-                            console.log('[v0] postMessage sent to parent');
                         } catch (err) {
-                            console.log('[v0] postMessage failed, falling back:', err);
                             window.postMessage({ type: 'agenda-slot-edit', ...detail }, '*');
                         }
                     };
@@ -960,18 +975,17 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                         sessionHour: el.getAttribute('data-session-hour') || '9',
                     });
 
-                    // Session item click delegation
-                    console.log('[v0] Setting up agenda click listener on sectionContainer:', sectionContainer.tagName, sectionContainer.id);
+                    // Session item click delegation -- opens the detail modal (not edit)
                     sectionContainer.addEventListener('click', (e: Event) => {
                         const target = e.target as HTMLElement;
-                        console.log('[v0] Agenda section click, target:', target.tagName, target.getAttribute('data-add-agenda-slot'), target.closest('[data-add-agenda-slot]'));
                         // Don't open modal if user is editing text
                         if (target.isContentEditable || target.closest('[contenteditable="true"]')) return;
+                        // Don't intercept clicks inside the open modal overlay
+                        if (target.closest('.session-modal-overlay')) return;
 
                         // "Add Agenda Slot" button
                         const addBtn = target.closest('[data-add-agenda-slot]') as HTMLElement;
                         if (addBtn) {
-                            console.log('[v0] Add Agenda Slot button clicked!');
                             e.stopPropagation();
                             dispatchAgendaSlotEvent({ action: 'add' });
                             return;
@@ -979,7 +993,7 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
 
                         const sessionEl = target.closest('[data-session-click]') as HTMLElement;
                         if (sessionEl) {
-                            dispatchAgendaSlotEvent({ action: 'edit', ...extractSessionData(sessionEl) });
+                            openModal(sessionEl);
                         }
                     });
 
@@ -998,7 +1012,7 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                             const sessionEl = target.closest('[data-session-click]') as HTMLElement;
                             if (sessionEl) {
                                 e.preventDefault();
-                                dispatchAgendaSlotEvent({ action: 'edit', ...extractSessionData(sessionEl) });
+                                openModal(sessionEl);
                             }
                         }
                     });
@@ -1445,9 +1459,12 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
           const overlay = containerEl.querySelector('.session-modal-overlay') as HTMLElement;
           if (!overlay) return;
 
-          const closeModal = () => { overlay.style.display = 'none'; };
+          let activeSessionEl: HTMLElement | null = null;
+
+          const closeModal = () => { overlay.style.display = 'none'; activeSessionEl = null; };
 
           const openModal = (el: HTMLElement) => {
+              activeSessionEl = el;
               const title = el.getAttribute('data-session-title') || '';
               const time = el.getAttribute('data-session-time') || '';
               const day = el.getAttribute('data-session-day') || '';
@@ -1521,13 +1538,27 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                   window.postMessage({ type: 'agenda-slot-edit', ...detail }, '*');
               }
           };
+          // "Edit Slot" button inside the detail modal
+          const editBtn = overlay.querySelector('.session-modal-edit');
+          if (editBtn) {
+              editBtn.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  if (activeSessionEl) {
+                      const data = extractData(activeSessionEl);
+                      closeModal();
+                      dispatchEvt({ action: 'edit', ...data });
+                  }
+              });
+          }
+          // Row click opens the detail modal (not the edit modal)
           containerEl.addEventListener('click', (e) => {
               const target = e.target as HTMLElement;
               if (target.isContentEditable || target.closest('[contenteditable="true"]')) return;
+              if (target.closest('.session-modal-overlay')) return;
               const addBtn = target.closest('[data-add-agenda-slot]') as HTMLElement;
               if (addBtn) { e.stopPropagation(); dispatchEvt({ action: 'add' }); return; }
               const sessionEl = target.closest('[data-session-click]') as HTMLElement;
-              if (sessionEl) dispatchEvt({ action: 'edit', ...extractData(sessionEl) });
+              if (sessionEl) openModal(sessionEl);
           });
           containerEl.addEventListener('keydown', (e: Event) => {
               const ke = e as KeyboardEvent;
@@ -1536,7 +1567,7 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = ({
                   const addBtn = target.closest('[data-add-agenda-slot]') as HTMLElement;
                   if (addBtn) { ke.preventDefault(); dispatchEvt({ action: 'add' }); return; }
                   const sessionEl = target.closest('[data-session-click]') as HTMLElement;
-                  if (sessionEl) { ke.preventDefault(); dispatchEvt({ action: 'edit', ...extractData(sessionEl) }); }
+                  if (sessionEl) { ke.preventDefault(); openModal(sessionEl); }
               }
           });
       };

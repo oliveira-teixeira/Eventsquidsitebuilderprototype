@@ -7,7 +7,7 @@ import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
 import { ScrollArea } from "../ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
-import { Clock, MapPin, User, ChevronRight, Plus, Minus, ArrowUpRight, Circle, Check, CalendarPlus, X, Search, Filter, LayoutList, LayoutGrid, Pencil } from "lucide-react";
+import { Clock, MapPin, User, ChevronRight, Plus, Minus, ArrowUpRight, Circle, Check, CalendarPlus, X, Search, Filter, LayoutList, LayoutGrid, Pencil, FileText, Download, Layers, Megaphone } from "lucide-react";
 import { cn } from "../ui/utils";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 import {
@@ -321,9 +321,33 @@ const formatHourBucket = (hour24: number): string => {
   return `${h12} ${suffix}\u2013${nh12} ${nsuffix}`;
 };
 
-// Shared Session Detail Modal
-const SessionDetailModal = ({ session, open, onOpenChange }: { session: AgendaItem | null; open: boolean; onOpenChange: (open: boolean) => void }) => {
+// Shared Session Detail Modal (read mode)
+const SessionDetailModal = ({
+  session,
+  open,
+  onOpenChange,
+  onEditSlot,
+}: {
+  session: AgendaItem | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onEditSlot?: (session: AgendaItem) => void;
+}) => {
   if (!session) return null;
+
+  // Match session to known tracks by type
+  const matchedTracks = AVAILABLE_TRACKS.filter(t => {
+    const typeMap: Record<string, string> = {
+      Keynote: "Keynotes", Workshop: "Workshops", Talk: "Engineering",
+      Panel: "Design", "Fireside Chat": "AI & ML", Networking: "Networking", General: "Networking",
+    };
+    return typeMap[session.type] === t.name;
+  });
+
+  // Match session to known sponsors by people overlap
+  const matchedSponsors = AVAILABLE_SPONSORS.filter(sp =>
+    session.people.some(p => p.name.toLowerCase().includes(sp.name.split(" ")[0].toLowerCase()))
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -331,36 +355,58 @@ const SessionDetailModal = ({ session, open, onOpenChange }: { session: AgendaIt
         <DialogHeader>
           <div className="flex items-center gap-2 mb-1">
             <Badge variant="outline" className="text-[10px] font-mono uppercase">{session.type}</Badge>
+            {matchedTracks.map(t => (
+              <Badge key={t.id} variant="secondary" className="text-[10px] gap-1">
+                <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: t.color || 'var(--primary)' }} />
+                {t.name}
+              </Badge>
+            ))}
           </div>
           <DialogTitle className="text-xl font-bold leading-tight">{session.title}</DialogTitle>
           <DialogDescription className="sr-only">Details for {session.title}</DialogDescription>
         </DialogHeader>
 
+        {/* Day + Time range + Location */}
         <div className="flex flex-col gap-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 shrink-0 text-primary" />
             <span>{session.time}{session.endTime ? ` \u2013 ${session.endTime}` : ''} &middot; {session.day}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 shrink-0 text-primary" />
-            <span>{session.location}</span>
-          </div>
+          {session.location && (
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 shrink-0 text-primary" />
+              <span>{session.location}</span>
+            </div>
+          )}
         </div>
 
-        <Separator />
+        {/* Description */}
+        {session.description && (
+          <>
+            <Separator />
+            <div className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+              {session.description}
+            </div>
+          </>
+        )}
 
-        <div className="text-sm text-foreground leading-relaxed whitespace-pre-line">
-          {session.description}
-        </div>
-
+        {/* Speakers */}
         {session.people && session.people.length > 0 && (
           <>
             <Separator />
             <div>
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Speakers</h4>
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                <User className="h-3 w-3" />
+                Speakers
+              </h4>
               <div className="flex flex-col gap-2.5">
                 {session.people.map((person, i) => (
-                  <div key={i} className="flex items-center gap-3">
+                  <button
+                    key={i}
+                    type="button"
+                    className="flex items-center gap-3 rounded-md px-2 py-1.5 -mx-2 hover:bg-muted/50 transition-colors text-left"
+                    aria-label={`View profile for ${person.name}`}
+                  >
                     <div className="w-8 h-8 rounded-full overflow-hidden bg-muted shrink-0">
                       {person.img ? (
                         <ImageWithFallback src={person.img} alt={person.name} className="w-full h-full object-cover" />
@@ -371,7 +417,31 @@ const SessionDetailModal = ({ session, open, onOpenChange }: { session: AgendaIt
                       )}
                     </div>
                     <span className="text-sm font-medium text-foreground">{person.name}</span>
-                  </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Sponsors */}
+        {matchedSponsors.length > 0 && (
+          <>
+            <Separator />
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                <Megaphone className="h-3 w-3" />
+                Sponsors
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {matchedSponsors.map(sp => (
+                  <Badge key={sp.id} variant="outline" className="text-xs gap-1.5 py-1 px-2">
+                    {sp.logo && (
+                      <ImageWithFallback src={sp.logo} alt={sp.name} className="w-4 h-3 object-contain" />
+                    )}
+                    {sp.name}
+                    {sp.tier && <span className="text-muted-foreground">({sp.tier})</span>}
+                  </Badge>
                 ))}
               </div>
             </div>
@@ -380,10 +450,27 @@ const SessionDetailModal = ({ session, open, onOpenChange }: { session: AgendaIt
 
         <Separator />
 
-        <Button className="w-full gap-2" size="lg">
-          <CalendarPlus className="h-4 w-4" />
-          Add to Schedule
-        </Button>
+        {/* Actions */}
+        <div className="flex flex-col gap-2">
+          <Button className="w-full gap-2" size="lg">
+            <CalendarPlus className="h-4 w-4" />
+            Add to My Schedule
+          </Button>
+          {onEditSlot && (
+            <Button
+              variant="outline"
+              className="w-full gap-2"
+              size="sm"
+              onClick={() => {
+                onOpenChange(false);
+                onEditSlot(session);
+              }}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Edit Slot
+            </Button>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -509,7 +596,7 @@ const AgendaStickyHeader = ({
   setActiveTimeChip: (v: number | null) => void;
   timeChips: number[];
 }) => (
-  <div className="sticky top-0 z-10 bg-background pb-3 border-b border-border">
+  <div className="sticky top-0 z-[1] bg-background pb-3 border-b border-border">
     {/* Primary: Day selector tabs */}
     <nav className="flex gap-1 mb-3" aria-label="Event days">
       {DAY_CONFIG.map((day, i) => (
@@ -588,6 +675,17 @@ export const AgendaVariant1 = () => {
   const manager = useAgendaManager(MULTI_DAY_AGENDA);
   const filters = useAgendaFilters(manager.sessions);
   const [selectedSession, setSelectedSession] = useState<AgendaItem | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+
+  const openDetail = useCallback((session: AgendaItem) => {
+    setSelectedSession(session);
+    setDetailOpen(true);
+  }, []);
+
+  const handleEditFromDetail = useCallback((session: AgendaItem) => {
+    const globalIndex = manager.sessions.indexOf(session);
+    manager.openEditSlot(session, globalIndex >= 0 ? globalIndex : 0);
+  }, [manager]);
 
   return (
     <div className="w-full py-12 bg-background">
@@ -602,18 +700,16 @@ export const AgendaVariant1 = () => {
 
         <AgendaStickyHeader {...filters} />
 
-        {/* Scrollable session list */}
-        <div className="max-h-[60vh] overflow-y-auto mt-1">
+        {/* Scrollable session list -- relative + z-0 so sticky header does not steal clicks */}
+        <div className="relative z-0 max-h-[60vh] overflow-y-auto mt-1">
           {filters.filteredSessions.length > 0 ? (
-            filters.filteredSessions.map((item, i) => {
-              const globalIndex = manager.sessions.indexOf(item);
-              return (
+            filters.filteredSessions.map((item, i) => (
               <div
                 key={`${item.dayIndex}-${item.time}-${i}`}
                 role="button"
                 tabIndex={0}
-                onClick={() => manager.openEditSlot(item, globalIndex)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); manager.openEditSlot(item, globalIndex); } }}
+                onClick={() => openDetail(item)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(item); } }}
                 className="group flex items-center gap-4 py-2.5 border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
               >
                 {/* Time */}
@@ -635,14 +731,13 @@ export const AgendaVariant1 = () => {
                   </p>
                 </div>
 
-                {/* Edit icon on hover */}
-                <Pencil className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                {/* Detail arrow on hover */}
+                <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
 
                 {/* Avatar Cluster */}
                 <AvatarCluster people={item.people} />
               </div>
-              );
-            })
+            ))
           ) : (
             <div className="text-center py-12 text-muted-foreground text-sm">
               No sessions found matching your filters.
@@ -651,15 +746,36 @@ export const AgendaVariant1 = () => {
         </div>
       </div>
 
+      {/* Read-mode detail modal */}
+      <SessionDetailModal
+        session={selectedSession}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onEditSlot={handleEditFromDetail}
+      />
+
+      {/* Edit/create modal (opened from detail modal's "Edit Slot" button) */}
       <AgendaSlotModalWrapper manager={manager} />
     </div>
   );
 };
 
-// Variant 2: Timeline View (unchanged structurally, kept for compat)
+// Variant 2: Timeline View
 export const AgendaVariant2 = () => {
   const manager = useAgendaManager(MULTI_DAY_AGENDA);
   const daySessions = manager.sessions.filter(s => s.dayIndex === 0).slice(0, 5);
+  const [selectedSession, setSelectedSession] = useState<AgendaItem | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+
+  const openDetail = useCallback((session: AgendaItem) => {
+    setSelectedSession(session);
+    setDetailOpen(true);
+  }, []);
+
+  const handleEditFromDetail = useCallback((session: AgendaItem) => {
+    const idx = manager.sessions.indexOf(session);
+    manager.openEditSlot(session, idx >= 0 ? idx : 0);
+  }, [manager]);
 
   return (
     <div className="w-full py-16 bg-muted/30">
@@ -683,8 +799,8 @@ export const AgendaVariant2 = () => {
                               <div
                                 role="button"
                                 tabIndex={0}
-                                onClick={() => manager.openEditSlot(item, i)}
-                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); manager.openEditSlot(item, i); } }}
+                                onClick={() => openDetail(item)}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(item); } }}
                                 className="bg-card p-6 rounded-lg border-none shadow-md space-y-3 cursor-pointer hover:shadow-lg hover:ring-1 hover:ring-primary/20 transition-all"
                               >
                                   <div className="flex items-center justify-between">
@@ -703,6 +819,12 @@ export const AgendaVariant2 = () => {
           </div>
       </div>
 
+      <SessionDetailModal
+        session={selectedSession}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onEditSlot={handleEditFromDetail}
+      />
       <AgendaSlotModalWrapper manager={manager} />
     </div>
   );
@@ -715,6 +837,17 @@ export const AgendaVariant3 = () => {
   const manager = useAgendaManager(MULTI_DAY_AGENDA);
   const filters = useAgendaFilters(manager.sessions);
   const [selectedSession, setSelectedSession] = useState<AgendaItem | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+
+  const openDetail = useCallback((session: AgendaItem) => {
+    setSelectedSession(session);
+    setDetailOpen(true);
+  }, []);
+
+  const handleEditFromDetail = useCallback((session: AgendaItem) => {
+    const globalIndex = manager.sessions.indexOf(session);
+    manager.openEditSlot(session, globalIndex >= 0 ? globalIndex : 0);
+  }, [manager]);
 
   return (
     <div className="w-full py-12 bg-background">
@@ -729,19 +862,17 @@ export const AgendaVariant3 = () => {
 
         <AgendaStickyHeader {...filters} />
 
-        {/* Scrollable grid */}
-        <div className="max-h-[65vh] overflow-y-auto mt-3">
+        {/* Scrollable grid -- relative + z-0 so sticky header does not steal clicks */}
+        <div className="relative z-0 max-h-[65vh] overflow-y-auto mt-3">
           {filters.filteredSessions.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filters.filteredSessions.map((item, i) => {
-                const globalIndex = manager.sessions.indexOf(item);
-                return (
+              {filters.filteredSessions.map((item, i) => (
                 <Card
                   key={`${item.dayIndex}-${item.time}-${i}`}
                   role="button"
                   tabIndex={0}
-                  onClick={() => manager.openEditSlot(item, globalIndex)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); manager.openEditSlot(item, globalIndex); } }}
+                  onClick={() => openDetail(item)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(item); } }}
                   className="group border hover:border-primary/50 hover:shadow-md transition-all cursor-pointer"
                 >
                   <CardContent className="p-5">
@@ -764,8 +895,7 @@ export const AgendaVariant3 = () => {
                     </div>
                   </CardContent>
                 </Card>
-                );
-              })}
+              ))}
             </div>
           ) : (
             <div className="text-center py-12 text-muted-foreground text-sm">
@@ -775,6 +905,15 @@ export const AgendaVariant3 = () => {
         </div>
       </div>
 
+      {/* Read-mode detail modal */}
+      <SessionDetailModal
+        session={selectedSession}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onEditSlot={handleEditFromDetail}
+      />
+
+      {/* Edit/create modal (opened from detail modal's "Edit Slot" button) */}
       <AgendaSlotModalWrapper manager={manager} />
     </div>
   );
@@ -786,6 +925,18 @@ export const AgendaVariant3 = () => {
 export const AgendaVariant4 = () => {
     const manager = useAgendaManager(MULTI_DAY_AGENDA);
     const daySessions = manager.sessions.filter(s => s.dayIndex === 0).slice(0, 5);
+    const [selectedSession, setSelectedSession] = useState<AgendaItem | null>(null);
+    const [detailOpen, setDetailOpen] = useState(false);
+
+    const openDetail = useCallback((session: AgendaItem) => {
+      setSelectedSession(session);
+      setDetailOpen(true);
+    }, []);
+
+    const handleEditFromDetail = useCallback((session: AgendaItem) => {
+      const idx = manager.sessions.indexOf(session);
+      manager.openEditSlot(session, idx >= 0 ? idx : 0);
+    }, [manager]);
 
     return (
         <div className="w-full py-16 bg-background">
@@ -801,8 +952,8 @@ export const AgendaVariant4 = () => {
                           key={i}
                           role="button"
                           tabIndex={0}
-                          onClick={() => manager.openEditSlot(item, i)}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); manager.openEditSlot(item, i); } }}
+                          onClick={() => openDetail(item)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(item); } }}
                           className="group grid grid-cols-1 lg:grid-cols-[200px_1fr] border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
                         >
                             <div className="p-6 border-b lg:border-b-0 lg:border-r border-border flex items-center">
@@ -828,6 +979,12 @@ export const AgendaVariant4 = () => {
                  </div>
             </div>
 
+            <SessionDetailModal
+              session={selectedSession}
+              open={detailOpen}
+              onOpenChange={setDetailOpen}
+              onEditSlot={handleEditFromDetail}
+            />
             <AgendaSlotModalWrapper manager={manager} />
         </div>
     );
@@ -911,6 +1068,18 @@ export const AgendaVariant5 = () => {
 export const AgendaVariant6 = () => {
     const manager = useAgendaManager(MULTI_DAY_AGENDA);
     const daySessions = manager.sessions.filter(s => s.dayIndex === 0).slice(0, 5);
+    const [selectedSession, setSelectedSession] = useState<AgendaItem | null>(null);
+    const [detailOpen, setDetailOpen] = useState(false);
+
+    const openDetail = useCallback((session: AgendaItem) => {
+      setSelectedSession(session);
+      setDetailOpen(true);
+    }, []);
+
+    const handleEditFromDetail = useCallback((session: AgendaItem) => {
+      const idx = manager.sessions.indexOf(session);
+      manager.openEditSlot(session, idx >= 0 ? idx : 0);
+    }, [manager]);
 
     return (
         <div className="w-full py-16 bg-zinc-950 text-zinc-50 font-mono">
@@ -934,8 +1103,8 @@ export const AgendaVariant6 = () => {
                                   key={i}
                                   role="button"
                                   tabIndex={0}
-                                  onClick={() => manager.openEditSlot(item, i)}
-                                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); manager.openEditSlot(item, i); } }}
+                                  onClick={() => openDetail(item)}
+                                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(item); } }}
                                   className="relative grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 cursor-pointer group"
                                 >
                                     <div className="absolute left-4 lg:left-1/2 top-0 -translate-x-1/2 w-4 h-4 bg-zinc-950 border border-zinc-500 rounded-full z-10 group-hover:border-green-500 transition-colors">
@@ -982,6 +1151,12 @@ export const AgendaVariant6 = () => {
                 </div>
             </div>
 
+            <SessionDetailModal
+              session={selectedSession}
+              open={detailOpen}
+              onOpenChange={setDetailOpen}
+              onEditSlot={handleEditFromDetail}
+            />
             <AgendaSlotModalWrapper manager={manager} />
         </div>
     );
@@ -993,6 +1168,18 @@ export const AgendaVariant6 = () => {
 export const AgendaVariant7 = () => {
     const manager = useAgendaManager(MULTI_DAY_AGENDA);
     const daySessions = manager.sessions.filter(s => s.dayIndex === 0).slice(0, 5);
+    const [selectedSession, setSelectedSession] = useState<AgendaItem | null>(null);
+    const [detailOpen, setDetailOpen] = useState(false);
+
+    const openDetail = useCallback((session: AgendaItem) => {
+      setSelectedSession(session);
+      setDetailOpen(true);
+    }, []);
+
+    const handleEditFromDetail = useCallback((session: AgendaItem) => {
+      const idx = manager.sessions.indexOf(session);
+      manager.openEditSlot(session, idx >= 0 ? idx : 0);
+    }, [manager]);
 
     return (
         <div className="w-full py-16 bg-muted/10">
@@ -1012,8 +1199,8 @@ export const AgendaVariant7 = () => {
                                 key={i}
                                 role="button"
                                 tabIndex={0}
-                                onClick={() => manager.openEditSlot(item, i)}
-                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); manager.openEditSlot(item, i); } }}
+                                onClick={() => openDetail(item)}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(item); } }}
                                 className={cn(
                                     "border-none shadow-sm hover:shadow-md transition-all group overflow-hidden relative flex flex-col justify-between cursor-pointer",
                                     isKeynote ? "md:col-span-2 md:row-span-2 bg-primary text-primary-foreground" : "bg-card",
@@ -1059,6 +1246,12 @@ export const AgendaVariant7 = () => {
                 </div>
             </div>
 
+            <SessionDetailModal
+              session={selectedSession}
+              open={detailOpen}
+              onOpenChange={setDetailOpen}
+              onEditSlot={handleEditFromDetail}
+            />
             <AgendaSlotModalWrapper manager={manager} />
         </div>
     );
@@ -1070,6 +1263,18 @@ export const AgendaVariant7 = () => {
 export const AgendaVariant8 = () => {
     const manager = useAgendaManager(MULTI_DAY_AGENDA);
     const daySessions = manager.sessions.filter(s => s.dayIndex === 0).slice(0, 5);
+    const [selectedSession, setSelectedSession] = useState<AgendaItem | null>(null);
+    const [detailOpen, setDetailOpen] = useState(false);
+
+    const openDetail = useCallback((session: AgendaItem) => {
+      setSelectedSession(session);
+      setDetailOpen(true);
+    }, []);
+
+    const handleEditFromDetail = useCallback((session: AgendaItem) => {
+      const idx = manager.sessions.indexOf(session);
+      manager.openEditSlot(session, idx >= 0 ? idx : 0);
+    }, [manager]);
 
     return (
         <div className="w-full py-20 bg-background text-foreground">
@@ -1091,8 +1296,8 @@ export const AgendaVariant8 = () => {
                           key={i}
                           role="button"
                           tabIndex={0}
-                          onClick={() => manager.openEditSlot(item, i)}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); manager.openEditSlot(item, i); } }}
+                          onClick={() => openDetail(item)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(item); } }}
                           className="group relative cursor-pointer"
                         >
                             <div className="flex flex-wrap justify-between items-start text-xs font-mono uppercase tracking-widest text-muted-foreground mb-4 border-t border-transparent group-hover:border-foreground/20 pt-4 transition-all">
@@ -1121,6 +1326,12 @@ export const AgendaVariant8 = () => {
                 <div className="mt-20 border-t-2 border-foreground" />
             </div>
 
+            <SessionDetailModal
+              session={selectedSession}
+              open={detailOpen}
+              onOpenChange={setDetailOpen}
+              onEditSlot={handleEditFromDetail}
+            />
             <AgendaSlotModalWrapper manager={manager} />
         </div>
     );
