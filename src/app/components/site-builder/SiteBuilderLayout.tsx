@@ -934,6 +934,7 @@ export const SiteBuilderLayout = () => {
       speakers={AVAILABLE_SPEAKERS}
       tracks={AVAILABLE_TRACKS}
       sponsors={AVAILABLE_SPONSORS}
+      days={["Day 1 — Mon, Jun 15", "Day 2 — Tue, Jun 16", "Day 3 — Wed, Jun 17"]}
     />
     </DndProvider>
   );

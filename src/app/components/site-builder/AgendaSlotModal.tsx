@@ -31,6 +31,8 @@ import {
   Link2,
   Trash2,
   CalendarPlus,
+  Calendar,
+  Upload,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -88,6 +90,7 @@ interface AgendaSlotModalProps {
   speakers: SpeakerOption[];
   tracks: TrackOption[];
   sponsors: SponsorOption[];
+  days?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -125,6 +128,8 @@ function MultiSelectChips<T extends { id: string }>({
   renderOption,
   renderChip,
   placeholder,
+  emptyIcon,
+  emptyDescription,
 }: {
   label: string;
   options: T[];
@@ -133,6 +138,8 @@ function MultiSelectChips<T extends { id: string }>({
   renderOption: (item: T, isSelected: boolean) => React.ReactNode;
   renderChip: (item: T) => React.ReactNode;
   placeholder: string;
+  emptyIcon?: React.ReactNode;
+  emptyDescription?: string;
 }) {
   const [search, setSearch] = useState("");
 
@@ -190,9 +197,15 @@ function MultiSelectChips<T extends { id: string }>({
       <ScrollArea className="max-h-[180px]">
         <div className="space-y-0.5">
           {filtered.length === 0 && (
-            <p className="text-xs text-muted-foreground py-3 text-center">
-              No {label.toLowerCase()} found.
-            </p>
+            <div className="text-center py-6">
+              {emptyIcon && <div className="flex justify-center mb-2 opacity-30">{emptyIcon}</div>}
+              <p className="text-xs text-muted-foreground font-medium">
+                No {label.toLowerCase()} found.
+              </p>
+              {emptyDescription && (
+                <p className="text-[10px] text-muted-foreground/70 mt-1">{emptyDescription}</p>
+              )}
+            </div>
           )}
           {filtered.map((item) => {
             const isSelected = selectedIds.includes(item.id);
@@ -218,9 +231,42 @@ function MultiSelectChips<T extends { id: string }>({
   );
 }
 
+/** Shows a compact cross-relationship summary above each relationship tab */
+function RelationshipSummary({
+  items,
+}: {
+  items: { icon: React.ReactNode; label: string; count: number; names: string[] }[];
+}) {
+  const active = items.filter((i) => i.count > 0);
+  if (active.length === 0) return null;
+
+  return (
+    <div className="mb-3 p-2.5 rounded-lg border border-border bg-muted/30">
+      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
+        Linked to this session
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {active.map((item) => (
+          <div
+            key={item.label}
+            className="flex items-center gap-1.5 text-xs text-foreground"
+            title={item.names.join(", ")}
+          >
+            {item.icon}
+            <span className="font-medium">{item.count}</span>
+            <span className="text-muted-foreground">{item.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Main Modal
 // ---------------------------------------------------------------------------
+const DEFAULT_DAYS = ["Day 1", "Day 2", "Day 3"];
+
 export const AgendaSlotModal: React.FC<AgendaSlotModalProps> = ({
   open,
   onOpenChange,
@@ -229,6 +275,7 @@ export const AgendaSlotModal: React.FC<AgendaSlotModalProps> = ({
   speakers,
   tracks,
   sponsors,
+  days = DEFAULT_DAYS,
 }) => {
   const isEditing = !!slot;
 
@@ -306,6 +353,50 @@ export const AgendaSlotModal: React.FC<AgendaSlotModalProps> = ({
   // Validation
   const canSave = form.title.trim().length > 0;
 
+  // Resolved relationship names for cross-reference display
+  const selectedSpeakerNames = useMemo(
+    () => speakers.filter((s) => form.speakerIds.includes(s.id)).map((s) => s.name),
+    [speakers, form.speakerIds]
+  );
+  const selectedTrackNames = useMemo(
+    () => tracks.filter((t) => form.trackIds.includes(t.id)).map((t) => t.name),
+    [tracks, form.trackIds]
+  );
+  const selectedSponsorNames = useMemo(
+    () => sponsors.filter((s) => form.sponsorIds.includes(s.id)).map((s) => s.name),
+    [sponsors, form.sponsorIds]
+  );
+
+  const crossRelItems = useMemo(
+    () => [
+      {
+        icon: <Users className="h-3 w-3 text-muted-foreground" />,
+        label: "Speaker" + (form.speakerIds.length !== 1 ? "s" : ""),
+        count: form.speakerIds.length,
+        names: selectedSpeakerNames,
+      },
+      {
+        icon: <Layers className="h-3 w-3 text-muted-foreground" />,
+        label: "Track" + (form.trackIds.length !== 1 ? "s" : ""),
+        count: form.trackIds.length,
+        names: selectedTrackNames,
+      },
+      {
+        icon: <Megaphone className="h-3 w-3 text-muted-foreground" />,
+        label: "Sponsor" + (form.sponsorIds.length !== 1 ? "s" : ""),
+        count: form.sponsorIds.length,
+        names: selectedSponsorNames,
+      },
+      {
+        icon: <FileText className="h-3 w-3 text-muted-foreground" />,
+        label: "Doc" + (form.documents.length !== 1 ? "s" : ""),
+        count: form.documents.length,
+        names: form.documents.map((d) => d.title || "Untitled"),
+      },
+    ],
+    [form.speakerIds, form.trackIds, form.sponsorIds, form.documents, selectedSpeakerNames, selectedTrackNames, selectedSponsorNames]
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
@@ -329,21 +420,41 @@ export const AgendaSlotModal: React.FC<AgendaSlotModalProps> = ({
                 <Type className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Basics</span>
               </TabsTrigger>
-              <TabsTrigger value="speakers" className="text-xs gap-1">
+              <TabsTrigger value="speakers" className="text-xs gap-1 relative">
                 <Users className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Speakers</span>
+                {form.speakerIds.length > 0 && (
+                  <span className="ml-0.5 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold leading-none">
+                    {form.speakerIds.length}
+                  </span>
+                )}
               </TabsTrigger>
-              <TabsTrigger value="tracks" className="text-xs gap-1">
+              <TabsTrigger value="tracks" className="text-xs gap-1 relative">
                 <Layers className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Tracks</span>
+                {form.trackIds.length > 0 && (
+                  <span className="ml-0.5 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold leading-none">
+                    {form.trackIds.length}
+                  </span>
+                )}
               </TabsTrigger>
-              <TabsTrigger value="sponsors" className="text-xs gap-1">
+              <TabsTrigger value="sponsors" className="text-xs gap-1 relative">
                 <Megaphone className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Sponsors</span>
+                {form.sponsorIds.length > 0 && (
+                  <span className="ml-0.5 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold leading-none">
+                    {form.sponsorIds.length}
+                  </span>
+                )}
               </TabsTrigger>
-              <TabsTrigger value="documents" className="text-xs gap-1">
+              <TabsTrigger value="documents" className="text-xs gap-1 relative">
                 <FileText className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Docs</span>
+                {form.documents.length > 0 && (
+                  <span className="ml-0.5 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold leading-none">
+                    {form.documents.length}
+                  </span>
+                )}
               </TabsTrigger>
             </TabsList>
           </div>
@@ -354,10 +465,43 @@ export const AgendaSlotModal: React.FC<AgendaSlotModalProps> = ({
               {/* BASICS TAB */}
               {/* --------------------------------------------------------- */}
               <TabsContent value="basics" className="mt-0 space-y-4">
+                {/* Day */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium flex items-center gap-1.5">
+                    <Calendar className="h-3 w-3 text-muted-foreground" />
+                    Day
+                  </Label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {days.map((d, i) => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => {
+                          update("day", d);
+                          update("dayIndex", i);
+                        }}
+                        className={cn(
+                          "px-3 py-1.5 rounded-md text-xs font-medium border transition-colors",
+                          form.day === d
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background text-muted-foreground border-border hover:text-foreground hover:border-foreground/20"
+                        )}
+                      >
+                        {d}
+                      </button>
+                    ))}
+                    {!days.includes(form.day) && form.day && (
+                      <span className="px-3 py-1.5 rounded-md text-xs font-medium border border-primary bg-primary/10 text-primary">
+                        {form.day}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
                 {/* Title */}
                 <div className="space-y-1.5">
                   <Label htmlFor="slot-title" className="text-xs font-medium">
-                    Title
+                    Title <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="slot-title"
@@ -368,7 +512,7 @@ export const AgendaSlotModal: React.FC<AgendaSlotModalProps> = ({
                   />
                 </div>
 
-                {/* Time row */}
+                {/* Day + Time row */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label htmlFor="slot-start" className="text-xs font-medium flex items-center gap-1.5">
@@ -495,12 +639,17 @@ export const AgendaSlotModal: React.FC<AgendaSlotModalProps> = ({
               {/* SPEAKERS TAB */}
               {/* --------------------------------------------------------- */}
               <TabsContent value="speakers" className="mt-0">
+                <RelationshipSummary
+                  items={crossRelItems.filter((i) => i.label.startsWith("Track") || i.label.startsWith("Sponsor") || i.label.startsWith("Doc"))}
+                />
                 <MultiSelectChips
                   label="Speakers"
                   options={speakers}
                   selectedIds={form.speakerIds}
                   onToggle={(id) => toggleArrayItem("speakerIds", id)}
                   placeholder="Search speakers..."
+                  emptyIcon={<Users className="h-8 w-8" />}
+                  emptyDescription="Add speakers from your event to this session."
                   renderOption={(s, sel) => (
                     <>
                       <div className="w-7 h-7 rounded-full bg-muted overflow-hidden shrink-0 flex items-center justify-center">
@@ -574,12 +723,17 @@ export const AgendaSlotModal: React.FC<AgendaSlotModalProps> = ({
               {/* TRACKS TAB */}
               {/* --------------------------------------------------------- */}
               <TabsContent value="tracks" className="mt-0">
+                <RelationshipSummary
+                  items={crossRelItems.filter((i) => i.label.startsWith("Speaker") || i.label.startsWith("Sponsor") || i.label.startsWith("Doc"))}
+                />
                 <MultiSelectChips
                   label="Tracks"
                   options={tracks}
                   selectedIds={form.trackIds}
                   onToggle={(id) => toggleArrayItem("trackIds", id)}
                   placeholder="Search tracks..."
+                  emptyIcon={<Layers className="h-8 w-8" />}
+                  emptyDescription="Assign color-coded tracks to categorize this session."
                   renderOption={(t, sel) => (
                     <>
                       <div
@@ -626,12 +780,17 @@ export const AgendaSlotModal: React.FC<AgendaSlotModalProps> = ({
               {/* SPONSORS TAB */}
               {/* --------------------------------------------------------- */}
               <TabsContent value="sponsors" className="mt-0">
+                <RelationshipSummary
+                  items={crossRelItems.filter((i) => i.label.startsWith("Speaker") || i.label.startsWith("Track") || i.label.startsWith("Doc"))}
+                />
                 <MultiSelectChips
                   label="Sponsors"
                   options={sponsors}
                   selectedIds={form.sponsorIds}
                   onToggle={(id) => toggleArrayItem("sponsorIds", id)}
                   placeholder="Search sponsors..."
+                  emptyIcon={<Megaphone className="h-8 w-8" />}
+                  emptyDescription="Link sponsors to sessions they are supporting."
                   renderOption={(sp, sel) => (
                     <>
                       <div className="w-8 h-6 rounded bg-muted overflow-hidden shrink-0 flex items-center justify-center p-0.5">
@@ -701,10 +860,14 @@ export const AgendaSlotModal: React.FC<AgendaSlotModalProps> = ({
               {/* DOCUMENTS TAB */}
               {/* --------------------------------------------------------- */}
               <TabsContent value="documents" className="mt-0 space-y-3">
+                <RelationshipSummary
+                  items={crossRelItems.filter((i) => i.label.startsWith("Speaker") || i.label.startsWith("Track") || i.label.startsWith("Sponsor"))}
+                />
                 {form.documents.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
-                    <FileText className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                    <p className="text-xs">No documents attached yet.</p>
+                    <Upload className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-xs font-medium">No documents attached yet</p>
+                    <p className="text-[10px] mt-1 text-muted-foreground/70">Attach presentations, handouts, or reference materials.</p>
                   </div>
                 )}
 
@@ -763,33 +926,39 @@ export const AgendaSlotModal: React.FC<AgendaSlotModalProps> = ({
           {/* Fixed footer actions */}
           <Separator />
           <div className="flex items-center justify-between px-6 py-3 bg-background">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
+              {form.day && (
+                <Badge variant="secondary" className="text-[10px] gap-1">
+                  <Calendar className="h-2.5 w-2.5" />
+                  {form.day}
+                </Badge>
+              )}
               {form.speakerIds.length > 0 && (
-                <Badge variant="outline" className="text-[10px] gap-1">
+                <Badge variant="outline" className="text-[10px] gap-1" title={selectedSpeakerNames.join(", ")}>
                   <Users className="h-2.5 w-2.5" />
-                  {form.speakerIds.length}
+                  {form.speakerIds.length} {form.speakerIds.length === 1 ? "speaker" : "speakers"}
                 </Badge>
               )}
               {form.trackIds.length > 0 && (
-                <Badge variant="outline" className="text-[10px] gap-1">
+                <Badge variant="outline" className="text-[10px] gap-1" title={selectedTrackNames.join(", ")}>
                   <Layers className="h-2.5 w-2.5" />
-                  {form.trackIds.length}
+                  {form.trackIds.length} {form.trackIds.length === 1 ? "track" : "tracks"}
                 </Badge>
               )}
               {form.sponsorIds.length > 0 && (
-                <Badge variant="outline" className="text-[10px] gap-1">
+                <Badge variant="outline" className="text-[10px] gap-1" title={selectedSponsorNames.join(", ")}>
                   <Megaphone className="h-2.5 w-2.5" />
-                  {form.sponsorIds.length}
+                  {form.sponsorIds.length} {form.sponsorIds.length === 1 ? "sponsor" : "sponsors"}
                 </Badge>
               )}
               {form.documents.length > 0 && (
                 <Badge variant="outline" className="text-[10px] gap-1">
                   <FileText className="h-2.5 w-2.5" />
-                  {form.documents.length}
+                  {form.documents.length} {form.documents.length === 1 ? "doc" : "docs"}
                 </Badge>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <Button
                 type="button"
                 variant="outline"

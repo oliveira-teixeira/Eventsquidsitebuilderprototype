@@ -264,6 +264,8 @@ const useAgendaManager = (initialSessions: AgendaSession[]): AgendaManager => {
 };
 
 /** Wrapper that renders the AgendaSlotModal and provides the Add button */
+const AGENDA_DAYS = ["Friday, March 14", "Saturday, March 15", "Sunday, March 16"];
+
 const AgendaSlotModalWrapper: React.FC<{ manager: AgendaManager }> = ({ manager }) => (
   <AgendaSlotModal
     open={manager.slotModalOpen}
@@ -273,6 +275,7 @@ const AgendaSlotModalWrapper: React.FC<{ manager: AgendaManager }> = ({ manager 
     speakers={AVAILABLE_SPEAKERS}
     tracks={AVAILABLE_TRACKS}
     sponsors={AVAILABLE_SPONSORS}
+    days={AGENDA_DAYS}
   />
 );
 
