@@ -3,6 +3,11 @@ import { Card, CardContent } from "../ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { Linkedin, Twitter, Globe } from "lucide-react";
+import {
+  SpeakerDirectory,
+  type Speaker,
+  type SpeakerSession,
+} from "../site-builder/SpeakerProfilePanel";
 
 const SPEAKERS = [
     { name: "Sarah Johnson", role: "VP of Design", company: "Acme Corp", img: "https://images.unsplash.com/photo-1766928963-c72589b9ef3f?w=400" },
@@ -12,6 +17,88 @@ const SPEAKERS = [
     { name: "Emily Davis", role: "Director", company: "Future", img: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400" },
     { name: "Robert Wilson", role: "Engineer", company: "BuildIt", img: "https://images.unsplash.com/photo-1762968269894-1d7e1ce8894e?w=400" },
 ];
+
+// ---------------------------------------------------------------------------
+// Full speaker roster with IDs (cross-referenced from agenda data)
+// ---------------------------------------------------------------------------
+const FULL_SPEAKERS: Speaker[] = [
+  { id: "sp-1", name: "Sarah Connor", role: "VP of Design", company: "Acme Corp", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" },
+  { id: "sp-2", name: "Dan Abramov", role: "React Core Team", company: "Meta", img: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop" },
+  { id: "sp-3", name: "Emma K", role: "Design Lead", company: "Figma", img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop" },
+  { id: "sp-4", name: "Matt Pocock", role: "TypeScript Educator", company: "Total TypeScript", img: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop" },
+  { id: "sp-5", name: "Andrej K", role: "AI Researcher", company: "OpenAI", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" },
+  { id: "sp-6", name: "Jake Archibald", role: "Developer Advocate", company: "Google" },
+  { id: "sp-7", name: "Guillermo Rauch", role: "CEO", company: "Vercel", img: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop" },
+  { id: "sp-8", name: "Kelsey Hightower", role: "Distinguished Engineer", company: "Google Cloud", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" },
+  { id: "sp-9", name: "Addy Osmani", role: "Engineering Lead", company: "Google", img: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop" },
+  { id: "sp-10", name: "Una Kravets", role: "CSS Advocate", company: "Google", img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop" },
+  { id: "sp-11", name: "Werner Vogels", role: "CTO", company: "Amazon", img: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop" },
+  { id: "sp-12", name: "Jina Anne", role: "Design Tokens Pioneer", company: "Independent", img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop" },
+  { id: "sp-13", name: "Troy Hunt", role: "Security Researcher", company: "Have I Been Pwned", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" },
+  { id: "sp-14", name: "Jen Simmons", role: "Web Technologies Evangelist", company: "Apple" },
+  { id: "sp-15", name: "Phil Sturgeon", role: "API Design Expert", company: "Stoplight", img: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop" },
+  { id: "sp-16", name: "Oscar T", role: "Accessibility Lead", company: "A11y Co", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" },
+  { id: "sp-17", name: "Lena R", role: "UX Researcher", company: "DesignLab", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" },
+];
+
+// ---------------------------------------------------------------------------
+// Session assignments per speaker (cross-relationship data)
+// ---------------------------------------------------------------------------
+const SPEAKER_SESSIONS: Record<string, SpeakerSession[]> = {
+  "sp-1": [
+    { title: "Opening Keynote: Future of the Web", day: "Friday, March 14", dayIndex: 0, time: "09:00 AM", endTime: "10:00 AM", location: "Auditorium A", type: "Keynote" },
+  ],
+  "sp-2": [
+    { title: "React Server Components Workshop", day: "Friday, March 14", dayIndex: 0, time: "10:00 AM", endTime: "11:00 AM", location: "Room 204", type: "Workshop" },
+  ],
+  "sp-3": [
+    { title: "Design Tokens at Scale", day: "Friday, March 14", dayIndex: 0, time: "10:00 AM", endTime: "11:00 AM", location: "Room 305", type: "Talk" },
+    { title: "Design Systems Panel", day: "Friday, March 14", dayIndex: 0, time: "02:00 PM", endTime: "03:00 PM", location: "Auditorium B", type: "Panel" },
+  ],
+  "sp-4": [
+    { title: "TypeScript Advanced Patterns", day: "Friday, March 14", dayIndex: 0, time: "11:00 AM", endTime: "12:00 PM", location: "Room 204", type: "Workshop" },
+  ],
+  "sp-5": [
+    { title: "AI in Production", day: "Friday, March 14", dayIndex: 0, time: "01:00 PM", endTime: "02:00 PM", location: "Auditorium A", type: "Keynote" },
+  ],
+  "sp-6": [
+    { title: "State of Web Standards", day: "Saturday, March 15", dayIndex: 1, time: "09:00 AM", endTime: "10:00 AM", location: "Auditorium A", type: "Keynote" },
+  ],
+  "sp-7": [
+    { title: "Building with Edge Functions", day: "Saturday, March 15", dayIndex: 1, time: "11:00 AM", endTime: "12:00 PM", location: "Auditorium B", type: "Talk" },
+  ],
+  "sp-8": [
+    { title: "DevOps & CI/CD", day: "Saturday, March 15", dayIndex: 1, time: "01:00 PM", endTime: "02:00 PM", location: "Room 204", type: "Workshop" },
+  ],
+  "sp-9": [
+    { title: "Performance Deep-Dive", day: "Friday, March 14", dayIndex: 0, time: "03:00 PM", endTime: "04:00 PM", location: "Room 204", type: "Workshop" },
+  ],
+  "sp-10": [
+    { title: "Advanced CSS Architecture", day: "Saturday, March 15", dayIndex: 1, time: "10:00 AM", endTime: "11:00 AM", location: "Room 204", type: "Workshop" },
+  ],
+  "sp-11": [
+    { title: "Edge Computing Keynote", day: "Sunday, March 16", dayIndex: 2, time: "09:00 AM", endTime: "10:00 AM", location: "Auditorium A", type: "Keynote" },
+  ],
+  "sp-12": [
+    { title: "Building Design Tokens", day: "Sunday, March 16", dayIndex: 2, time: "10:00 AM", endTime: "11:00 AM", location: "Room 204", type: "Workshop" },
+  ],
+  "sp-13": [
+    { title: "Security in Modern Apps", day: "Sunday, March 16", dayIndex: 2, time: "11:00 AM", endTime: "12:00 PM", location: "Room 204", type: "Workshop" },
+  ],
+  "sp-14": [
+    { title: "Mobile-First Strategies", day: "Sunday, March 16", dayIndex: 2, time: "11:00 AM", endTime: "12:00 PM", location: "Auditorium B", type: "Talk" },
+  ],
+  "sp-15": [
+    { title: "API Design Best Practices", day: "Sunday, March 16", dayIndex: 2, time: "10:00 AM", endTime: "11:00 AM", location: "Room 305", type: "Talk" },
+  ],
+  "sp-16": [
+    { title: "Accessibility Masterclass", day: "Friday, March 14", dayIndex: 0, time: "11:00 AM", endTime: "12:00 PM", location: "Auditorium B", type: "Panel" },
+    { title: "Design Systems Panel", day: "Friday, March 14", dayIndex: 0, time: "02:00 PM", endTime: "03:00 PM", location: "Auditorium B", type: "Panel" },
+  ],
+  "sp-17": [
+    { title: "Accessibility Masterclass", day: "Friday, March 14", dayIndex: 0, time: "11:00 AM", endTime: "12:00 PM", location: "Auditorium B", type: "Panel" },
+  ],
+};
 
 // Variant 1: Grid Cards
 export const SpeakersVariant1 = () => (
@@ -96,4 +183,12 @@ export const SpeakersVariant3 = () => (
           ))}
       </div>
   </div>
+);
+
+// Variant 4: Interactive Speaker Directory with Search, Alphabet Chips & Profile Panel
+export const SpeakersVariant4 = () => (
+  <SpeakerDirectory
+    speakers={FULL_SPEAKERS}
+    speakerSessions={SPEAKER_SESSIONS}
+  />
 );

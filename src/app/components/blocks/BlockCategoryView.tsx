@@ -5,7 +5,7 @@ import { ComponentPreview } from "../design-system/ComponentPreview";
 import { HeroVariant1, HeroVariant2, HeroVariant3, HeroVariant4, HeroVariant5 } from "./HeroBlocks";
 import { AgendaVariant1, AgendaVariant2, AgendaVariant3, AgendaVariant4, AgendaVariant5, AgendaVariant6, AgendaVariant7, AgendaVariant8 } from "./AgendaBlocks";
 import { CountdownVariant1, CountdownVariant2, CountdownVariant3 } from "./CountdownBlocks";
-import { SpeakersVariant1, SpeakersVariant2, SpeakersVariant3 } from "./SpeakersBlocks";
+import { SpeakersVariant1, SpeakersVariant2, SpeakersVariant3, SpeakersVariant4 } from "./SpeakersBlocks";
 import { SponsorsVariant1, SponsorsVariant2, SponsorsVariant3, SponsorsVariant4, SponsorsVariant5, SponsorsVariant6, SponsorsVariant7, SponsorsVariant8, SponsorsVariant9 } from "./SponsorsBlocks";
 import { LocationVariant1, LocationVariant2, LocationVariant3 } from "./LocationBlocks";
 import { DocumentsVariant1, DocumentsVariant2, DocumentsVariant3 } from "./DocumentsBlocks";
@@ -1904,10 +1904,11 @@ export const BlockCategoryView = ({ category }: { category: string }) => {
             variants = [
                 <ComponentPreview key="1" title="Speakers Variant 1: Grid with Hover" description="Image-heavy grid with hover effects." preview={<SpeakersVariant1 />} code={CODE_SPEAKERS.v1} vueCode={CODE_SPEAKERS_VUE.v1} swiftCode={CODE_SPEAKERS_SWIFT.v1} />,
                 <ComponentPreview key="2" title="Speakers Variant 2: List Layout" description="Horizontal cards with avatars." preview={<SpeakersVariant2 />} code={CODE_SPEAKERS.v2} vueCode={CODE_SPEAKERS_VUE.v2} swiftCode={CODE_SPEAKERS_SWIFT.v2} />,
-                <ComponentPreview key="3" title="Speakers Variant 3: Horizontal Scroll" description="Swipeable row of cards." preview={<SpeakersVariant3 />} code={CODE_SPEAKERS.v3} vueCode={CODE_SPEAKERS_VUE.v3} swiftCode={CODE_SPEAKERS_SWIFT.v3} />,
-            ];
-            break;
-        case "sponsors":
+<ComponentPreview key="3" title="Speakers Variant 3: Horizontal Scroll" description="Swipeable row of cards." preview={<SpeakersVariant3 />} code={CODE_SPEAKERS.v3} vueCode={CODE_SPEAKERS_VUE.v3} swiftCode={CODE_SPEAKERS_SWIFT.v3} />,
+  <ComponentPreview key="4" title="Speakers Variant 4: Interactive Directory" description="Searchable speaker list with alphabet chips and session profile panel." preview={<SpeakersVariant4 />} code={""} vueCode={""} swiftCode={""} />,
+  ];
+  break;
+  case "sponsors":
             title = "Sponsors";
             description = "Highlight your partners. Use the controls to adjust the number of displayed sponsors.";
             variants = [

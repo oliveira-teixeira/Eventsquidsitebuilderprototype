@@ -1748,6 +1748,30 @@ ${showImage ? `<div class="flex-1 relative order-1 md:order-2 self-stretch min-h
     `
     }
   },
+  {
+    id: "speakers-directory",
+    name: "Speakers: Interactive Directory",
+    category: "Speakers",
+    description: "Searchable speaker list with alphabet filter chips and session profile panel.",
+    icon: Schematics.SpeakersList,
+    toggleableElements: [
+        { id: 'showTitle', label: 'Show Title', defaultValue: true },
+        { id: 'showSubtitle', label: 'Show Subtitle', defaultValue: true }
+    ],
+    html: (id, variant, settings) => {
+        return `
+      <builder-section id="${id}" class="relative block w-full ${getVariantClasses(variant)} ${getPaddingClass(settings, 'py-12')}">
+        <div class="w-full max-w-[var(--max-width)] mx-auto px-[var(--global-padding)]">
+          ${renderSectionHeader(settings, "Speakers", "Click a speaker to view their full session schedule.")}
+          <p style="font-size:13px; color:var(--muted-foreground); text-align:center; padding:32px 16px; border:1px dashed var(--border); border-radius:8px; font-family:var(--font-sans);">
+            Interactive Speaker Directory &mdash; search, filter by alphabet, and click any speaker to see their assigned sessions. <br/><em>This block renders as a React component in the live preview.</em>
+          </p>
+        </div>
+        ${getDividerHtml(settings)}
+      </builder-section>
+    `
+    }
+  },
 
   // --- SPONSORS ---
   {
